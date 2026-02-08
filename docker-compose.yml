@@ -1,0 +1,21 @@
+services:
+  # Postgres Database
+  database:
+    container_name: twitter-dev-postgres-db
+    image: postgres:15.4
+    ports:
+      - "5432:5432"
+    volumes:
+      - twitter_dev_postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: twitter_db
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: rootpass
+    networks:
+      - twitter_dev_network
+  
+networks:
+  twitter_dev_network:
+
+volumes:
+  twitter_dev_postgres_data:
