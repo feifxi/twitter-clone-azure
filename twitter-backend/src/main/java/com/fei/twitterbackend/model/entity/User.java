@@ -43,6 +43,12 @@ public class User implements UserDetails {
     @Column(name = "provider", length = 50, nullable = false)
     private String provider;
 
+    @Column(name = "followers_count", nullable = false)
+    private int followersCount = 0;
+
+    @Column(name = "following_count", nullable = false)
+    private int followingCount = 0;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

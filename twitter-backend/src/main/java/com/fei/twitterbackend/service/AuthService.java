@@ -11,6 +11,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,24 +21,31 @@ import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String googleClientId;
 
     private final UserRepository userRepository;
-    private final JwtService jwtService; // (Code provided in previous response)
+    private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
 
     public AuthResponse loginWithGoogle(String googleIdToken) {
-        // Verify Google Token
+        log.info("Attempting Google login/registration");
+
         GoogleIdToken.Payload payload = verifyGoogleToken(googleIdToken);
-        if (payload == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Invalid Google Token.");
+        if (payload == null) {
+            log.warn("Google token verification failed. Potential invalid request or expired token.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Google Token.");
+        }
 
         String email = payload.getEmail();
+        log.debug("Google token verified for email: {}", email);
 
-        // Create or Get User (One-Time Import)
+        // Find existing or Register new
         User user = userRepository.findByEmail(email).orElseGet(() -> {
+            log.info("First time login detected. Registering new user with email: {}", email);
             User newUser = new User();
             newUser.setEmail(email);
             newUser.setUsername(email.split("@")[0]);
@@ -48,10 +56,10 @@ public class AuthService {
             return userRepository.save(newUser);
         });
 
-        // Generate Tokens
         String accessToken = jwtService.generateToken(user);
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 
+        log.info("User logged in successfully: [ID: {}, Email: {}]", user.getId(), email);
         return new AuthResponse(
                 accessToken,
                 refreshToken.getToken(),
@@ -60,24 +68,33 @@ public class AuthService {
     }
 
     public AuthResponse refreshToken(String requestRefreshToken) {
+        log.debug("Attempting to rotate access token using refresh token");
+
         return refreshTokenService.findByToken(requestRefreshToken)
-                .map(refreshTokenService::verifyExpiration)
+                .map(token -> {
+                    log.debug("Valid refresh token found for user ID: {}", token.getUser().getId());
+                    return refreshTokenService.verifyExpiration(token);
+                })
                 .map(RefreshToken::getUser)
                 .map(user -> {
                     String newAccessToken = jwtService.generateToken(user);
                     RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user);
 
+                    log.info("Access token successfully refreshed for user ID: {}", user.getId());
                     return new AuthResponse(
                             newAccessToken,
                             newRefreshToken.getToken(),
                             UserDTO.fromEntity(user)
                     );
                 })
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Refresh token not found."));
+                .orElseThrow(() -> {
+                    log.warn("Failed refresh token attempt. Token not found or expired.");
+                    return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token not found.");
+                });
     }
 
     public void logout(User user) {
-        // delete the refresh token from DB
+        log.info("Logging out user ID: {}. Revoking all refresh tokens.", user.getId());
         refreshTokenService.deleteByUser(user);
     }
 
@@ -91,6 +108,7 @@ public class AuthService {
             GoogleIdToken idToken = verifier.verify(idTokenString);
             return (idToken != null) ? idToken.getPayload() : null;
         } catch (Exception e) {
+            log.error("Internal error during Google token verification: {}", e.getMessage());
             return null;
         }
     }

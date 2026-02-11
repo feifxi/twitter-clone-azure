@@ -13,21 +13,21 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "tweet_likes")
-public class TweetLike {
+@Table(name = "follows")
+public class Follow {
 
     @EmbeddedId
-    private TweetLikeId id;
+    private FollowKey id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("userId") // Automatically maps this User's ID to id.userId
-    @JoinColumn(name = "user_id")
-    private User user;
+    @MapsId("followerId") // Maps to FollowKey.followerId
+    @JoinColumn(name = "follower_id")
+    private User follower;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("tweetId") // Automatically maps this Tweet's ID to id.tweetId
-    @JoinColumn(name = "tweet_id")
-    private Tweet tweet;
+    @MapsId("followingId") // Maps to FollowKey.followingId
+    @JoinColumn(name = "following_id")
+    private User following;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -38,8 +38,14 @@ public class TweetLike {
     @NoArgsConstructor
     @AllArgsConstructor
     @Embeddable
-    public static class TweetLikeId implements Serializable {
-        private Long userId;
-        private Long tweetId;
+    public static class FollowKey implements Serializable {
+
+        @Column(name = "follower_id")
+        private Long followerId;
+
+        @Column(name = "following_id")
+        private Long followingId;
     }
 }
+
+

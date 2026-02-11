@@ -94,4 +94,13 @@ public class TweetController {
         tweetService.deleteTweet(user, id);
         return ResponseEntity.noContent().build(); // Returns 204 No Content
     }
+
+    @PostMapping("/{id}/retweet")
+    public ResponseEntity<Void> retweet(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id
+    ) {
+        tweetService.retweet(user, id);
+        return ResponseEntity.ok().build();
+    }
 }

@@ -45,17 +45,21 @@ public class Tweet {
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Tweet> replies = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "retweet_id")
+    private Tweet retweet; // The original tweet being retweeted
+
     // Simple Counters (Optimization: Don't count(*) every time)
     @Builder.Default
-    @Column(name = "like_count")
+    @Column(name = "like_count", nullable = false)
     private int likeCount = 0;
 
     @Builder.Default
-    @Column(name = "retweet_count")
+    @Column(name = "retweet_count", nullable = false)
     private int retweetCount = 0;
 
     @Builder.Default
-    @Column(name = "reply_count")
+    @Column(name = "reply_count", nullable = false)
     private int replyCount = 0;
 
     @CreationTimestamp
