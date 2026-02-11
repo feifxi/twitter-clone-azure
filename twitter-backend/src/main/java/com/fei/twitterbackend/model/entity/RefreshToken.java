@@ -1,17 +1,17 @@
-package com.fei.twitterbackend.model.entitiy;
+package com.fei.twitterbackend.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
 
-@Entity
-@Table(name = "refresh_tokens")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Entity
+@Table(name = "refresh_tokens")
 public class RefreshToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,6 +25,6 @@ public class RefreshToken {
     private Instant expiryDate;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private User user;
 }

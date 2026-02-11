@@ -11,6 +11,7 @@ CREATE TABLE users (
     display_name VARCHAR(100),
     avatar_url TEXT,
     role VARCHAR(20) NOT NULL DEFAULT 'USER',
+    provider VARCHAR(50) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
@@ -29,15 +30,13 @@ CREATE TABLE tweets (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content VARCHAR(280),
+    media_type VARCHAR(20),
     media_url TEXT,
-    -- Structure
     parent_id BIGINT REFERENCES tweets(id) ON DELETE CASCADE, -- Reply
     retweet_id BIGINT REFERENCES tweets(id) ON DELETE CASCADE, -- Retweet
-    -- Stats
     reply_count INT DEFAULT 0,
     retweet_count INT DEFAULT 0,
     like_count INT DEFAULT 0,
-
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
@@ -47,11 +46,12 @@ CREATE INDEX idx_tweets_user ON tweets(user_id);
 CREATE INDEX idx_tweets_parent ON tweets(parent_id);
 
 -- 4. LIKES
-CREATE TABLE likes (
+CREATE TABLE tweet_likes (
+    id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     tweet_id BIGINT NOT NULL REFERENCES tweets(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    PRIMARY KEY (user_id, tweet_id)
+    CONSTRAINT uk_user_tweet UNIQUE (user_id, tweet_id)
 );
 
 -- 5. FOLLOWS

@@ -2,8 +2,8 @@ package com.fei.twitterbackend.service;
 
 import com.fei.twitterbackend.model.dto.auth.AuthResponse;
 import com.fei.twitterbackend.model.dto.user.UserDTO;
-import com.fei.twitterbackend.model.entitiy.RefreshToken;
-import com.fei.twitterbackend.model.entitiy.User;
+import com.fei.twitterbackend.model.entity.RefreshToken;
+import com.fei.twitterbackend.model.entity.User;
 import com.fei.twitterbackend.model.enums.Role;
 import com.fei.twitterbackend.repository.UserRepository;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -21,6 +21,7 @@ import java.util.Collections;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String googleClientId;
 
@@ -29,13 +30,13 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
 
     public AuthResponse loginWithGoogle(String googleIdToken) {
-        // 1. Verify Google Token
+        // Verify Google Token
         GoogleIdToken.Payload payload = verifyGoogleToken(googleIdToken);
         if (payload == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Invalid Google Token.");
 
         String email = payload.getEmail();
 
-        // 2. Create or Get User (One-Time Import)
+        // Create or Get User (One-Time Import)
         User user = userRepository.findByEmail(email).orElseGet(() -> {
             User newUser = new User();
             newUser.setEmail(email);
@@ -43,10 +44,11 @@ public class AuthService {
             newUser.setDisplayName((String) payload.get("name"));
             newUser.setAvatarUrl((String) payload.get("picture"));
             newUser.setRole(Role.USER);
+            newUser.setProvider("GOOGLE");
             return userRepository.save(newUser);
         });
 
-        // 3. Generate Tokens
+        // Generate Tokens
         String accessToken = jwtService.generateToken(user);
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 

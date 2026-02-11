@@ -1,6 +1,6 @@
 package com.fei.twitterbackend.service;
 
-import com.fei.twitterbackend.model.entitiy.User;
+import com.fei.twitterbackend.model.entity.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -23,7 +23,6 @@ public class JwtService {
     @Value("${jwt.access-expiration}")
     private long jwtExpiration;
 
-    // Generate Token
     public String generateToken(User user) {
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("id", user.getId());
@@ -38,11 +37,15 @@ public class JwtService {
                 .compact();
     }
 
-    // Extract email (Used by Filter) - Returns null if token is invalid/expired
+    // Used by Auth Filter - Returns null if token is invalid/expired
     public String extractEmail(String token) {
         Claims claims = extractAllClaims(token);
         if (claims == null) return null; // Invalid token
         return claims.getSubject();
+    }
+
+    public boolean isTokenValid(String token) {
+        return extractAllClaims(token) != null;
     }
 
     // HELPER
@@ -61,10 +64,6 @@ public class JwtService {
             log.error("JWT Error: {}", e.getMessage());
         }
         return null; // Return null if ANY error occurs
-    }
-
-    public boolean isTokenValid(String token) {
-        return extractAllClaims(token) != null;
     }
 
     private Key getSignInKey() {

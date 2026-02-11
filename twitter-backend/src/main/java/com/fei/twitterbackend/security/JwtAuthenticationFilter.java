@@ -1,6 +1,6 @@
 package com.fei.twitterbackend.security;
 
-import com.fei.twitterbackend.model.entitiy.User;
+import com.fei.twitterbackend.model.entity.User;
 import com.fei.twitterbackend.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -32,7 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // 1. Check if Header is present and formatted correctly
+        // Check if Header is present and formatted correctly
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;

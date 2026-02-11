@@ -3,7 +3,7 @@ package com.fei.twitterbackend.controller;
 import com.fei.twitterbackend.model.dto.auth.AuthResponse;
 import com.fei.twitterbackend.model.dto.auth.GoogleAuthRequest;
 import com.fei.twitterbackend.model.dto.common.ApiResponse;
-import com.fei.twitterbackend.model.entitiy.User;
+import com.fei.twitterbackend.model.entity.User;
 import com.fei.twitterbackend.service.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
+
     @Value("${jwt.refresh-expiration}")
     private long refreshExpirationMs;
 

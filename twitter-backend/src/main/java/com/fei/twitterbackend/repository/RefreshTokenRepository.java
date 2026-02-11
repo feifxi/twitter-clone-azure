@@ -1,11 +1,10 @@
 package com.fei.twitterbackend.repository;
 
-import com.fei.twitterbackend.model.entitiy.RefreshToken;
-import com.fei.twitterbackend.model.entitiy.User;
+import com.fei.twitterbackend.model.entity.RefreshToken;
+import com.fei.twitterbackend.model.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
 @Repository

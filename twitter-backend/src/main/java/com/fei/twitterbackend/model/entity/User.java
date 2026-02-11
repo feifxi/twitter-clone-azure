@@ -1,4 +1,4 @@
-package com.fei.twitterbackend.model.entitiy;
+package com.fei.twitterbackend.model.entity;
 
 import com.fei.twitterbackend.model.enums.Role;
 import jakarta.persistence.*;
@@ -14,10 +14,10 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
-@Entity
-@Table(name = "users")
 @Getter
 @Setter
+@Entity
+@Table(name = "users")
 public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,8 +37,11 @@ public class User implements UserDetails {
     private String avatarUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", length = 20)
+    @Column(name = "role", length = 20, nullable = false)
     private Role role = Role.USER; // Enum: USER, ADMIN
+
+    @Column(name = "provider", length = 50, nullable = false)
+    private String provider;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false)

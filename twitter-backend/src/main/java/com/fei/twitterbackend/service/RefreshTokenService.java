@@ -1,7 +1,7 @@
 package com.fei.twitterbackend.service;
 
-import com.fei.twitterbackend.model.entitiy.RefreshToken;
-import com.fei.twitterbackend.model.entitiy.User;
+import com.fei.twitterbackend.model.entity.RefreshToken;
+import com.fei.twitterbackend.model.entity.User;
 import com.fei.twitterbackend.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +15,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {
+
     @Value("${jwt.refresh-expiration}")
     private Long refreshTokenDurationMs;
 
@@ -22,7 +23,7 @@ public class RefreshTokenService {
 
     @Transactional
     public RefreshToken createRefreshToken(User user) {
-        // Rotate Token: Delete old, create new (enforces 1 device policy)
+        // Rotate Token - Delete old, create new (enforces 1 device policy)
         refreshTokenRepository.deleteByUser(user);
 
         RefreshToken refreshToken = RefreshToken.builder()
