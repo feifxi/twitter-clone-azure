@@ -39,7 +39,11 @@ public class TweetLike {
     @AllArgsConstructor
     @Embeddable
     public static class TweetLikeId implements Serializable {
+
+        @Column(name = "user_id", nullable = false)
         private Long userId;
+
+        @Column(name = "tweet_id", nullable = false)
         private Long tweetId;
     }
 }

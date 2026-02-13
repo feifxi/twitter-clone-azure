@@ -31,7 +31,7 @@ spring:
           endpoint: https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net
           account-name: ${AZURE_STORAGE_ACCOUNT_NAME}
           account-key: ${AZURE_STORAGE_ACCOUNT_ACCESS_KEY}
-          container-name: tweet-media  # Make sure this container exists in Azure!
+          container-name: ${AZURE_STORAGE_CONTAINER_NAME:tweet-media}
   flyway:
     enabled: false
   web:

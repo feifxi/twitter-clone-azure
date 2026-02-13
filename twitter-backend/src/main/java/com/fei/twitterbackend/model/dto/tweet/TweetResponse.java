@@ -1,6 +1,6 @@
 package com.fei.twitterbackend.model.dto.tweet;
 
-import com.fei.twitterbackend.model.dto.user.UserDTO;
+import com.fei.twitterbackend.model.dto.user.UserResponse;
 import java.time.LocalDateTime;
 
 public record TweetResponse(
@@ -8,7 +8,7 @@ public record TweetResponse(
         String content,         // Will be NULL for a Retweet
         String mediaType,
         String mediaUrl,
-        UserDTO user,
+        UserResponse user,
         int replyCount,
         int likeCount,
         int retweetCount,

@@ -10,12 +10,15 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
+import static com.fei.twitterbackend.constant.Constant.REFRESH_TOKEN_COOKIE_NAME;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -34,62 +37,63 @@ public class AuthController {
             @Valid @RequestBody GoogleAuthRequest authRequest,
             HttpServletResponse response
     ) {
-        AuthResponse authToken = authService.loginWithGoogle(authRequest.token());
-        // Set HttpOnly Cookie
-        setRefreshTokenCookie(response, authToken.refreshToken());
-        return ResponseEntity.ok(authToken);
+        AuthResponse authData = authService.loginWithGoogle(authRequest.token());
+        setRefreshTokenCookie(response, authData.refreshToken(), refreshExpirationMs);
+        return ResponseEntity.ok(authData);
     }
 
     // 2. REFRESH (Old Refresh -> New Access + New Refresh)
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refreshToken(
-            @CookieValue(name = "refreshToken") String refreshToken,
+            @CookieValue(name = REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken,
             HttpServletResponse response
     ) {
-        if (refreshToken == null || refreshToken.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No refresh token provided");
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token missing");
         }
-        AuthResponse authToken = authService.refreshToken(refreshToken);
-        // Rotate Cookie
-        setRefreshTokenCookie(response, authToken.refreshToken());
-        return ResponseEntity.ok(authToken);
+
+        AuthResponse authData = authService.refreshToken(refreshToken);
+        setRefreshTokenCookie(response, authData.refreshToken(), refreshExpirationMs);
+        return ResponseEntity.ok(authData);
     }
 
     // 3. LOGOUT (Revoke Refresh Token)
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse> logout(@AuthenticationPrincipal User user, HttpServletResponse response) {
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, "No user is currently logged in."));
-        }
-        authService.logout(user);
-        // clear refresh token cookie
+        // Clear the cookie regardless of whether user is null (UI cleanup)
         clearRefreshTokenCookie(response);
-        return ResponseEntity.ok(new ApiResponse(true ,"Logged out"));
+
+        if (user != null) {
+            authService.logout(user);
+        }
+
+        return ResponseEntity.ok(new ApiResponse(true, "Logged out successfully"));
     }
 
-    private void setRefreshTokenCookie(HttpServletResponse response, String token) {
-        int maxAgeSeconds = (int) (refreshExpirationMs / 1000);
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", token)
+    private void setRefreshTokenCookie(HttpServletResponse response, String token, long durationMs) {
+        boolean isProd = isProduction();
+
+        ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, token)
                 .httpOnly(true)
-                .secure(isProduction()) // Dynamic check
+                .secure(isProd) // HTTPS only in prod
                 .path("/")
-                .maxAge(maxAgeSeconds)
-                .sameSite("Lax")
+                .maxAge(durationMs / 1000)
+                .sameSite(isProd ? "None" : "Lax") // "None" + Secure allows cross-site in prod if needed
                 .build();
 
-        response.addHeader("Set-Cookie", cookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     private void clearRefreshTokenCookie(HttpServletResponse response) {
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
+        ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, "")
                 .httpOnly(true)
-                .secure(isProduction()) // Dynamic check
+                .secure(isProduction())
                 .path("/")
-                .maxAge(0)
-                .sameSite("Lax")
+                .maxAge(0) // Immediately expires the cookie
+                .sameSite(isProduction() ? "None" : "Lax")
                 .build();
 
-        response.addHeader("Set-Cookie", cookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     private boolean isProduction() {

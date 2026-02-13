@@ -41,7 +41,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // Extract Token
         String jwt = authHeader.substring(7);
 
-        // Extract email - If token is expired/fake, this returns null automatically.
+        // Extract email - If Constant is expired/fake, this returns null automatically.
         String userEmail = jwtService.extractEmail(jwt);
 
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {

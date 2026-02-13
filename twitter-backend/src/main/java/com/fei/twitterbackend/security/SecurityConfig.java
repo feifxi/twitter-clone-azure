@@ -3,6 +3,7 @@ package com.fei.twitterbackend.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -25,10 +26,20 @@ public class SecurityConfig {
 
                 // 2. Define Endpoint Rules
                 .authorizeHttpRequests(auth -> auth
+                        // Error and Auth are always public
                         .requestMatchers("/error").permitAll()
-                        // Allow Public Access to Auth Endpoints
                         .requestMatchers("/api/v1/auth/**").permitAll()
-                        // All other requests require a valid JWT
+
+                        // Public Read Access (GET)
+                        // Allow guests to see the feed and single tweets
+                        .requestMatchers(HttpMethod.GET, "/api/v1/tweets/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/feeds/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/discovery/**").permitAll()
+
+                        // Everything else (POST, PUT, DELETE, and other paths)
+                        // This covers creating tweets, liking, following, etc.
                         .anyRequest().authenticated()
                 )
 

@@ -40,10 +40,10 @@ public class Follow {
     @Embeddable
     public static class FollowKey implements Serializable {
 
-        @Column(name = "follower_id")
+        @Column(name = "follower_id", nullable = false)
         private Long followerId;
 
-        @Column(name = "following_id")
+        @Column(name = "following_id", nullable = false)
         private Long followingId;
     }
 }

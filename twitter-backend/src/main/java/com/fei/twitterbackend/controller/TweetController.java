@@ -4,10 +4,12 @@ import com.fei.twitterbackend.model.dto.common.PageResponse;
 import com.fei.twitterbackend.model.dto.tweet.TweetRequest;
 import com.fei.twitterbackend.model.dto.tweet.TweetResponse;
 import com.fei.twitterbackend.model.entity.User;
+import com.fei.twitterbackend.service.LikeService;
+import com.fei.twitterbackend.service.RetweetService;
 import com.fei.twitterbackend.service.TweetService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,28 +22,28 @@ import org.springframework.web.multipart.MultipartFile;
 public class TweetController {
 
     private final TweetService tweetService;
+    private final LikeService likeService;
+    private final RetweetService retweetService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<TweetResponse> createTweet(
             @AuthenticationPrincipal User user,
             @RequestPart("data") @Valid TweetRequest request,
-            @RequestPart(value = "file", required = false) MultipartFile file
+            @RequestPart(value = "media", required = false) MultipartFile media
     ) {
-        return ResponseEntity.ok(tweetService.createTweet(user, request, file));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(tweetService.createTweet(user, request, media));
     }
 
-    // Global Feed
-    @GetMapping
-    public ResponseEntity<PageResponse<TweetResponse>> getGlobalFeed(
-            @AuthenticationPrincipal User user, // Can be null if public? Usually not in this app.
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTweet(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id
     ) {
-        Page<TweetResponse> tweetPage = tweetService.getGlobalFeed(user, page, size);
-        return ResponseEntity.ok(PageResponse.from(tweetPage));
+        tweetService.deleteTweet(user, id);
+        return ResponseEntity.noContent().build();
     }
 
-    // Get Single Tweet
     @GetMapping("/{id}")
     public ResponseEntity<TweetResponse> getTweet(
             @AuthenticationPrincipal User user,
@@ -50,7 +52,6 @@ public class TweetController {
         return ResponseEntity.ok(tweetService.getTweetById(user, id));
     }
 
-    // Get Replies
     @GetMapping("/{id}/replies")
     public ResponseEntity<PageResponse<TweetResponse>> getReplies(
             @AuthenticationPrincipal User user,
@@ -58,41 +59,26 @@ public class TweetController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        Page<TweetResponse> tweetPage = tweetService.getReplies(user, id, page, size);
-        return ResponseEntity.ok(PageResponse.from(tweetPage));
+        PageResponse<TweetResponse> tweetPage = tweetService.getReplies(user, id, page, size);
+        return ResponseEntity.ok(tweetPage);
     }
 
-    // Get User Profile Tweets
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<PageResponse<TweetResponse>> getUserTweets(
-            @AuthenticationPrincipal User user,
-            @PathVariable Long userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
-    ) {
-        Page<TweetResponse> tweetPage = tweetService.getUserTweets(user, userId, page, size);
-        return ResponseEntity.ok(PageResponse.from(tweetPage));
-    }
-
-    // UPDATE
-    @PutMapping("/{id}")
-    public ResponseEntity<TweetResponse> updateTweet(
-            @AuthenticationPrincipal User user,
+    @PostMapping("/{id}/like")
+    public ResponseEntity<Void> likeTweet(
             @PathVariable Long id,
-            @RequestBody @Valid TweetRequest request
+            @AuthenticationPrincipal User user
     ) {
-        // We ignore parentId in update logic, only content is used
-        return ResponseEntity.ok(tweetService.updateTweet(user, id, request));
+        likeService.likeTweet(user, id);
+        return ResponseEntity.ok().build();
     }
 
-    // DELETE
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTweet(
-            @AuthenticationPrincipal User user,
-            @PathVariable Long id
+    @DeleteMapping("/{id}/like")
+    public ResponseEntity<Void> unlikeTweet(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user
     ) {
-        tweetService.deleteTweet(user, id);
-        return ResponseEntity.noContent().build(); // Returns 204 No Content
+        likeService.unlikeTweet(user, id);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/retweet")
@@ -100,7 +86,16 @@ public class TweetController {
             @AuthenticationPrincipal User user,
             @PathVariable Long id
     ) {
-        tweetService.retweet(user, id);
+        retweetService.retweet(user, id);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{id}/retweet")
+    public ResponseEntity<Void> unretweet(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id
+    ) {
+        retweetService.unretweet(user, id);
         return ResponseEntity.ok().build();
     }
 }

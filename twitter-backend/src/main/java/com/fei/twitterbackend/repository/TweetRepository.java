@@ -3,30 +3,55 @@ package com.fei.twitterbackend.repository;
 import com.fei.twitterbackend.model.entity.Tweet;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+@Repository
 public interface TweetRepository extends JpaRepository<Tweet, Long> {
 
     // ========================================================================
-    // 1. CORE FEEDS (READS)
+    // 1. CORE FEEDS (READS) - OPTIMIZED WITH @EntityGraph
     // ========================================================================
 
     // Global Feed (Only root tweets, no replies)
+    @EntityGraph(attributePaths = {"user", "retweet", "retweet.user"})
     Page<Tweet> findAllByParentIdIsNull(Pageable pageable);
 
+    // Following Timeline (People you follow + Your own tweets)
+    @EntityGraph(attributePaths = {"user", "retweet", "retweet.user"})
+    @Query("""
+    SELECT t FROM Tweet t
+    WHERE (t.user.id = :userId OR t.user.id IN (SELECT f.following.id FROM Follow f WHERE f.follower.id = :userId))
+    AND t.parent IS NULL
+    """)
+    Page<Tweet> findFollowingTimeline(@Param("userId") Long userId, Pageable pageable);
+
     // Main Profile Feed (User's tweets + retweets)
+    @EntityGraph(attributePaths = {"user", "retweet", "retweet.user"})
     Page<Tweet> findAllByUserIdAndParentIdIsNull(Long userId, Pageable pageable);
 
     // Reply Thread (Flat strategy)
+    @EntityGraph(attributePaths = {"user", "retweet", "retweet.user"})
     Page<Tweet> findAllByParentId(Long parentId, Pageable pageable);
+
+    // Hashtag Search
+    @EntityGraph(attributePaths = {"user", "retweet", "retweet.user"})
+    @Query("""
+    SELECT t FROM Tweet t
+    JOIN t.hashtags h
+    WHERE LOWER(h.text) = LOWER(:hashtag)
+    ORDER BY t.createdAt DESC
+    """)
+    Page<Tweet> findTweetsByHashtag(@Param("hashtag") String hashtag, Pageable pageable);
 
 
     // ========================================================================
@@ -34,7 +59,7 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
     // Uses direct SQL updates for performance (Avoids loading entity -> modifying -> saving)
     // ========================================================================
 
-    // --- REPLY COUNTERS ---
+    // REPLY COUNTERS
     @Modifying
     @Transactional
     @Query("UPDATE Tweet t SET t.replyCount = t.replyCount + 1 WHERE t.id = :tweetId")
@@ -45,7 +70,7 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
     @Query("UPDATE Tweet t SET t.replyCount = t.replyCount - 1 WHERE t.id = :tweetId")
     void decrementReplyCount(@Param("tweetId") Long tweetId);
 
-    // --- LIKE COUNTERS ---
+    // LIKE COUNTERS
     @Modifying
     @Transactional
     @Query("UPDATE Tweet t SET t.likeCount = t.likeCount + 1 WHERE t.id = :tweetId")
@@ -56,7 +81,7 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
     @Query("UPDATE Tweet t SET t.likeCount = t.likeCount - 1 WHERE t.id = :tweetId")
     void decrementLikeCount(@Param("tweetId") Long tweetId);
 
-    // --- RETWEET COUNTERS ---
+    // RETWEET COUNTERS
     @Modifying
     @Transactional
     @Query("UPDATE Tweet t SET t.retweetCount = t.retweetCount + 1 WHERE t.id = :tweetId")
@@ -76,6 +101,7 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
     boolean existsByUserIdAndRetweetId(Long userId, Long retweetId);
 
     // Find specific retweet entity (Used for "Un-retweet" to delete the row)
+    // We don't need the graph here because we just need the Tweet ID to delete it.
     Optional<Tweet> findByUserIdAndRetweetId(Long userId, Long retweetId);
 
     // Batch Fetch: Finds which of the given tweetIds were retweeted by the user
@@ -85,7 +111,22 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
 
 
     // ========================================================================
-    // 4. UTILITIES & COMPLEX QUERIES
+    // 4. SEARCHING
+    // ========================================================================
+
+    // Using PostgreSQL Full-Text Search (FTS)
+    // NOTE: @EntityGraph does NOT work on native queries.
+    @Query(value = """
+    SELECT * FROM tweets
+    WHERE search_vector @@ to_tsquery('english', :query)
+    ORDER BY ts_rank(search_vector, to_tsquery('english', :query)) DESC, created_at DESC
+    """,
+    countQuery = "SELECT count(*) FROM tweets WHERE search_vector @@ to_tsquery('english', :query)",
+    nativeQuery = true)
+    Page<Tweet> searchTweets(@Param("query") String query, Pageable pageable);
+
+    // ========================================================================
+    // 5. UTILITIES & COMPLEX QUERIES
     // ========================================================================
 
     // Recursive Cleanup: Finds the tweet and ALL descendants' media URLs
@@ -101,6 +142,7 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
             INNER JOIN tweet_tree tt ON t.parent_id = tt.id
         )
         SELECT media_url FROM tweet_tree WHERE media_url IS NOT NULL
-    """, nativeQuery = true)
+    """,
+    nativeQuery = true)
     List<String> findAllMediaUrlsInThread(@Param("tweetId") Long tweetId);
 }

@@ -3,35 +3,39 @@ package com.fei.twitterbackend.model.dto.user;
 import com.fei.twitterbackend.model.entity.User;
 import com.fei.twitterbackend.model.enums.Role;
 
-public record UserDTO(
+public record UserResponse(
         Long id,
         String username,
         String email,
         String displayName,
         String avatarUrl,
+        String bio,
         Role role,
         int followersCount,
         int followingCount,
         boolean followedByMe
 ) {
 
-    // 1. FEED MAPPER: Use when viewing a list of tweets or a profile
-    public static UserDTO fromEntity(User user, boolean followedByMe) {
-        return new UserDTO(
+    // FEED MAPPER: Use when viewing a list of tweets or a profile
+    public static UserResponse fromEntity(User user, boolean isFollowing) {
+        if (user == null) return null;
+
+        return new UserResponse(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getDisplayName(),
                 user.getAvatarUrl(),
+                user.getBio(),
                 user.getRole(),
                 user.getFollowersCount(),
                 user.getFollowingCount(),
-                followedByMe
+                isFollowing
         );
     }
 
-    // 2. AUTH MAPPER: Use for Login/Register (You can't follow yourself)
-    public static UserDTO fromEntity(User user) {
+    // Overloaded method for when we don't need/have follow context (like login response)
+    public static UserResponse fromEntity(User user) {
         return fromEntity(user, false);
     }
 }

@@ -37,10 +37,10 @@ public class JwtService {
                 .compact();
     }
 
-    // Used by Auth Filter - Returns null if token is invalid/expired
+    // Used by Auth Filter - Returns null if Constant is invalid/expired
     public String extractEmail(String token) {
         Claims claims = extractAllClaims(token);
-        if (claims == null) return null; // Invalid token
+        if (claims == null) return null; // Invalid Constant
         return claims.getSubject();
     }
 
@@ -57,9 +57,9 @@ public class JwtService {
                     .parseClaimsJws(token)
                     .getBody();
         } catch (ExpiredJwtException e) {
-            log.error("JWT token is expired: {}", e.getMessage());
+            log.error("JWT Constant is expired: {}", e.getMessage());
         } catch (MalformedJwtException e) {
-            log.error("Invalid JWT token: {}", e.getMessage());
+            log.error("Invalid JWT Constant: {}", e.getMessage());
         } catch (UnsupportedJwtException | IllegalArgumentException | io.jsonwebtoken.security.SignatureException e) {
             log.error("JWT Error: {}", e.getMessage());
         }

@@ -8,7 +8,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -41,10 +43,6 @@ public class Tweet {
     @JoinColumn(name = "parent_id")
     private Tweet parent;
 
-    // A tweet can have many replies (One-to-Many)
-    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Tweet> replies = new ArrayList<>();
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "retweet_id")
     private Tweet retweet; // The original tweet being retweeted
@@ -62,8 +60,22 @@ public class Tweet {
     @Column(name = "reply_count", nullable = false)
     private int replyCount = 0;
 
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "tweet_hashtags",
+            joinColumns = @JoinColumn(name = "tweet_id"),
+            inverseJoinColumns = @JoinColumn(name = "hashtag_id")
+    )
+    @Builder.Default
+    private Set<Hashtag> hashtags = new HashSet<>();
+
+    // A tweet can have many replies (One-to-Many)
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Tweet> replies = new ArrayList<>();
+
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp

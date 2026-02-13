@@ -1,14 +1,18 @@
 package com.fei.twitterbackend.service;
 
+import com.fei.twitterbackend.mapper.TweetMapper;
+import com.fei.twitterbackend.model.dto.common.PageResponse;
 import com.fei.twitterbackend.model.dto.tweet.TweetRequest;
 import com.fei.twitterbackend.model.dto.tweet.TweetResponse;
-import com.fei.twitterbackend.model.dto.user.UserDTO;
+import com.fei.twitterbackend.model.entity.Hashtag;
 import com.fei.twitterbackend.model.entity.Tweet;
 import com.fei.twitterbackend.model.entity.User;
 import com.fei.twitterbackend.model.enums.MediaType;
 import com.fei.twitterbackend.repository.FollowRepository;
+import com.fei.twitterbackend.repository.HashtagRepository;
 import com.fei.twitterbackend.repository.LikeRepository;
 import com.fei.twitterbackend.repository.TweetRepository;
+import com.fei.twitterbackend.util.HashtagParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -20,13 +24,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,89 +41,82 @@ public class TweetService {
     private final LikeRepository likeRepository;
     private final FollowRepository followRepository;
     private final FileStorageService fileStorageService;
+    private final HashtagRepository hashtagRepository;
+    private final HashtagParser hashtagParser;
+    private final TweetMapper tweetMapper;
+    private final TransactionTemplate transactionTemplate;
 
-    // ========================================================================
-    // 1. CREATE / UPDATE / DELETE (WRITE OPERATIONS)
-    // ========================================================================
-
-    @Transactional
+    /**
+     * Creates a new Tweet.
+     * Strategy: Fail-Fast -> Upload (No-Lock) -> Save (Transactional)
+     */
     public TweetResponse createTweet(User user, TweetRequest request, MultipartFile file) {
         log.info("User {} is creating a new tweet", user.getId());
 
+        // 1. Validation
+        String cleanContent = validateAndClean(request, file, user);
+        // Do this BEFORE the expensive file upload.
+        validateParentTweet(request.parentId());
+
+        // 2. Resolve Media Type (Fail Fast if invalid type)
+        MediaType mediaType = resolveMediaType(file);
+
+        // 3. Upload File (Expensive Network Call - No DB Transaction)
         String mediaUrl = null;
-        MediaType mediaType = MediaType.NONE;
-
-        // 1. Handle File Upload
-        if (file != null && !file.isEmpty()) {
-            String contentType = file.getContentType();
-            log.debug("Processing file upload. ContentType: {}", contentType);
-
-            if (contentType == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is missing Content-Type");
-            }
-
-            if (contentType.startsWith("image/")) {
-                mediaType = MediaType.IMAGE;
-            } else if (contentType.startsWith("video/")) {
-                mediaType = MediaType.VIDEO;
-            } else {
-                log.warn("Unsupported media upload attempt by User {}: {}", user.getId(), contentType);
-                throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Only images and videos are allowed");
-            }
-
+        if (mediaType != MediaType.NONE) {
+            // This happens without holding a DB connection
             mediaUrl = fileStorageService.uploadFile(file);
-            log.debug("File uploaded successfully to: {}", mediaUrl);
         }
 
-        // 2. Handle Parent (Reply Logic)
+        // Capture variables for lambda
+        String finalMediaUrl = mediaUrl;
+
+        try {
+            // 4. Save to DB (Transactional)
+            // transactionTemplate handles the transaction boundary explicitly
+            return transactionTemplate.execute(status ->
+                    saveTweetToDb(user, request, cleanContent, finalMediaUrl, mediaType)
+            );
+
+        } catch (Exception e) {
+            // 5. Rollback Compensation
+            // If the DB save fails (SQL error, constraint violation), delete the file.
+            if (finalMediaUrl != null) {
+                log.warn("DB Transaction failed. Rolling back file upload: {}", finalMediaUrl);
+                fileStorageService.deleteFile(finalMediaUrl);
+            }
+            throw e;
+        }
+    }
+
+    // Internal Transactional Logic
+    private TweetResponse saveTweetToDb(User user, TweetRequest request, String content, String mediaUrl, MediaType mediaType) {
         Tweet parent = null;
+
         if (request.parentId() != null) {
-            log.debug("Fetching parent tweet ID: {}", request.parentId());
-            parent = tweetRepository.findById(request.parentId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parent tweet not found"));
+            // OPTIMIZATION: getReferenceById creates a Proxy without hitting the DB.
+            // It assumes the ID exists (which we verified in step 2).
+            parent = tweetRepository.getReferenceById(request.parentId());
+
+            // Update Reply Counter (Native Query uses ID directly, so Proxy works fine)
             tweetRepository.incrementReplyCount(parent.getId());
         }
 
-        // 3. Save Tweet
         Tweet tweet = Tweet.builder()
-                .content(request.content())
+                .content(content)
                 .user(user)
-                .parent(parent)
-                .mediaUrl(mediaUrl)
+                .parent(parent) // Hibernate sets the FK using the Proxy ID
                 .mediaType(mediaType)
-                .replyCount(0)
-                .likeCount(0)
-                .retweetCount(0)
+                .mediaUrl(mediaUrl)
+                .hashtags(new HashSet<>())
                 .build();
+
+        // Increase/Add Hashtags
+        processHashtagsForCreate(tweet, content);
 
         Tweet savedTweet = tweetRepository.save(tweet);
         log.info("Tweet created successfully with ID: {}", savedTweet.getId());
-
-        return mapToDTO(savedTweet, false, false, false);
-    }
-
-    @Transactional
-    public TweetResponse updateTweet(User user, Long tweetId, TweetRequest request) {
-        log.info("User {} requesting update for tweet {}", user.getId(), tweetId);
-
-        Tweet tweet = tweetRepository.findById(tweetId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tweet not found"));
-
-        // Authorization
-        if (!tweet.getUser().getId().equals(user.getId())) {
-            log.warn("Unauthorized update attempt. User {} tried to edit Tweet {} owned by User {}",
-                    user.getId(), tweetId, tweet.getUser().getId());
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only edit your own tweets");
-        }
-
-        tweet.setContent(request.content());
-        Tweet updatedTweet = tweetRepository.save(tweet);
-        log.info("Tweet {} updated successfully", tweetId);
-
-        boolean likedByMe = likeRepository.existsByUserIdAndTweetId(user.getId(), tweetId);
-        boolean retweetedByMe = tweetRepository.existsByUserIdAndRetweetId(user.getId(), tweetId);
-
-        return mapToDTO(updatedTweet, likedByMe, retweetedByMe, false);
+        return tweetMapper.toResponse(savedTweet, false, false, false);
     }
 
     @Transactional
@@ -135,20 +132,22 @@ public class TweetService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own tweets");
         }
 
-        // Data Integrity
+        // Reduced/Remove Hashtags
+        removeHashtagsForDelete(tweet);
+
+        // Parent reply count cleanup
         if (tweet.getParent() != null) {
             tweetRepository.decrementReplyCount(tweet.getParent().getId());
         }
 
-        // Harvest Media
+        // Harvest media URLs for clean up
         List<String> allMediaToDelete = tweetRepository.findAllMediaUrlsInThread(tweetId);
-        log.debug("Found {} media files associated with tweet thread {} to cleanup", allMediaToDelete.size(), tweetId);
 
-        // Delete DB
+        // Delete from DB
         tweetRepository.delete(tweet);
         log.info("Tweet {} deleted from database", tweetId);
 
-        // Schedule Storage Cleanup
+        // Schedule media cleanup (support rollback)
         if (!allMediaToDelete.isEmpty()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
@@ -158,18 +157,6 @@ public class TweetService {
                 }
             });
         }
-    }
-
-    // ========================================================================
-    // 2. READ OPERATIONS (FEEDS & SINGLE)
-    // ========================================================================
-
-    @Transactional(readOnly = true)
-    public Page<TweetResponse> getGlobalFeed(User currentUser, int page, int size) {
-        log.debug("Fetching global feed. Page: {}, Size: {}, User: {}", page, size, currentUser != null ? currentUser.getId() : "Guest");
-        Pageable pageable = createPageable(page, size, Sort.Direction.DESC);
-        Page<Tweet> tweetsPage = tweetRepository.findAllByParentIdIsNull(pageable);
-        return mapPageToResponse(tweetsPage, currentUser);
     }
 
     @Transactional(readOnly = true)
@@ -196,135 +183,119 @@ public class TweetService {
             }
         }
 
-        return mapToDTO(tweet, likedByMe, retweetedByMe, isFollowingAuthor);
+        return tweetMapper.toResponse(tweet, likedByMe, retweetedByMe, isFollowingAuthor);
     }
 
     @Transactional(readOnly = true)
-    public Page<TweetResponse> getUserTweets(User currentUser, Long userId, int page, int size) {
-        log.debug("Fetching profile feed for user {}. Page: {}", userId, page);
-        Pageable pageable = createPageable(page, size, Sort.Direction.DESC);
-        Page<Tweet> tweetsPage = tweetRepository.findAllByUserIdAndParentIdIsNull(userId, pageable);
-        return mapPageToResponse(tweetsPage, currentUser);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<TweetResponse> getReplies(User currentUser, Long tweetId, int page, int size) {
+    public PageResponse<TweetResponse> getReplies(User currentUser, Long tweetId, int page, int size) {
         log.debug("Fetching replies for tweet {}. Page: {}", tweetId, page);
 
         if (!tweetRepository.existsById(tweetId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Parent tweet not found");
         }
 
-        Pageable pageable = createPageable(page, size, Sort.Direction.ASC);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt"));
         Page<Tweet> repliesPage = tweetRepository.findAllByParentId(tweetId, pageable);
-        return mapPageToResponse(repliesPage, currentUser);
+        return tweetMapper.toResponsePage(repliesPage, currentUser);
     }
 
-    // ========================================================================
-    // 3. INTERACTION ACTIONS (RETWEET)
-    // ========================================================================
+    // Creation Hashtag
+    private void processHashtagsForCreate(Tweet tweet, String content) {
+        if (content == null) return;
 
-    @Transactional
-    public void retweet(User user, Long tweetId) {
-        log.info("User {} processing retweet for tweet {}", user.getId(), tweetId);
+        Set<String> tagTexts = hashtagParser.parseHashtags(content);
+        if (tagTexts.isEmpty()) return;
 
-        Tweet targetTweet = tweetRepository.findById(tweetId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tweet not found"));
+        // Fetch existing hashtags to avoid duplicates
+        List<Hashtag> existingHashtags = hashtagRepository.findByTextIn(new ArrayList<>(tagTexts));
+        Map<String, Hashtag> existingMap = existingHashtags.stream()
+                .collect(Collectors.toMap(Hashtag::getText, Function.identity()));
 
-        // Flatten Logic
-        if (targetTweet.getRetweet() != null) {
-            log.debug("Target is already a retweet. Redirecting to original tweet ID: {}", targetTweet.getRetweet().getId());
-            targetTweet = targetTweet.getRetweet();
-        }
+        for (String text : tagTexts) {
+            Hashtag hashtag = existingMap.get(text);
+            if (hashtag == null) {
+                // Create new if not exists
+                hashtag = Hashtag.builder().text(text).usageCount(0).build();
+            }
+            // Increment
+            hashtag.setUsageCount(hashtag.getUsageCount() + 1);
 
-        // Toggle Logic
-        Optional<Tweet> existingRetweet = tweetRepository.findByUserIdAndRetweetId(user.getId(), targetTweet.getId());
-
-        if (existingRetweet.isPresent()) {
-            log.info("Retweet exists. Removing (Undoing) retweet.");
-            tweetRepository.delete(existingRetweet.get());
-            tweetRepository.decrementRetweetCount(targetTweet.getId());
-        } else {
-            log.info("Retweet does not exist. Creating new retweet.");
-            Tweet retweet = Tweet.builder()
-                    .user(user)
-                    .retweet(targetTweet)
-                    .content(null)
-                    .mediaType(MediaType.NONE)
-                    .build();
-
-            tweetRepository.save(retweet);
-            tweetRepository.incrementRetweetCount(targetTweet.getId());
+            // If it's a new tag, we must save it to get an ID.
+            // If it's existing, we must save it to update the usage count.
+            tweet.getHashtags().add(hashtagRepository.save(hashtag));
         }
     }
 
-    // ========================================================================
-    // 4. HELPER METHODS
-    // ========================================================================
+    // Deletion Hashtag
+    private void removeHashtagsForDelete(Tweet tweet) {
+        Set<Hashtag> tags = tweet.getHashtags();
+        if (tags.isEmpty()) return;
 
-    private Pageable createPageable(int page, int size, Sort.Direction direction) {
-        return PageRequest.of(page, size, Sort.by(direction, "createdAt"));
+        // Copy to iterate safely
+        for (Hashtag tag : new HashSet<>(tags)) {
+            // Decrement
+            int newCount = Math.max(0, tag.getUsageCount() - 1);
+            tag.setUsageCount(newCount);
+
+            if (newCount == 0) {
+                // Delete orphan tag to keep DB clean
+                hashtagRepository.delete(tag);
+            } else {
+                hashtagRepository.save(tag);
+            }
+        }
+        // Clear relation
+        tweet.getHashtags().clear();
     }
 
-    private Page<TweetResponse> mapPageToResponse(Page<Tweet> tweetsPage, User currentUser) {
-        // 1. Get all Tweet IDs
-        List<Long> tweetIds = tweetsPage.getContent().stream().map(Tweet::getId).toList();
 
-        // 2. Get all Author IDs (to check follows)
-        List<Long> authorIds = tweetsPage.getContent().stream()
-                .map(t -> t.getUser().getId())
-                .distinct()
-                .toList();
-
-        if (tweetIds.isEmpty()) return tweetsPage.map(t -> mapToDTO(t, false, false, false));
-
-        // 3. Batch Fetch Data
-        Set<Long> likedTweetIds;
-        Set<Long> retweetedTweetIds;
-        Set<Long> followedAuthorIds; // <--- NEW SET
-
-        if (currentUser != null) {
-            likedTweetIds = likeRepository.findLikedTweetIdsByUserId(currentUser.getId(), tweetIds);
-            retweetedTweetIds = tweetRepository.findRetweetedTweetIdsByUserId(currentUser.getId(), tweetIds);
-            // Fetch Follows
-            followedAuthorIds = followRepository.findFollowedUserIds(currentUser.getId(), authorIds);
-        } else {
-            likedTweetIds = Collections.emptySet();
-            retweetedTweetIds = Collections.emptySet();
-            followedAuthorIds = Collections.emptySet();
-        }
-
-        // 4. Map
-        return tweetsPage.map(tweet -> {
-            boolean isLiked = likedTweetIds.contains(tweet.getId());
-            boolean isRetweeted = retweetedTweetIds.contains(tweet.getId());
-            boolean isFollowingAuthor = followedAuthorIds.contains(tweet.getUser().getId()); // <--- CHECK
-
-            return mapToDTO(tweet, isLiked, isRetweeted, isFollowingAuthor);
-        });
+    // Helper to normalize the content
+    private String getCleanContent(String content) {
+        if (content == null) return null;
+        String trimmed = content.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
-    private TweetResponse mapToDTO(Tweet tweet, boolean likedByMe, boolean retweetedByMe, boolean isFollowingAuthor) {
+    private String validateAndClean(TweetRequest request, MultipartFile file, User user) {
+        String cleanContent = getCleanContent(request.content());
+        boolean hasContent = cleanContent != null;
+        boolean hasFile = file != null && !file.isEmpty();
 
-        TweetResponse originalTweetDTO = null;
-        if (tweet.getRetweet() != null) {
-            // Recursion: For the nested tweet, we pass false for everything to be safe/fast
-            originalTweetDTO = mapToDTO(tweet.getRetweet(), false, false, false);
+        if (!hasContent && !hasFile) {
+            log.warn("Empty tweet attempt by User ID: {}", user.getId());
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "A tweet must have either text content or an image/video."
+            );
+        }
+        return cleanContent;
+    }
+
+    private void validateParentTweet(Long parentId) {
+        if (parentId != null) {
+            boolean parentExists = tweetRepository.existsById(parentId);
+            if (!parentExists) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Parent tweet not found");
+            }
+        }
+    }
+
+    private MediaType resolveMediaType(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return MediaType.NONE;
         }
 
-        return new TweetResponse(
-                tweet.getId(),
-                tweet.getContent(),
-                tweet.getMediaType() != null ? tweet.getMediaType().name() : null,
-                tweet.getMediaUrl(),
-                UserDTO.fromEntity(tweet.getUser(), isFollowingAuthor),
-                tweet.getReplyCount(),
-                tweet.getLikeCount(),
-                tweet.getRetweetCount(),
-                likedByMe,
-                retweetedByMe,
-                originalTweetDTO,
-                tweet.getCreatedAt()
-        );
+        String contentType = file.getContentType();
+        if (contentType == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing Content-Type");
+        }
+
+        if (contentType.startsWith("image/")) {
+            return MediaType.IMAGE;
+        } else if (contentType.startsWith("video/")) {
+            return MediaType.VIDEO;
+        }
+
+        throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Only images and videos allowed");
     }
 }

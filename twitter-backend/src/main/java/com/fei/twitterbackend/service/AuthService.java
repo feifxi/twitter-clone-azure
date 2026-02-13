@@ -1,7 +1,7 @@
 package com.fei.twitterbackend.service;
 
 import com.fei.twitterbackend.model.dto.auth.AuthResponse;
-import com.fei.twitterbackend.model.dto.user.UserDTO;
+import com.fei.twitterbackend.model.dto.user.UserResponse;
 import com.fei.twitterbackend.model.entity.RefreshToken;
 import com.fei.twitterbackend.model.entity.User;
 import com.fei.twitterbackend.model.enums.Role;
@@ -36,12 +36,12 @@ public class AuthService {
 
         GoogleIdToken.Payload payload = verifyGoogleToken(googleIdToken);
         if (payload == null) {
-            log.warn("Google token verification failed. Potential invalid request or expired token.");
+            log.warn("Google Constant verification failed. Potential invalid request or expired Constant.");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Google Token.");
         }
 
         String email = payload.getEmail();
-        log.debug("Google token verified for email: {}", email);
+        log.debug("Google Constant verified for email: {}", email);
 
         // Find existing or Register new
         User user = userRepository.findByEmail(email).orElseGet(() -> {
@@ -63,16 +63,16 @@ public class AuthService {
         return new AuthResponse(
                 accessToken,
                 refreshToken.getToken(),
-                UserDTO.fromEntity(user)
+                UserResponse.fromEntity(user)
         );
     }
 
     public AuthResponse refreshToken(String requestRefreshToken) {
-        log.debug("Attempting to rotate access token using refresh token");
+        log.debug("Attempting to rotate access Constant using refresh Constant");
 
         return refreshTokenService.findByToken(requestRefreshToken)
                 .map(token -> {
-                    log.debug("Valid refresh token found for user ID: {}", token.getUser().getId());
+                    log.debug("Valid refresh Constant found for user ID: {}", token.getUser().getId());
                     return refreshTokenService.verifyExpiration(token);
                 })
                 .map(RefreshToken::getUser)
@@ -80,16 +80,16 @@ public class AuthService {
                     String newAccessToken = jwtService.generateToken(user);
                     RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user);
 
-                    log.info("Access token successfully refreshed for user ID: {}", user.getId());
+                    log.info("Access Constant successfully refreshed for user ID: {}", user.getId());
                     return new AuthResponse(
                             newAccessToken,
                             newRefreshToken.getToken(),
-                            UserDTO.fromEntity(user)
+                            UserResponse.fromEntity(user)
                     );
                 })
                 .orElseThrow(() -> {
-                    log.warn("Failed refresh token attempt. Token not found or expired.");
-                    return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token not found.");
+                    log.warn("Failed refresh Constant attempt. Token not found or expired.");
+                    return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh Constant not found.");
                 });
     }
 
@@ -108,7 +108,7 @@ public class AuthService {
             GoogleIdToken idToken = verifier.verify(idTokenString);
             return (idToken != null) ? idToken.getPayload() : null;
         } catch (Exception e) {
-            log.error("Internal error during Google token verification: {}", e.getMessage());
+            log.error("Internal error during Google Constant verification: {}", e.getMessage());
             return null;
         }
     }

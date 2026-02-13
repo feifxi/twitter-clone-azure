@@ -2,8 +2,7 @@ package com.fei.twitterbackend.model.entity;
 
 import com.fei.twitterbackend.model.enums.Role;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
@@ -16,6 +15,9 @@ import java.util.List;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "users")
 public class User implements UserDetails {
@@ -33,9 +35,13 @@ public class User implements UserDetails {
     @Column(name = "display_name", length = 100)
     private String displayName;
 
+    @Column(name = "bio", length = 160)
+    private String bio;
+
     @Column(name = "avatar_url")
     private String avatarUrl;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "role", length = 20, nullable = false)
     private Role role = Role.USER; // Enum: USER, ADMIN
@@ -43,14 +49,16 @@ public class User implements UserDetails {
     @Column(name = "provider", length = 50, nullable = false)
     private String provider;
 
+    @Builder.Default
     @Column(name = "followers_count", nullable = false)
     private int followersCount = 0;
 
+    @Builder.Default
     @Column(name = "following_count", nullable = false)
     private int followingCount = 0;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp

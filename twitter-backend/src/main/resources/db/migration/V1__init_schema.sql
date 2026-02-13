@@ -1,6 +1,5 @@
 /* Flyway V1: Twitter Clone Complete Schema
    Features: Users, Refresh Tokens, Tweets, Interactions
-   Updates: All timestamps are NOT NULL with defaults
 */
 
 -- 1. USERS
@@ -9,6 +8,7 @@ CREATE TABLE users (
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     display_name VARCHAR(100),
+    bio VARCHAR(160),
     avatar_url TEXT,
     role VARCHAR(20) NOT NULL DEFAULT 'USER',
     provider VARCHAR(50) NOT NULL,
@@ -31,13 +31,14 @@ CREATE TABLE refresh_tokens (
 CREATE TABLE tweets (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    -- Content can be null if it's a simple Retweet (no quote)
     content VARCHAR(280),
     media_type VARCHAR(20),
     media_url TEXT,
+
     -- Self-References
     parent_id BIGINT REFERENCES tweets(id) ON DELETE CASCADE, -- Reply
     retweet_id BIGINT REFERENCES tweets(id) ON DELETE CASCADE, -- Retweet
+
     -- Counters
     reply_count INT NOT NULL DEFAULT 0,
     retweet_count INT NOT NULL DEFAULT 0,
@@ -47,10 +48,10 @@ CREATE TABLE tweets (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Indexes for Feed & Lookups
-CREATE INDEX idx_tweets_user_created ON tweets(user_id, created_at DESC); -- Critical for Profile Feed
+CREATE INDEX idx_tweets_user_created ON tweets(user_id, created_at DESC);
 CREATE INDEX idx_tweets_parent ON tweets(parent_id);
 CREATE INDEX idx_tweets_retweet ON tweets(retweet_id);
+CREATE INDEX idx_tweets_created_at ON tweets(created_at DESC);
 
 -- 4. LIKES
 CREATE TABLE tweet_likes (
@@ -59,7 +60,6 @@ CREATE TABLE tweet_likes (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, tweet_id) -- Composite PK is faster than a surrogate serial ID
 );
-
 
 -- 5. FOLLOWS
 CREATE TABLE follows (
@@ -70,6 +70,35 @@ CREATE TABLE follows (
     CHECK (follower_id != following_id)
 );
 
--- Indexes for "Who follows X" and "Who is X following"
 CREATE INDEX idx_follows_follower ON follows(follower_id);
 CREATE INDEX idx_follows_following ON follows(following_id);
+
+-- 6. HASHTAGS
+CREATE TABLE hashtags (
+    id BIGSERIAL PRIMARY KEY,
+    text VARCHAR(100) NOT NULL UNIQUE, -- Stored as lowercase for consistency
+    usage_count INT NOT NULL DEFAULT 1,
+    last_used_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE tweet_hashtags (
+    tweet_id BIGINT NOT NULL REFERENCES tweets(id) ON DELETE CASCADE,
+    hashtag_id BIGINT NOT NULL REFERENCES hashtags(id) ON DELETE CASCADE,
+    PRIMARY KEY (tweet_id, hashtag_id)
+);
+
+CREATE INDEX idx_hashtags_text ON hashtags(text);
+CREATE INDEX idx_tweet_hashtags_tag ON tweet_hashtags(hashtag_id);
+
+-- 7. FULL TEXT SEARCH
+ALTER TABLE tweets ADD COLUMN search_vector tsvector 
+    GENERATED ALWAYS AS (to_tsvector('english', coalesce(content, ''))) STORED;
+
+-- GIN Index for lightning-fast text search
+CREATE INDEX idx_tweets_search ON tweets USING GIN(search_vector);
+
+-- 8. USER SEARCH OPTIMIZATION 
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX idx_users_username_trgm ON users USING GIN (username gin_trgm_ops);
+CREATE INDEX idx_users_displayname_trgm ON users USING GIN (display_name gin_trgm_ops);

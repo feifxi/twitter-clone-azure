@@ -1,6 +1,5 @@
 package com.fei.twitterbackend.service;
 
-import com.azure.core.exception.AzureException;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
