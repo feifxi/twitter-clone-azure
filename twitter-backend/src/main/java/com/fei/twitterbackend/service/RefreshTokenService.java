@@ -1,5 +1,6 @@
 package com.fei.twitterbackend.service;
 
+import com.fei.twitterbackend.exception.AccessDeniedException;
 import com.fei.twitterbackend.model.entity.RefreshToken;
 import com.fei.twitterbackend.model.entity.User;
 import com.fei.twitterbackend.repository.RefreshTokenRepository;
@@ -25,12 +26,12 @@ public class RefreshTokenService {
 
     @Transactional
     public RefreshToken createRefreshToken(User user) {
-        log.info("Creating new refresh Constant for user ID: {}", user.getId());
+        log.info("Creating new refresh token for user ID: {}", user.getId());
 
         // Rotate Token - Delete old, create new (enforces 1 device policy)
         int deletedCount = refreshTokenRepository.deleteByUser(user);
         if (deletedCount > 0) {
-            log.debug("Rotated Constant: Deleted {} old refresh tokens for user {}", deletedCount, user.getId());
+            log.debug("Rotated Token: Deleted {} old refresh tokens for user {}", deletedCount, user.getId());
         }
 
         RefreshToken refreshToken = RefreshToken.builder()
@@ -40,26 +41,26 @@ public class RefreshTokenService {
                 .build();
 
         RefreshToken savedToken = refreshTokenRepository.save(refreshToken);
-        log.info("New refresh Constant generated successfully for user {}", user.getId());
+        log.info("New refresh token generated successfully for user {}", user.getId());
 
         return savedToken;
     }
 
     public Optional<RefreshToken> findByToken(String token) {
-        log.debug("Searching for refresh Constant in database");
+        log.debug("Searching for refresh token in database");
         return refreshTokenRepository.findByToken(token);
     }
 
     @Transactional
     public RefreshToken verifyExpiration(RefreshToken token) {
-        log.debug("Verifying expiration for Constant belonging to user {}", token.getUser().getId());
+        log.debug("Verifying expiration for token belonging to user {}", token.getUser().getId());
 
         if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
-            log.warn("Refresh Constant expired at {}. Deleting from DB. User ID: {}",
+            log.warn("Refresh token expired at {}. Deleting from DB. User ID: {}",
                     token.getExpiryDate(), token.getUser().getId());
 
             refreshTokenRepository.delete(token);
-            throw new RuntimeException("Refresh Constant was expired. Please make a new signin request");
+            throw new AccessDeniedException("Refresh token was expired. Please make a new signin request");
         }
 
         return token;

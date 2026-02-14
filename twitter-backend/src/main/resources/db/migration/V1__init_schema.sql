@@ -1,8 +1,17 @@
 /* Flyway V1: Twitter Clone Complete Schema
-   Features: Users, Refresh Tokens, Tweets, Interactions
+   Order: Config -> Users -> Auth -> Content -> Graph -> Interactions -> Discovery
 */
 
+-- ==========================================
+-- 0. CONFIGURATION & EXTENSIONS
+-- ==========================================
+-- Enable Trigram extension for fuzzy search (usernames/display names)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+
+-- ==========================================
 -- 1. USERS
+-- ==========================================
 CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -18,7 +27,14 @@ CREATE TABLE users (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Search Optimization Indexes
+CREATE INDEX idx_users_username_trgm ON users USING GIN (username gin_trgm_ops);
+CREATE INDEX idx_users_displayname_trgm ON users USING GIN (display_name gin_trgm_ops);
+
+
+-- ==========================================
 -- 2. REFRESH TOKENS
+-- ==========================================
 CREATE TABLE refresh_tokens (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -27,7 +43,10 @@ CREATE TABLE refresh_tokens (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+
+-- ==========================================
 -- 3. TWEETS
+-- ==========================================
 CREATE TABLE tweets (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -35,33 +54,35 @@ CREATE TABLE tweets (
     media_type VARCHAR(20),
     media_url TEXT,
 
-    -- Self-References
-    parent_id BIGINT REFERENCES tweets(id) ON DELETE CASCADE, -- Reply
-    retweet_id BIGINT REFERENCES tweets(id) ON DELETE CASCADE, -- Retweet
+    -- Self-References (Reply & Retweet)
+    parent_id BIGINT REFERENCES tweets(id) ON DELETE CASCADE,
+    retweet_id BIGINT REFERENCES tweets(id) ON DELETE CASCADE,
 
-    -- Counters
+    -- Counters (De-normalized for read performance)
     reply_count INT NOT NULL DEFAULT 0,
     retweet_count INT NOT NULL DEFAULT 0,
     like_count INT NOT NULL DEFAULT 0,
     
+    -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_tweets_user_created ON tweets(user_id, created_at DESC);
-CREATE INDEX idx_tweets_parent ON tweets(parent_id);
-CREATE INDEX idx_tweets_retweet ON tweets(retweet_id);
-CREATE INDEX idx_tweets_created_at ON tweets(created_at DESC);
+-- Full Text Search Generated Column
+ALTER TABLE tweets ADD COLUMN search_vector tsvector 
+    GENERATED ALWAYS AS (to_tsvector('english', coalesce(content, ''))) STORED;
 
--- 4. LIKES
-CREATE TABLE tweet_likes (
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    tweet_id BIGINT NOT NULL REFERENCES tweets(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, tweet_id) -- Composite PK is faster than a surrogate serial ID
-);
+-- Tweet Indexes
+CREATE INDEX idx_tweets_user_created ON tweets(user_id, created_at DESC); -- Optimize profile feeds
+CREATE INDEX idx_tweets_parent ON tweets(parent_id);                      -- Optimize fetching replies
+CREATE INDEX idx_tweets_retweet ON tweets(retweet_id);                    -- Optimize fetching retweets
+CREATE INDEX idx_tweets_created_at ON tweets(created_at DESC);            -- Optimize global/home feeds
+CREATE INDEX idx_tweets_search ON tweets USING GIN(search_vector);        -- Optimize text search
 
--- 5. FOLLOWS
+
+-- ==========================================
+-- 4. FOLLOWS (Social Graph)
+-- ==========================================
 CREATE TABLE follows (
     follower_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     following_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -73,14 +94,30 @@ CREATE TABLE follows (
 CREATE INDEX idx_follows_follower ON follows(follower_id);
 CREATE INDEX idx_follows_following ON follows(following_id);
 
--- 6. HASHTAGS
+
+-- ==========================================
+-- 5. LIKES (Interactions)
+-- ==========================================
+CREATE TABLE tweet_likes (
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    tweet_id BIGINT NOT NULL REFERENCES tweets(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, tweet_id) -- Composite PK prevents duplicate likes
+);
+
+
+-- ==========================================
+-- 6. HASHTAGS (Discovery)
+-- ==========================================
 CREATE TABLE hashtags (
     id BIGSERIAL PRIMARY KEY,
-    text VARCHAR(100) NOT NULL UNIQUE, -- Stored as lowercase for consistency
+    text VARCHAR(100) NOT NULL UNIQUE,
     usage_count INT NOT NULL DEFAULT 1,
     last_used_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX idx_hashtags_text ON hashtags(text);
 
 CREATE TABLE tweet_hashtags (
     tweet_id BIGINT NOT NULL REFERENCES tweets(id) ON DELETE CASCADE,
@@ -88,17 +125,22 @@ CREATE TABLE tweet_hashtags (
     PRIMARY KEY (tweet_id, hashtag_id)
 );
 
-CREATE INDEX idx_hashtags_text ON hashtags(text);
 CREATE INDEX idx_tweet_hashtags_tag ON tweet_hashtags(hashtag_id);
 
--- 7. FULL TEXT SEARCH
-ALTER TABLE tweets ADD COLUMN search_vector tsvector 
-    GENERATED ALWAYS AS (to_tsvector('english', coalesce(content, ''))) STORED;
 
--- GIN Index for lightning-fast text search
-CREATE INDEX idx_tweets_search ON tweets USING GIN(search_vector);
+-- ==========================================
+-- 7. NOTIFICATIONS
+-- ==========================================
+CREATE TABLE notifications (
+    id BIGSERIAL PRIMARY KEY,
+    recipient_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- Who gets it
+    actor_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,     -- Who caused it
+    tweet_id BIGINT REFERENCES tweets(id) ON DELETE CASCADE,             -- Optional (Follows don't have tweets)
+    type VARCHAR(20) NOT NULL,                                           -- LIKE, FOLLOW, REPLY, RETWEET
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
--- 8. USER SEARCH OPTIMIZATION 
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE INDEX idx_users_username_trgm ON users USING GIN (username gin_trgm_ops);
-CREATE INDEX idx_users_displayname_trgm ON users USING GIN (display_name gin_trgm_ops);
+-- Optimization Indexes
+CREATE INDEX idx_notifications_recipient ON notifications(recipient_id);
+CREATE INDEX idx_notifications_unread ON notifications(recipient_id) WHERE is_read = FALSE;

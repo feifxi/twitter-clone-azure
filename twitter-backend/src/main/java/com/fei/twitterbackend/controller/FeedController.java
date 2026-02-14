@@ -16,7 +16,7 @@ public class FeedController {
 
     private final FeedService feedService;
 
-    // GLOBAL / FOR YOU (Public)
+    // Global / For you (Public)
     @GetMapping("/global")
     public ResponseEntity<PageResponse<TweetResponse>> getGlobalFeed(
             @AuthenticationPrincipal User user,
@@ -26,7 +26,7 @@ public class FeedController {
         return ResponseEntity.ok(feedService.getForYouFeed(user, page, size));
     }
 
-    // FOLLOWING TIMELINE (Private)
+    // Following Timeline
     @GetMapping("/following")
     public ResponseEntity<PageResponse<TweetResponse>> getFollowingFeed(
             @AuthenticationPrincipal User user,

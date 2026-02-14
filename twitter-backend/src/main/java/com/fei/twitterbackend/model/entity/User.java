@@ -74,7 +74,7 @@ public class User implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email; // Use email to login
+        return email;
     }
 
     @Override
@@ -93,4 +93,8 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() { return true; }
+
+    public String getHandle() {
+        return username;
+    }
 }

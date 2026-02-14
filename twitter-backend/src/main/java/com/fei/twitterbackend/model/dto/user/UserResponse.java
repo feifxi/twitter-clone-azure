@@ -22,7 +22,7 @@ public record UserResponse(
 
         return new UserResponse(
                 user.getId(),
-                user.getUsername(),
+                user.getHandle(),
                 user.getEmail(),
                 user.getDisplayName(),
                 user.getAvatarUrl(),

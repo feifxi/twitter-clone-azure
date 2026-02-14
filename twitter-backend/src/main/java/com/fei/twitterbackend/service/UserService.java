@@ -1,25 +1,25 @@
 package com.fei.twitterbackend.service;
 
+import com.fei.twitterbackend.exception.BadRequestException;
+import com.fei.twitterbackend.exception.ResourceNotFoundException;
 import com.fei.twitterbackend.mapper.UserMapper;
 import com.fei.twitterbackend.model.dto.common.PageResponse;
 import com.fei.twitterbackend.model.dto.user.UpdateProfileRequest;
 import com.fei.twitterbackend.model.dto.user.UserResponse;
 import com.fei.twitterbackend.model.entity.User;
+import com.fei.twitterbackend.model.event.UserFollowedEvent;
 import com.fei.twitterbackend.repository.FollowRepository;
 import com.fei.twitterbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -31,13 +31,13 @@ public class UserService {
     private final FileStorageService fileStorageService;
     private final UserMapper userMapper;
     private final TransactionTemplate transactionTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     public UserResponse updateProfile(Long currentUserId, UpdateProfileRequest request, MultipartFile avatarFile) {
         log.info("User {} is updating profile", currentUserId);
 
-        // Fetch current data
         User user = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
 
         String oldAvatarUrl = user.getAvatarUrl();
         String newAvatarUrl = null;
@@ -103,18 +103,18 @@ public class UserService {
     @Transactional
     public void followUser(User currentUser, Long targetUserId) {
         if (currentUser.getId().equals(targetUserId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot follow yourself");
+            throw new BadRequestException("You cannot follow yourself");
         }
 
         // Prevent duplicate follow records
         if (followRepository.isFollowing(currentUser.getId(), targetUserId)) {
-            log.info("User {} is already following user {}. Ignoring request.", currentUser.getId(), targetUserId);
+            log.warn("User {} is already following user {}. Ignoring request.", currentUser.getId(), targetUserId);
             return;
         }
 
-        if (!userRepository.existsById(targetUserId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-        }
+        // Fetch Target User
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", targetUserId));
 
         log.info("User {} is following User {}", currentUser.getId(), targetUserId);
         followRepository.followUser(currentUser.getId(), targetUserId);
@@ -122,6 +122,9 @@ public class UserService {
         // Update Counters
         userRepository.incrementFollowingCount(currentUser.getId());
         userRepository.incrementFollowersCount(targetUserId);
+
+        // Send Notification Event
+        eventPublisher.publishEvent(new UserFollowedEvent(currentUser, targetUser));
     }
 
     @Transactional
@@ -143,7 +146,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserResponse getUserProfile(Long targetUserId, User currentUser) {
         User targetUser = userRepository.findById(targetUserId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", targetUserId));
         return userMapper.toResponse(targetUser, currentUser);
     }
 

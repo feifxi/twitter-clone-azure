@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -17,19 +18,25 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
+    private final CustomAuthEntryPoint customAuthEntryPoint;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. Disable CSRF (Stateful protection not needed for stateless JWT APIs)
+                // 1. CORS: Uses separate "CorsConfigurationSource" bean automatically
+                .cors(Customizer.withDefaults())
+
+                // 2. Disable CSRF (Stateful protection not needed for stateless JWT APIs)
                 .csrf(AbstractHttpConfigurer::disable)
 
-                // 2. Define Endpoint Rules
+                // 3. Define Endpoint Rules
                 .authorizeHttpRequests(auth -> auth
-                        // SPECIFIC RESTRICTIONS (The Exceptions)
+                        // SPECIFIC RESTRICTIONS (Must come BEFORE generic wildcards)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/feeds/following").authenticated()
 
-                        // Error and Auth are always public
+                        // Public Endpoints
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
 
@@ -41,27 +48,23 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/discovery/**").permitAll()
 
-                        // Everything else (POST, PUT, DELETE, and other paths)
-                        // This covers creating tweets, liking, following, etc.
+                        // Swagger UI (Optional)
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
+                        // Everything else (POST/PUT/DELETE) -> Authenticated
                         .anyRequest().authenticated()
                 )
 
-                // 3. Exception
+                // 4.  Exception Handling
                 .exceptionHandling(e -> e
-                        // Handle "Not Logged In" (401)
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.sendError(401, "Unauthorized: Please log in");
-                        })
-                        // Handle "Logged In, But No Permission" (403) - Optional: Spring does this by default, but you can customize it here
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.sendError(403, "Forbidden: You don't have permission");
-                        })
+                        .authenticationEntryPoint(customAuthEntryPoint)     // 401
+                        .accessDeniedHandler(customAccessDeniedHandler)     // 403
                 )
 
-                // 4. Make it Stateless (No Session/Cookies created by Spring)
+                // 5. Stateless (No Session/Cookies created by Spring)
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // 5. Add Custom JWT Filter BEFORE the standard Spring Login filter
+                // 6. JWT Filter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

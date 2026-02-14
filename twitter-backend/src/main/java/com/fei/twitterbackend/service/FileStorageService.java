@@ -8,10 +8,12 @@ import com.azure.storage.blob.batch.BlobBatchClient;
 import com.azure.storage.blob.batch.BlobBatchClientBuilder;
 import com.azure.storage.blob.models.BlobHttpHeaders;
 import com.azure.storage.blob.models.DeleteSnapshotsOptionType;
+import com.fei.twitterbackend.exception.AppException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -61,7 +63,7 @@ public class FileStorageService {
 
         } catch (IOException e) {
             log.error("Failed to upload file to Azure", e);
-            throw new RuntimeException("Failed to upload file");
+            throw new AppException("Failed to upload file", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -72,8 +74,6 @@ public class FileStorageService {
 
         try {
             // 1. Extract filename from the full URL
-            // URL Format: https://<account>.blob.core.windows.net/<container>/<filename>
-            // We just need the last part after the last '/'
             String filename = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
 
             // 2. Get Client
@@ -87,7 +87,6 @@ public class FileStorageService {
         } catch (RuntimeException e) {
             // Log it but DO NOT throw exception.
             // Reason: If Azure fails, we still want the Tweet to be deleted from the DB.
-            // We don't want to block the user action just because of a storage glitch.
             log.error("Failed to delete file from Azure: {}", fileUrl, e);
         }
     }
@@ -103,7 +102,6 @@ public class FileStorageService {
         for (String rawUrl : rawFileUrls) {
             try {
                 // 1. Extract ONLY the filename.
-                // We do NOT reconstruct the URL. We will use (Container + Filename) directly.
                 String filename = rawUrl.substring(rawUrl.lastIndexOf("/") + 1);
                 currentBatchFilenames.add(filename);
 
@@ -128,23 +126,17 @@ public class FileStorageService {
             BlobBatch batch = blobBatchClient.getBlobBatch();
 
             // 2. Add "Delete" operations to the batch using Container + Filename
-            // This bypasses all URL/Protocol/Host mismatch issues.
             for (String filename : filenames) {
-                // 'null' for conditions means unconditional delete
                 batch.deleteBlob(containerName, filename, DeleteSnapshotsOptionType.INCLUDE, null);
             }
 
             // 3. Submit the Batch (One HTTP Request)
-            // Note: If ANY file is missing (404), this might throw an exception depending on Azure version.
-            // But for a 'Cleanup' job, we generally expect files to exist.
             blobBatchClient.submitBatch(batch);
 
             log.info("Batch deleted {} files successfully", filenames.size());
 
         } catch (Exception e) {
             // 4. Fallback Strategy
-            // If the Batch fails (e.g. one file was already missing), we fall back to
-            // deleting them one-by-one to ensure the valid ones still get deleted.
             log.warn("Batch delete failed (possibly due to missing file). Switching to singular delete fallback.");
             for (String filename : filenames) {
                 deleteFileByName(filename);

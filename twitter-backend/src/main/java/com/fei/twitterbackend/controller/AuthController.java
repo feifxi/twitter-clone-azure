@@ -3,6 +3,7 @@ package com.fei.twitterbackend.controller;
 import com.fei.twitterbackend.model.dto.auth.AuthResponse;
 import com.fei.twitterbackend.model.dto.auth.GoogleAuthRequest;
 import com.fei.twitterbackend.model.dto.common.ApiResponse;
+import com.fei.twitterbackend.model.dto.user.UserResponse;
 import com.fei.twitterbackend.model.entity.User;
 import com.fei.twitterbackend.service.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -31,7 +32,7 @@ public class AuthController {
     private final Environment environment;
     private final AuthService authService;
 
-    // 1. LOGIN (Google -> Access + Refresh)
+    // Login (Google -> Access + Refresh)
     @PostMapping("/google")
     public ResponseEntity<AuthResponse> googleLogin(
             @Valid @RequestBody GoogleAuthRequest authRequest,
@@ -42,7 +43,7 @@ public class AuthController {
         return ResponseEntity.ok(authData);
     }
 
-    // 2. REFRESH (Old Refresh -> New Access + New Refresh)
+    // Refresh (Old Refresh -> New Access + New Refresh)
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refreshToken(
             @CookieValue(name = REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken,
@@ -57,7 +58,7 @@ public class AuthController {
         return ResponseEntity.ok(authData);
     }
 
-    // 3. LOGOUT (Revoke Refresh Token)
+    // Logout (Revoke Refresh Token)
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse> logout(@AuthenticationPrincipal User user, HttpServletResponse response) {
         // Clear the cookie regardless of whether user is null (UI cleanup)
@@ -68,6 +69,12 @@ public class AuthController {
         }
 
         return ResponseEntity.ok(new ApiResponse(true, "Logged out successfully"));
+    }
+
+    // Get current logged-in user
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(authService.getCurrentUser(currentUser));
     }
 
     private void setRefreshTokenCookie(HttpServletResponse response, String token, long durationMs) {

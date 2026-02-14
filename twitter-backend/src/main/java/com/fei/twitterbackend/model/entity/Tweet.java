@@ -22,6 +22,7 @@ import java.util.Set;
 public class Tweet {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Long id;
 
     @Column(name = "content", length = 280, nullable = false)

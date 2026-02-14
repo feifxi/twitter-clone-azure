@@ -1,5 +1,8 @@
 package com.fei.twitterbackend.service;
 
+import com.fei.twitterbackend.exception.AccessDeniedException;
+import com.fei.twitterbackend.exception.BadRequestException;
+import com.fei.twitterbackend.exception.ResourceNotFoundException;
 import com.fei.twitterbackend.mapper.TweetMapper;
 import com.fei.twitterbackend.model.dto.common.PageResponse;
 import com.fei.twitterbackend.model.dto.tweet.TweetRequest;
@@ -8,6 +11,7 @@ import com.fei.twitterbackend.model.entity.Hashtag;
 import com.fei.twitterbackend.model.entity.Tweet;
 import com.fei.twitterbackend.model.entity.User;
 import com.fei.twitterbackend.model.enums.MediaType;
+import com.fei.twitterbackend.model.event.UserRepliedEvent;
 import com.fei.twitterbackend.repository.FollowRepository;
 import com.fei.twitterbackend.repository.HashtagRepository;
 import com.fei.twitterbackend.repository.LikeRepository;
@@ -15,18 +19,17 @@ import com.fei.twitterbackend.repository.TweetRepository;
 import com.fei.twitterbackend.util.HashtagParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import java.util.function.Function;
@@ -45,6 +48,7 @@ public class TweetService {
     private final HashtagParser hashtagParser;
     private final TweetMapper tweetMapper;
     private final TransactionTemplate transactionTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Creates a new Tweet.
@@ -94,18 +98,17 @@ public class TweetService {
         Tweet parent = null;
 
         if (request.parentId() != null) {
-            // OPTIMIZATION: getReferenceById creates a Proxy without hitting the DB.
-            // It assumes the ID exists (which we verified in 'createTweet').
-            parent = tweetRepository.getReferenceById(request.parentId());
+            parent = tweetRepository.findById(request.parentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Tweet", "id", request.parentId()));
 
-            // Update Reply Counter (Native Query uses ID directly, so Proxy works fine)
+            // Update Reply Counter
             tweetRepository.incrementReplyCount(parent.getId());
         }
 
         Tweet tweet = Tweet.builder()
                 .content(content)
                 .user(user)
-                .parent(parent) // Hibernate sets the FK using the Proxy ID
+                .parent(parent)
                 .mediaType(mediaType)
                 .mediaUrl(mediaUrl)
                 .hashtags(new HashSet<>())
@@ -116,6 +119,11 @@ public class TweetService {
 
         Tweet savedTweet = tweetRepository.save(tweet);
         log.info("Tweet created successfully with ID: {}", savedTweet.getId());
+
+        if (parent != null) {
+            eventPublisher.publishEvent(new UserRepliedEvent(user, parent, savedTweet));
+        }
+
         return tweetMapper.toResponse(savedTweet, false, false, false);
     }
 
@@ -124,15 +132,15 @@ public class TweetService {
         log.info("User {} requesting deletion of tweet {}", user.getId(), tweetId);
 
         Tweet tweet = tweetRepository.findById(tweetId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tweet not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Tweet", "id", tweetId));
 
         // Authorization
         if (!tweet.getUser().getId().equals(user.getId())) {
             log.warn("Unauthorized delete attempt by User {} on Tweet {}", user.getId(), tweetId);
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own tweets");
+            throw new AccessDeniedException("You can only delete your own tweets");
         }
 
-        // Decreas/Remove Hashtags
+        // Decrease/Remove Hashtags
         removeHashtagsForDelete(tweet);
 
         // Parent reply count cleanup
@@ -161,10 +169,10 @@ public class TweetService {
 
     @Transactional(readOnly = true)
     public TweetResponse getTweetById(User currentUser, Long tweetId) {
-        log.debug("Fetching single tweet details: {}", tweetId);
+        log.info("Fetching single tweet details: {}", tweetId);
 
         Tweet tweet = tweetRepository.findById(tweetId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tweet not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Tweet", "id", tweetId));
 
         boolean likedByMe = false;
         boolean retweetedByMe = false;
@@ -188,10 +196,10 @@ public class TweetService {
 
     @Transactional(readOnly = true)
     public PageResponse<TweetResponse> getReplies(User currentUser, Long tweetId, int page, int size) {
-        log.debug("Fetching replies for tweet {}. Page: {}", tweetId, page);
+        log.info("Fetching replies for tweet {}. Page: {}", tweetId, page);
 
         if (!tweetRepository.existsById(tweetId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Parent tweet not found");
+            throw new ResourceNotFoundException("Tweet", "id", tweetId);
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt"));
@@ -206,7 +214,6 @@ public class TweetService {
         Set<String> tagTexts = hashtagParser.parseHashtags(content);
         if (tagTexts.isEmpty()) return;
 
-        // Fetch existing hashtags to avoid duplicates
         List<Hashtag> existingHashtags = hashtagRepository.findByTextIn(new ArrayList<>(tagTexts));
         Map<String, Hashtag> existingMap = existingHashtags.stream()
                 .collect(Collectors.toMap(Hashtag::getText, Function.identity()));
@@ -214,14 +221,9 @@ public class TweetService {
         for (String text : tagTexts) {
             Hashtag hashtag = existingMap.get(text);
             if (hashtag == null) {
-                // Create new if not exists
                 hashtag = Hashtag.builder().text(text).usageCount(0).build();
             }
-            // Increment
             hashtag.setUsageCount(hashtag.getUsageCount() + 1);
-
-            // If it's a new tag, we must save it to get an ID.
-            // If it's existing, we must save it to update the usage count.
             tweet.getHashtags().add(hashtagRepository.save(hashtag));
         }
     }
@@ -231,20 +233,16 @@ public class TweetService {
         Set<Hashtag> tags = tweet.getHashtags();
         if (tags.isEmpty()) return;
 
-        // Copy to iterate safely
         for (Hashtag tag : new HashSet<>(tags)) {
-            // Decrement
             int newCount = Math.max(0, tag.getUsageCount() - 1);
             tag.setUsageCount(newCount);
 
             if (newCount == 0) {
-                // Delete orphan tag to keep DB clean
                 hashtagRepository.delete(tag);
             } else {
                 hashtagRepository.save(tag);
             }
         }
-        // Clear relation
         tweet.getHashtags().clear();
     }
 
@@ -263,10 +261,7 @@ public class TweetService {
 
         if (!hasContent && !hasFile) {
             log.warn("Empty tweet attempt by User ID: {}", user.getId());
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "A tweet must have either text content or an image/video."
-            );
+            throw new BadRequestException("A tweet must have either text content or an image/video.");
         }
         return cleanContent;
     }
@@ -275,7 +270,7 @@ public class TweetService {
         if (parentId != null) {
             boolean parentExists = tweetRepository.existsById(parentId);
             if (!parentExists) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Parent tweet not found");
+                throw new ResourceNotFoundException("Tweet", "id", parentId);
             }
         }
     }
@@ -287,7 +282,7 @@ public class TweetService {
 
         String contentType = file.getContentType();
         if (contentType == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing Content-Type");
+            throw new BadRequestException("Missing Content-Type");
         }
 
         if (contentType.startsWith("image/")) {
@@ -296,6 +291,6 @@ public class TweetService {
             return MediaType.VIDEO;
         }
 
-        throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Only images and videos allowed");
+        throw new BadRequestException("Only images and videos allowed");
     }
 }

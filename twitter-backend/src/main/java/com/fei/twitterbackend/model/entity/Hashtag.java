@@ -19,9 +19,10 @@ import java.util.Set;
 public class Hashtag {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "text", nullable = false, unique = true)
     private String text;
 
     @Builder.Default

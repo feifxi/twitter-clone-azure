@@ -1,5 +1,6 @@
 package com.fei.twitterbackend.service;
 
+import com.fei.twitterbackend.exception.UnauthorizedException;
 import com.fei.twitterbackend.mapper.TweetMapper;
 import com.fei.twitterbackend.model.dto.common.PageResponse;
 import com.fei.twitterbackend.model.dto.tweet.TweetResponse;
@@ -29,7 +30,7 @@ public class FeedService {
 
     @Transactional(readOnly = true)
     public PageResponse<TweetResponse> getForYouFeed(User currentUser, int page, int size) {
-        log.debug("Loading 'For You' feed for user: {}", currentUser != null ? currentUser.getId() : "Guest");
+        log.info("Loading 'For You' feed for user: {}", currentUser != null ? currentUser.getId() : "Guest");
         Pageable pageable = PageRequest.of(page, size);
 
         Page<Tweet> tweets = tweetRepository.findForYouFeed(pageable);
@@ -40,9 +41,9 @@ public class FeedService {
     public PageResponse<TweetResponse> getFollowingTimeline(User currentUser, int page, int size) {
         // If not logged in, they can't have a following feed
         if (currentUser == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login to see following feed");
+            throw new UnauthorizedException("Login to see following feed");
         }
-        log.debug("Loading 'Following' timeline for user: {}", currentUser.getId());
+        log.info("Loading 'Following' timeline for user: {}", currentUser.getId());
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         Page<Tweet> tweets = tweetRepository.findFollowingTimeline(currentUser.getId(), pageable);
@@ -51,7 +52,7 @@ public class FeedService {
 
     @Transactional(readOnly = true)
     public PageResponse<TweetResponse> getUserTweets(User currentUser, Long userId, int page, int size) {
-        log.debug("Fetching profile feed for user {}. Page: {}", userId, page);
+        log.info("Fetching profile feed for user {}. Page: {}", userId, page);
         Pageable pageable =  PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         Page<Tweet> tweetsPage = tweetRepository.findAllByUserIdAndParentIdIsNull(userId, pageable);

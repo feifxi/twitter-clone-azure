@@ -37,10 +37,10 @@ public class JwtService {
                 .compact();
     }
 
-    // Used by Auth Filter - Returns null if Constant is invalid/expired
+    // Used by Auth Filter - Returns null if Token is invalid/expired
     public String extractEmail(String token) {
         Claims claims = extractAllClaims(token);
-        if (claims == null) return null; // Invalid Constant
+        if (claims == null) return null; // Invalid Token
         return claims.getSubject();
     }
 
@@ -48,7 +48,6 @@ public class JwtService {
         return extractAllClaims(token) != null;
     }
 
-    // HELPER
     private Claims extractAllClaims(String token) {
         try {
             return Jwts.parserBuilder()
@@ -57,13 +56,14 @@ public class JwtService {
                     .parseClaimsJws(token)
                     .getBody();
         } catch (ExpiredJwtException e) {
-            log.error("JWT Constant is expired: {}", e.getMessage());
+            // WARN: It is normal for tokens to expire, not a server error.
+            log.warn("JWT Token is expired: {}", e.getMessage());
         } catch (MalformedJwtException e) {
-            log.error("Invalid JWT Constant: {}", e.getMessage());
+            log.error("Invalid JWT Token structure: {}", e.getMessage());
         } catch (UnsupportedJwtException | IllegalArgumentException | io.jsonwebtoken.security.SignatureException e) {
-            log.error("JWT Error: {}", e.getMessage());
+            log.error("JWT Validation Error: {}", e.getMessage());
         }
-        return null; // Return null if ANY error occurs
+        return null; // Return null so the Filter treats user as "Anonymous"
     }
 
     private Key getSignInKey() {
