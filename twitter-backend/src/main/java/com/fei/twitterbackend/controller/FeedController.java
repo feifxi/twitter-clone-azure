@@ -16,17 +16,24 @@ public class FeedController {
 
     private final FeedService feedService;
 
-    @GetMapping
-    public ResponseEntity<PageResponse<TweetResponse>> getFeed(
+    // GLOBAL / FOR YOU (Public)
+    @GetMapping("/global")
+    public ResponseEntity<PageResponse<TweetResponse>> getGlobalFeed(
             @AuthenticationPrincipal User user,
-            @RequestParam(defaultValue = "foryou") String type,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        if ("following".equalsIgnoreCase(type)) {
-            return ResponseEntity.ok(feedService.getFollowingTimeline(user, page, size));
-        }
         return ResponseEntity.ok(feedService.getForYouFeed(user, page, size));
+    }
+
+    // FOLLOWING TIMELINE (Private)
+    @GetMapping("/following")
+    public ResponseEntity<PageResponse<TweetResponse>> getFollowingFeed(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(feedService.getFollowingTimeline(user, page, size));
     }
 
     @GetMapping("/user/{userId}")

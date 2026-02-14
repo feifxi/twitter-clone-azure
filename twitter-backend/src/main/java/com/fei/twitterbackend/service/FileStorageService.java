@@ -65,6 +65,33 @@ public class FileStorageService {
         }
     }
 
+    public void deleteFile(String fileUrl) {
+        if (fileUrl == null || fileUrl.isEmpty()) {
+            return;
+        }
+
+        try {
+            // 1. Extract filename from the full URL
+            // URL Format: https://<account>.blob.core.windows.net/<container>/<filename>
+            // We just need the last part after the last '/'
+            String filename = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+
+            // 2. Get Client
+            BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
+            BlobClient blobClient = containerClient.getBlobClient(filename);
+
+            // 3. Delete (use deleteIfExists to avoid errors if already gone)
+            blobClient.deleteIfExists();
+            log.info("Deleted file from Azure: {}", filename);
+
+        } catch (RuntimeException e) {
+            // Log it but DO NOT throw exception.
+            // Reason: If Azure fails, we still want the Tweet to be deleted from the DB.
+            // We don't want to block the user action just because of a storage glitch.
+            log.error("Failed to delete file from Azure: {}", fileUrl, e);
+        }
+    }
+
     // BATCH DELETE
     public void deleteFiles(List<String> rawFileUrls) {
         if (rawFileUrls == null || rawFileUrls.isEmpty()) return;
@@ -133,33 +160,6 @@ public class FileStorageService {
                     .deleteIfExists();
         } catch (Exception ex) {
             log.error("Failed to delete blob during fallback: {}", filename, ex);
-        }
-    }
-
-    public void deleteFile(String fileUrl) {
-        if (fileUrl == null || fileUrl.isEmpty()) {
-            return;
-        }
-
-        try {
-            // 1. Extract filename from the full URL
-            // URL Format: https://<account>.blob.core.windows.net/<container>/<filename>
-            // We just need the last part after the last '/'
-            String filename = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
-
-            // 2. Get Client
-            BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
-            BlobClient blobClient = containerClient.getBlobClient(filename);
-
-            // 3. Delete (use deleteIfExists to avoid errors if already gone)
-            blobClient.deleteIfExists();
-            log.info("Deleted file from Azure: {}", filename);
-
-        } catch (RuntimeException e) {
-            // Log it but DO NOT throw exception.
-            // Reason: If Azure fails, we still want the Tweet to be deleted from the DB.
-            // We don't want to block the user action just because of a storage glitch.
-            log.error("Failed to delete file from Azure: {}", fileUrl, e);
         }
     }
 }

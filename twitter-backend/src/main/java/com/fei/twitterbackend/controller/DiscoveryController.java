@@ -2,14 +2,16 @@ package com.fei.twitterbackend.controller;
 
 import com.fei.twitterbackend.model.dto.common.PageResponse;
 import com.fei.twitterbackend.model.dto.hashtag.TrendingHashtagDTO;
-import com.fei.twitterbackend.model.dto.tweet.TweetResponse;
 import com.fei.twitterbackend.model.dto.user.UserResponse;
 import com.fei.twitterbackend.model.entity.User;
 import com.fei.twitterbackend.service.DiscoveryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -20,15 +22,6 @@ public class DiscoveryController {
 
     private final DiscoveryService discoveryService;
 
-    // Usage: GET /api/v1/discovery/tags?query=java
-    @GetMapping("/tags")
-    public ResponseEntity<List<TrendingHashtagDTO>> searchHashtags(
-            @RequestParam("q") String query,
-            @RequestParam(defaultValue = "5") int limit
-    ) {
-        return ResponseEntity.ok(discoveryService.searchHashtags(query, limit));
-    }
-
     @GetMapping("/trending")
     public ResponseEntity<List<TrendingHashtagDTO>> getTrendingHashtags(
             @RequestParam(defaultValue = "10") int limit) {
@@ -37,17 +30,6 @@ public class DiscoveryController {
         int safeLimit = Math.min(limit, 50);
 
         return ResponseEntity.ok(discoveryService.getTrendingHashtags(safeLimit));
-    }
-
-    @GetMapping("/hashtags/{hashtag}/tweets")
-    public ResponseEntity<PageResponse<TweetResponse>> getTweetsForHashtag(
-            @AuthenticationPrincipal User user,
-            @PathVariable String hashtag,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-
-        PageResponse<TweetResponse> results = discoveryService.getTweetsByHashtag(user, hashtag, page, size);
-        return ResponseEntity.ok(results);
     }
 
     // TIP for Frontend:

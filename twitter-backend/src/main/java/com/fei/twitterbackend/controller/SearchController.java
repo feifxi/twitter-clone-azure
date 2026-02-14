@@ -1,6 +1,7 @@
 package com.fei.twitterbackend.controller;
 
 import com.fei.twitterbackend.model.dto.common.PageResponse;
+import com.fei.twitterbackend.model.dto.hashtag.TrendingHashtagDTO;
 import com.fei.twitterbackend.model.dto.tweet.TweetResponse;
 import com.fei.twitterbackend.model.dto.user.UserResponse;
 import com.fei.twitterbackend.model.entity.User;
@@ -12,6 +13,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/search")
@@ -40,5 +43,13 @@ public class SearchController {
 
         PageResponse<UserResponse> results = searchService.searchUsers(user, query, page, size);
         return ResponseEntity.ok(results);
+    }
+
+    @GetMapping("/hashtags")
+    public ResponseEntity<List<TrendingHashtagDTO>> searchHashtags(
+            @RequestParam("q") String query,
+            @RequestParam(defaultValue = "5") int limit
+    ) {
+        return ResponseEntity.ok(searchService.searchHashtags(query, limit));
     }
 }

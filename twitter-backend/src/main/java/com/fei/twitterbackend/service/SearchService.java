@@ -3,18 +3,26 @@ package com.fei.twitterbackend.service;
 import com.fei.twitterbackend.mapper.TweetMapper;
 import com.fei.twitterbackend.mapper.UserMapper;
 import com.fei.twitterbackend.model.dto.common.PageResponse;
+import com.fei.twitterbackend.model.dto.hashtag.TrendingHashtagDTO;
 import com.fei.twitterbackend.model.dto.tweet.TweetResponse;
 import com.fei.twitterbackend.model.dto.user.UserResponse;
+import com.fei.twitterbackend.model.entity.Hashtag;
 import com.fei.twitterbackend.model.entity.Tweet;
 import com.fei.twitterbackend.model.entity.User;
+import com.fei.twitterbackend.repository.HashtagRepository;
 import com.fei.twitterbackend.repository.TweetRepository;
 import com.fei.twitterbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +31,7 @@ public class SearchService {
 
     private final TweetRepository tweetRepository;
     private final UserRepository userRepository;
+    private final HashtagRepository hashtagRepository;
     private final TweetMapper tweetMapper;
     private final UserMapper userMapper;
 
@@ -30,15 +39,32 @@ public class SearchService {
     public PageResponse<TweetResponse> searchTweets(User currentUser, String rawQuery, int page, int size) {
         log.info("User {} searching for: {}", currentUser != null ? currentUser.getId() : "Guest", rawQuery);
 
-        // Sanitize and format the query
-        String sanitizedQuery = prepareTsQuery(rawQuery);
-        if (sanitizedQuery.isEmpty()) {
+        if (rawQuery == null || rawQuery.isBlank()) {
             return PageResponse.from(Page.empty());
         }
 
-        // Execute Native PostgreSQL FTS Query
+        String trimmedQuery = rawQuery.trim();
         PageRequest pageRequest = PageRequest.of(page, size);
-        Page<Tweet> tweetPage = tweetRepository.searchTweets(sanitizedQuery, pageRequest);
+        Page<Tweet> tweetPage;
+
+        // STRATEGY 1: HASHTAG SEARCH (Exact Match)
+        if (trimmedQuery.startsWith("#")) {
+            // Remove # and any non-alphanumeric chars (keep underscores)
+            String cleanHashtag = trimmedQuery.substring(1).replaceAll("[^a-zA-Z0-9_]", "");
+
+            if (cleanHashtag.isEmpty()) return PageResponse.from(Page.empty());
+
+            // Use the Optimized @EntityGraph method from TweetRepository
+            tweetPage = tweetRepository.findTweetsByHashtag(cleanHashtag, pageRequest);
+        }
+        // STRATEGY 2: FULL-TEXT SEARCH (Fuzzy Match)
+        else {
+            String sanitizedQuery = prepareTsQuery(trimmedQuery);
+            if (sanitizedQuery.isEmpty()) return PageResponse.from(Page.empty());
+
+            // Use the Native PostgreSQL FTS method
+            tweetPage = tweetRepository.searchTweets(sanitizedQuery, pageRequest);
+        }
 
         return tweetMapper.toResponsePage(tweetPage, currentUser);
     }
@@ -59,6 +85,27 @@ public class SearchService {
         Page<User> userPage = userRepository.searchUsers(cleanQuery, pageRequest);
 
         return userMapper.toResponsePage(userPage, currentUser);
+    }
+
+    /**
+     * Autocomplete for the "Compose Tweet" box.
+     * Query: "java" -> Returns top 5 tags starting with "java"
+     */
+    @Transactional(readOnly = true)
+    public List<TrendingHashtagDTO> searchHashtags(String query, int limit) {
+        if (query == null || query.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        // Remove the '#' if the frontend sent it (e.g., "#jav" -> "jav")
+        String cleanPrefix = query.replace("#", "").trim();
+
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Hashtag> hashtags = hashtagRepository.searchHashtagsByPrefix(cleanPrefix, pageable);
+
+        return hashtags.stream()
+                .map(h -> new TrendingHashtagDTO(h.getText(), h.getUsageCount()))
+                .collect(Collectors.toList());
     }
 
     /**

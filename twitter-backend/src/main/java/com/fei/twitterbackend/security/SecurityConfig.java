@@ -26,15 +26,18 @@ public class SecurityConfig {
 
                 // 2. Define Endpoint Rules
                 .authorizeHttpRequests(auth -> auth
+                        // SPECIFIC RESTRICTIONS (The Exceptions)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/feeds/following").authenticated()
+
                         // Error and Auth are always public
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
 
                         // Public Read Access (GET)
                         // Allow guests to see the feed and single tweets
+                        .requestMatchers(HttpMethod.GET, "/api/v1/feeds/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/tweets/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/feeds/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/discovery/**").permitAll()
 

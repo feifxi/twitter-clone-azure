@@ -22,9 +22,45 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
     // 1. CORE FEEDS (READS) - OPTIMIZED WITH @EntityGraph
     // ========================================================================
 
-    // Global Feed (Only root tweets, no replies)
-    @EntityGraph(attributePaths = {"user", "retweet", "retweet.user"})
-    Page<Tweet> findAllByParentIdIsNull(Pageable pageable);
+    /**
+     * Retrieves the "For You" feed using a Gravity Decay Algorithm.
+     *
+     * <p><strong>The Algorithm:</strong> Hacker News / Reddit "Hot" Ranking</p>
+     * <p>
+     * Formula:
+     * <pre>
+     * Score = (Votes - 1) / (AgeInHours + 2)^Gravity
+     * </pre>
+     * </p>
+     *
+     * <ul>
+     * <li><strong>Votes:</strong> (Likes * 2) + (Retweets * 3) + (Replies * 1). We weight interactions differently.</li>
+     * <li><strong>AgeInHours:</strong> Time since creation. We add +2 to prevent dividing by zero for new tweets.</li>
+     * <li><strong>Gravity (1.8):</strong> How fast the score decays.
+     * <ul>
+     * <li>Higher Gravity (e.g., 2.0) = News sites (New stuff replaces old stuff very fast).</li>
+     * <li>Lower Gravity (e.g., 1.5) = Pinterest (Old viral content stays visible longer).</li>
+     * <li><strong>1.8</strong> is the sweet spot for a social feed in early stages.</li>
+     * </ul>
+     * </li>
+     * </ul>
+     *
+     * @param pageable Pagination info (page, size)
+     * @return A page of tweets sorted by their calculated "Hot" score.
+     */
+    // NOTE: @EntityGraph does NOT work on native queries.
+    @Query(value = """
+        SELECT * FROM tweets t
+        WHERE t.parent_id IS NULL
+        ORDER BY
+            (t.like_count * 2 + t.retweet_count * 3 + t.reply_count + 1) /
+            POWER((EXTRACT(EPOCH FROM NOW() - t.created_at) / 3600) + 2, 1.8)
+            DESC,
+            t.created_at DESC
+    """,
+    countQuery = "SELECT count(*) FROM tweets WHERE parent_id IS NULL",
+    nativeQuery = true)
+    Page<Tweet> findForYouFeed(Pageable pageable);
 
     // Following Timeline (People you follow + Your own tweets)
     @EntityGraph(attributePaths = {"user", "retweet", "retweet.user"})
@@ -42,17 +78,6 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
     // Reply Thread (Flat strategy)
     @EntityGraph(attributePaths = {"user", "retweet", "retweet.user"})
     Page<Tweet> findAllByParentId(Long parentId, Pageable pageable);
-
-    // Hashtag Search
-    @EntityGraph(attributePaths = {"user", "retweet", "retweet.user"})
-    @Query("""
-    SELECT t FROM Tweet t
-    JOIN t.hashtags h
-    WHERE LOWER(h.text) = LOWER(:hashtag)
-    ORDER BY t.createdAt DESC
-    """)
-    Page<Tweet> findTweetsByHashtag(@Param("hashtag") String hashtag, Pageable pageable);
-
 
     // ========================================================================
     // 2. ATOMIC COUNTERS (WRITES)
@@ -114,8 +139,17 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
     // 4. SEARCHING
     // ========================================================================
 
+    // Find by Hashtag
+    @EntityGraph(attributePaths = {"user", "retweet", "retweet.user"})
+    @Query("""
+    SELECT t FROM Tweet t
+    JOIN t.hashtags h
+    WHERE LOWER(h.text) = LOWER(:hashtag)
+    ORDER BY t.createdAt DESC
+    """)
+    Page<Tweet> findTweetsByHashtag(@Param("hashtag") String hashtag, Pageable pageable);
+
     // Using PostgreSQL Full-Text Search (FTS)
-    // NOTE: @EntityGraph does NOT work on native queries.
     @Query(value = """
     SELECT * FROM tweets
     WHERE search_vector @@ to_tsquery('english', :query)

@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -25,17 +27,15 @@ public class FeedService {
     private final TweetRepository tweetRepository;
     private final TweetMapper tweetMapper;
 
-    // TAB 1: FOR YOU (The Global/Discovery)
     @Transactional(readOnly = true)
     public PageResponse<TweetResponse> getForYouFeed(User currentUser, int page, int size) {
         log.debug("Loading 'For You' feed for user: {}", currentUser != null ? currentUser.getId() : "Guest");
-        Pageable pageable = createPageable(page, size, Sort.Direction.DESC);
+        Pageable pageable = PageRequest.of(page, size);
 
-        Page<Tweet> tweets = tweetRepository.findAllByParentIdIsNull(pageable);
+        Page<Tweet> tweets = tweetRepository.findForYouFeed(pageable);
         return tweetMapper.toResponsePage(tweets, currentUser);
     }
 
-    // TAB 2: FOLLOWING (Only people you follow)
     @Transactional(readOnly = true)
     public PageResponse<TweetResponse> getFollowingTimeline(User currentUser, int page, int size) {
         // If not logged in, they can't have a following feed
@@ -43,7 +43,7 @@ public class FeedService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login to see following feed");
         }
         log.debug("Loading 'Following' timeline for user: {}", currentUser.getId());
-        Pageable pageable = createPageable(page, size, Sort.Direction.DESC);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         Page<Tweet> tweets = tweetRepository.findFollowingTimeline(currentUser.getId(), pageable);
         return tweetMapper.toResponsePage(tweets, currentUser);
@@ -52,14 +52,9 @@ public class FeedService {
     @Transactional(readOnly = true)
     public PageResponse<TweetResponse> getUserTweets(User currentUser, Long userId, int page, int size) {
         log.debug("Fetching profile feed for user {}. Page: {}", userId, page);
-        Pageable pageable = createPageable(page, size, Sort.Direction.DESC);
+        Pageable pageable =  PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         Page<Tweet> tweetsPage = tweetRepository.findAllByUserIdAndParentIdIsNull(userId, pageable);
         return tweetMapper.toResponsePage(tweetsPage, currentUser);
-    }
-
-    // HELPER METHODS
-    private Pageable createPageable(int page, int size, Sort.Direction direction) {
-        return PageRequest.of(page, size, Sort.by(direction, "createdAt"));
     }
 }

@@ -95,7 +95,7 @@ public class TweetService {
 
         if (request.parentId() != null) {
             // OPTIMIZATION: getReferenceById creates a Proxy without hitting the DB.
-            // It assumes the ID exists (which we verified in step 2).
+            // It assumes the ID exists (which we verified in 'createTweet').
             parent = tweetRepository.getReferenceById(request.parentId());
 
             // Update Reply Counter (Native Query uses ID directly, so Proxy works fine)
@@ -132,7 +132,7 @@ public class TweetService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own tweets");
         }
 
-        // Reduced/Remove Hashtags
+        // Decreas/Remove Hashtags
         removeHashtagsForDelete(tweet);
 
         // Parent reply count cleanup
