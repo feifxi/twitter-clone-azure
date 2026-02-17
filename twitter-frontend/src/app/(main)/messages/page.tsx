@@ -50,7 +50,7 @@ export default function MessagesPage() {
 
   const handleSendMessage = () => {
     if (!messageInput.trim()) return;
-    toast.info("Messaging feature is coming soon! อิอิ");
+    toast.info("ยังทำไม่เสร็จโว้ยยยย");
     setMessageInput('');
   };
 

@@ -6,9 +6,11 @@ import { Check } from 'lucide-react';
 
 export default function PremiumPage() {
   const features = [
-    'เป็นที่รักของ Indian call center',
+    'เป็นที่รักของแก๊ง call center',
     'โพสต์ยาวได้ แต่ไม่มีใครเห็นโพสต์',
     'ได้ blue check "this mf paid for Twitter"',
+    'เพื่อนไม่คบ',
+    'พ่อแม่ย้ายร่าง',
     'อย่ากดถ้าไม่อยากโดนย่ำกระหม่อม',
   ];
 

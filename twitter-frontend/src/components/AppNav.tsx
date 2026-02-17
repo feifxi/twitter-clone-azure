@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import Link from 'next/link';
-import { Home, User, MoreHorizontal, Bell, Mail, Search, Bookmark, List, Users, BotMessageSquare } from 'lucide-react';
+import { Home, User, MoreHorizontal, Bell, Mail, Search, Bookmark, List, Users, BotMessageSquare, TvMinimalPlay } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -111,7 +111,7 @@ export function AppNav() {
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild className="p-3 text-[15px] cursor-pointer focus:bg-accent">
                             <Link href="/brainrot" className="flex items-center gap-4">
-                                <BotMessageSquare className="w-5 h-5" />
+                                <TvMinimalPlay className="w-5 h-5" />
                                 <span>Brainrot</span>
                             </Link>
                         </DropdownMenuItem>
