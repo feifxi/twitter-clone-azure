@@ -6,6 +6,7 @@ import { useUserProfileByUsername, useUserFeed } from '@/hooks/useProfile';
 import { FollowButton } from '@/components/FollowButton';
 import { useAuth } from '@/hooks/useAuth';
 import { EditProfileModal } from '@/components/EditProfileModal';
+import { UserListModal } from '@/components/UserListModal';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useState } from 'react';
@@ -17,6 +18,7 @@ function ProfileContent({ params }: { params: Promise<{ username: string }> }) {
   const feed = useUserFeed(userId);
   const { user: currentUser, isLoggedIn } = useAuth();
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [listType, setListType] = useState<'followers' | 'following' | null>(null);
   
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -80,14 +82,20 @@ function ProfileContent({ params }: { params: Promise<{ username: string }> }) {
               <p className="text-[#e7e9ea] text-[15px] mt-1">{user.bio}</p>
             )}
             <div className="flex gap-4 mt-2 text-[#71767b] text-[15px]">
-              <span>
+              <button 
+                className="hover:underline cursor-pointer"
+                onClick={() => setListType('following')}
+              >
                 <strong className="text-[#e7e9ea]">{user.followingCount}</strong>{' '}
                 Following
-              </span>
-              <span>
+              </button>
+              <button 
+                className="hover:underline cursor-pointer"
+                onClick={() => setListType('followers')}
+              >
                 <strong className="text-[#e7e9ea]">{user.followersCount}</strong>{' '}
                 Followers
-              </span>
+              </button>
             </div>
             {isLoggedIn && !isOwnProfile && (
               <div className="mt-2">
@@ -107,6 +115,15 @@ function ProfileContent({ params }: { params: Promise<{ username: string }> }) {
         </div>
         
         <EditProfileModal user={user} isOpen={showEditProfile} onClose={() => setShowEditProfile(false)} />
+        
+        {user.id && (
+          <UserListModal 
+            userId={user.id} 
+            type={listType} 
+            isOpen={!!listType} 
+            onClose={() => setListType(null)} 
+          />
+        )}
 
         <div className="flex border-b border-[#2f3336]">
           {(['tweets', 'media'] as const).map((t) => (

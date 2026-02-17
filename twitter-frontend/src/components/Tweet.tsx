@@ -262,11 +262,7 @@ export function Tweet({ tweet }: TweetProps) {
                 <span className="text-[13px] group-hover:text-primary transition-colors">{displayTweet.replyCount || ''}</span>
             </Button>
             
-            <ReplyModal 
-                tweet={displayTweet} 
-                isOpen={showReplyModal} 
-                onClose={() => setShowReplyModal(false)} 
-            />
+
 
             {/* Retweet */}
             <Button
@@ -299,7 +295,6 @@ export function Tweet({ tweet }: TweetProps) {
             {/* View/Stats */}
             <Button variant="ghost" size="sm" className="group flex items-center gap-1 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full px-2 h-8 cursor-pointer" onClick={stopProp}>
                 <BarChart2 className="w-[18px] h-[18px] group-hover:text-primary transition-colors" />
-                <span className="text-[13px] group-hover:text-primary transition-colors"></span>
             </Button>
 
              {/* Share */}
@@ -307,6 +302,11 @@ export function Tweet({ tweet }: TweetProps) {
                 <Share className="w-[18px] h-[18px] group-hover:text-primary transition-colors" />
             </Button>
         </div>
+        <ReplyModal 
+            tweet={displayTweet} 
+            isOpen={showReplyModal} 
+            onClose={() => setShowReplyModal(false)} 
+        />
       </div>
     </article>
   );

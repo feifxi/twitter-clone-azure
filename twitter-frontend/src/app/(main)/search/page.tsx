@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { axiosInstance } from '@/api/axiosInstance';
 import type { PageResponse, TweetResponse } from '@/types';
 
-  // ... imports
+
   import { useSearchUsers } from '@/hooks/useDiscovery';
   import Link from 'next/link';
   import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

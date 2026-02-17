@@ -175,12 +175,41 @@ export function useUpdateProfile() {
       });
       return data;
     },
+
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: userQueryKey(data.id) });
       queryClient.invalidateQueries({ queryKey: ['users', 'byUsername', data.username] });
-      queryClient.setQueryData(['auth', 'user'], data); // Update local auth state if we stored it in query cache, but we use zustand. 
-      // We might need to update zustand store too if it syncs with this.
-      // But for now, invalidating queries is good.
+      queryClient.setQueryData(['auth', 'user'], data);
     },
+  });
+}
+
+export function useUserFollowers(userId: number | null, pageSize = 20) {
+  return useInfiniteQuery({
+    queryKey: ['users', userId, 'followers'],
+    queryFn: async ({ pageParam = 0 }) => {
+      const { data } = await axiosInstance.get<PageResponse<UserResponse>>(`/users/${userId}/followers`, {
+        params: { page: pageParam, size: pageSize },
+      });
+      return data;
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => (lastPage.last ? undefined : lastPage.page + 1),
+    enabled: !!userId,
+  });
+}
+
+export function useUserFollowing(userId: number | null, pageSize = 20) {
+  return useInfiniteQuery({
+    queryKey: ['users', userId, 'following'],
+    queryFn: async ({ pageParam = 0 }) => {
+      const { data } = await axiosInstance.get<PageResponse<UserResponse>>(`/users/${userId}/following`, {
+        params: { page: pageParam, size: pageSize },
+      });
+      return data;
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => (lastPage.last ? undefined : lastPage.page + 1),
+    enabled: !!userId,
   });
 }

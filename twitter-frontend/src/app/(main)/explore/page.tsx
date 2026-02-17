@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, ArrowLeft } from 'lucide-react';
-// ... imports
+
 import { useTrendingHashtags } from '@/hooks/useDiscovery';
 import Link from 'next/link';
 

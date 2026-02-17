@@ -102,9 +102,7 @@ export function useCreateTweet() {
 
 
 
-        // ... (existing imports)
 
-        // ...
 
         // Helper to prepend tweet to feed
         const updateFeed = (key: QueryKey) => {
@@ -135,7 +133,7 @@ export function useCreateTweet() {
       }
     },
     onSettled: () => {
-      // logic removed
+
     },
     onSuccess: (realTweet, variables) => {
       // Helper to swap optimistic tweet with real tweet in a feed
@@ -162,7 +160,7 @@ export function useCreateTweet() {
 
       // Also update replies if it was a reply
       if (variables.parentId) {
-        // ... (rest of logic)
+
       }
     }
   });

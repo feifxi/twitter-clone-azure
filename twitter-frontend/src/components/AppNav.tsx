@@ -89,6 +89,37 @@ export function AppNav() {
              )
           }
 
+          if (item.label === 'More') {
+             return (
+                 <DropdownMenu key={item.label}>
+                    <DropdownMenuTrigger asChild>
+                        <button className="group flex items-center w-fit xl:w-full outline-none">
+                            <div className={`flex items-center xl:gap-5 px-3 py-3 rounded-full transition-colors group-hover:bg-accent/50 ${isActive ? 'font-bold' : 'font-normal'}`}>
+                                <item.icon className={`w-7 h-7 ${isActive ? 'fill-current' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
+                                <div className="relative hidden xl:block cursor-pointer">
+                                    <span className="text-[20px] mr-4 leading-6">{item.label}</span>
+                                </div>
+                            </div>
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[200px] rounded-xl border border-border shadow-[0_0_15px_rgba(255,255,255,0.1)] py-2 bg-background font-bold ml-10 xl:ml-0" align="start" side="top">
+                        <DropdownMenuItem asChild className="p-3 text-[15px] cursor-pointer focus:bg-accent">
+                            <Link href="/premium" className="flex items-center gap-4">
+                                <XLogo className="w-5 h-5 fill-current" />
+                                <span>Premium</span>
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild className="p-3 text-[15px] cursor-pointer focus:bg-accent">
+                            <Link href="/brainrot" className="flex items-center gap-4">
+                                <BotMessageSquare className="w-5 h-5" />
+                                <span>Brainrot</span>
+                            </Link>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                 </DropdownMenu>
+             )
+          }
+
           return (
             <Link
               key={item.label}

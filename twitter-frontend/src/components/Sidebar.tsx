@@ -50,7 +50,7 @@ export function Sidebar() {
   };
 
   const subscribeToPremium = () => {
-    router.push('/brainrot');
+    router.push('/premium');
   };
 
   // Helper component for suggested users list

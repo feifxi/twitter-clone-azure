@@ -9,6 +9,7 @@ A robust REST API for the Twitter clone application, built with Java and Spring 
 - **Database**: PostgreSQL integration with Spring Data JPA.
 - **Security**: Spring Security configuration.
 - **Validation**: Input validation using Bean Validation.
+- **Rate Limiting**: Protects APIs using Bucket4j (100 requests/minute/IP).
 - **Testing**: Unit and integration tests with JUnit and Mockito.
 
 ## Tech Stack
