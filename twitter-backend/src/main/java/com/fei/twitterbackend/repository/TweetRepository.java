@@ -25,22 +25,30 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
     /**
      * Retrieves the "For You" feed using a Gravity Decay Algorithm.
      *
-     * <p><strong>The Algorithm:</strong> Hacker News / Reddit "Hot" Ranking</p>
+     * <p>
+     * <strong>The Algorithm:</strong> Hacker News / Reddit "Hot" Ranking
+     * </p>
      * <p>
      * Formula:
+     * 
      * <pre>
-     * Score = (Votes - 1) / (AgeInHours + 2)^Gravity
+     * Score = (Votes - 1) / (AgeInHours + 2) ^ Gravity
      * </pre>
      * </p>
      *
      * <ul>
-     * <li><strong>Votes:</strong> (Likes * 2) + (Retweets * 3) + (Replies * 1). We weight interactions differently.</li>
-     * <li><strong>AgeInHours:</strong> Time since creation. We add +2 to prevent dividing by zero for new tweets.</li>
+     * <li><strong>Votes:</strong> (Likes * 2) + (Retweets * 3) + (Replies * 1). We
+     * weight interactions differently.</li>
+     * <li><strong>AgeInHours:</strong> Time since creation. We add +2 to prevent
+     * dividing by zero for new tweets.</li>
      * <li><strong>Gravity (1.8):</strong> How fast the score decays.
      * <ul>
-     * <li>Higher Gravity (e.g., 2.0) = News sites (New stuff replaces old stuff very fast).</li>
-     * <li>Lower Gravity (e.g., 1.5) = Pinterest (Old viral content stays visible longer).</li>
-     * <li><strong>1.8</strong> is the sweet spot for a social feed in early stages.</li>
+     * <li>Higher Gravity (e.g., 2.0) = News sites (New stuff replaces old stuff
+     * very fast).</li>
+     * <li>Lower Gravity (e.g., 1.5) = Pinterest (Old viral content stays visible
+     * longer).</li>
+     * <li><strong>1.8</strong> is the sweet spot for a social feed in early
+     * stages.</li>
      * </ul>
      * </li>
      * </ul>
@@ -50,38 +58,37 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
      */
     // NOTE: @EntityGraph does NOT work on native queries.
     @Query(value = """
-        SELECT * FROM tweets t
-        WHERE t.parent_id IS NULL
-        ORDER BY
-            (t.like_count * 2 + t.retweet_count * 3 + t.reply_count + 1) /
-            POWER((EXTRACT(EPOCH FROM NOW() - t.created_at) / 3600) + 2, 1.8)
-            DESC,
-            t.created_at DESC
-    """,
-    countQuery = "SELECT count(*) FROM tweets WHERE parent_id IS NULL",
-    nativeQuery = true)
+                SELECT * FROM tweets t
+                WHERE t.parent_id IS NULL
+                ORDER BY
+                    (t.like_count * 2 + t.retweet_count * 3 + t.reply_count + 1) /
+                    POWER((EXTRACT(EPOCH FROM NOW() - t.created_at) / 3600) + 2, 1.8)
+                    DESC,
+                    t.created_at DESC
+            """, countQuery = "SELECT count(*) FROM tweets WHERE parent_id IS NULL", nativeQuery = true)
     Page<Tweet> findForYouFeed(Pageable pageable);
 
-    // Following Timeline (People you follow + Your own tweets)
-    @EntityGraph(attributePaths = {"user", "retweet", "retweet.user"})
+    // Following Timeline (People you follow)
+    @EntityGraph(attributePaths = { "user", "retweet", "retweet.user" })
     @Query("""
-    SELECT t FROM Tweet t
-    WHERE (t.user.id = :userId OR t.user.id IN (SELECT f.following.id FROM Follow f WHERE f.follower.id = :userId))
-    AND t.parent IS NULL
-    """)
+            SELECT t FROM Tweet t
+            WHERE t.user.id IN (SELECT f.following.id FROM Follow f WHERE f.follower.id = :userId)
+            AND t.parent IS NULL
+            """)
     Page<Tweet> findFollowingTimeline(@Param("userId") Long userId, Pageable pageable);
 
     // Main Profile Feed (User's tweets + retweets)
-    @EntityGraph(attributePaths = {"user", "retweet", "retweet.user"})
+    @EntityGraph(attributePaths = { "user", "retweet", "retweet.user" })
     Page<Tweet> findAllByUserIdAndParentIdIsNull(Long userId, Pageable pageable);
 
     // Reply Thread (Flat strategy)
-    @EntityGraph(attributePaths = {"user", "retweet", "retweet.user"})
+    @EntityGraph(attributePaths = { "user", "retweet", "retweet.user" })
     Page<Tweet> findAllByParentId(Long parentId, Pageable pageable);
 
     // ========================================================================
     // 2. ATOMIC COUNTERS (WRITES)
-    // Uses direct SQL updates for performance (Avoids loading entity -> modifying -> saving)
+    // Uses direct SQL updates for performance (Avoids loading entity -> modifying
+    // -> saving)
     // ========================================================================
 
     // REPLY COUNTERS
@@ -117,7 +124,6 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
     @Query("UPDATE Tweet t SET t.retweetCount = t.retweetCount - 1 WHERE t.id = :tweetId")
     void decrementRetweetCount(@Param("tweetId") Long tweetId);
 
-
     // ========================================================================
     // 3. RETWEET LOGIC
     // ========================================================================
@@ -134,29 +140,26 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
     @Query("SELECT t.retweet.id FROM Tweet t WHERE t.user.id = :userId AND t.retweet.id IN :tweetIds")
     Set<Long> findRetweetedTweetIdsByUserId(@Param("userId") Long userId, @Param("tweetIds") List<Long> tweetIds);
 
-
     // ========================================================================
     // 4. SEARCHING
     // ========================================================================
 
     // Find by Hashtag
-    @EntityGraph(attributePaths = {"user", "retweet", "retweet.user"})
+    @EntityGraph(attributePaths = { "user", "retweet", "retweet.user" })
     @Query("""
-    SELECT t FROM Tweet t
-    JOIN t.hashtags h
-    WHERE LOWER(h.text) = LOWER(:hashtag)
-    ORDER BY t.createdAt DESC
-    """)
+            SELECT t FROM Tweet t
+            JOIN t.hashtags h
+            WHERE LOWER(h.text) = LOWER(:hashtag)
+            ORDER BY t.createdAt DESC
+            """)
     Page<Tweet> findTweetsByHashtag(@Param("hashtag") String hashtag, Pageable pageable);
 
     // Using PostgreSQL Full-Text Search (FTS)
     @Query(value = """
-    SELECT * FROM tweets
-    WHERE search_vector @@ to_tsquery('english', :query)
-    ORDER BY ts_rank(search_vector, to_tsquery('english', :query)) DESC, created_at DESC
-    """,
-    countQuery = "SELECT count(*) FROM tweets WHERE search_vector @@ to_tsquery('english', :query)",
-    nativeQuery = true)
+            SELECT * FROM tweets
+            WHERE search_vector @@ to_tsquery('english', :query)
+            ORDER BY ts_rank(search_vector, to_tsquery('english', :query)) DESC, created_at DESC
+            """, countQuery = "SELECT count(*) FROM tweets WHERE search_vector @@ to_tsquery('english', :query)", nativeQuery = true)
     Page<Tweet> searchTweets(@Param("query") String query, Pageable pageable);
 
     // ========================================================================
@@ -166,17 +169,16 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
     // Recursive Cleanup: Finds the tweet and ALL descendants' media URLs
     // Uses CTE (Common Table Expression) for tree traversal
     @Query(value = """
-        WITH RECURSIVE tweet_tree AS (
-            SELECT id, media_url, parent_id
-            FROM tweets
-            WHERE id = :tweetId
-            UNION ALL
-            SELECT t.id, t.media_url, t.parent_id
-            FROM tweets t
-            INNER JOIN tweet_tree tt ON t.parent_id = tt.id
-        )
-        SELECT media_url FROM tweet_tree WHERE media_url IS NOT NULL
-    """,
-    nativeQuery = true)
+                WITH RECURSIVE tweet_tree AS (
+                    SELECT id, media_url, parent_id
+                    FROM tweets
+                    WHERE id = :tweetId
+                    UNION ALL
+                    SELECT t.id, t.media_url, t.parent_id
+                    FROM tweets t
+                    INNER JOIN tweet_tree tt ON t.parent_id = tt.id
+                )
+                SELECT media_url FROM tweet_tree WHERE media_url IS NOT NULL
+            """, nativeQuery = true)
     List<String> findAllMediaUrlsInThread(@Param("tweetId") Long tweetId);
 }

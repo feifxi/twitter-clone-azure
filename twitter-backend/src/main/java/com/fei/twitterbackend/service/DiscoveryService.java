@@ -55,16 +55,18 @@ public class DiscoveryService {
         if (currentUser == null) {
             // Guest? Show global top users
             usersPage = userRepository.findTopUsersGlobally(pageable);
+            return PageResponse.from(
+                    usersPage.map(user -> UserResponse.fromEntity(user, false)));
         } else {
-            // Logged in? Show personalized suggestions (excluding followed)
+            // Logged in? Show personalized suggestions (sorted by not followed first)
             usersPage = userRepository.findSuggestedUsers(currentUser.getId(), pageable);
-        }
 
-        // MAPPER OPTIMIZATION:
-        // Since the SQL query filtered out people we already follow,
-        // This saves us from doing ANY batch-fetching!
-        return PageResponse.from(
-                usersPage.map(user -> UserResponse.fromEntity(user, false))
-        );
+            // Determine which of these users are followed by me
+            List<Long> userIds = usersPage.getContent().stream().map(User::getId).collect(Collectors.toList());
+            List<Long> followedIds = userRepository.findFollowedUserIds(currentUser.getId(), userIds);
+
+            return PageResponse.from(
+                    usersPage.map(user -> UserResponse.fromEntity(user, followedIds.contains(user.getId()))));
+        }
     }
 }

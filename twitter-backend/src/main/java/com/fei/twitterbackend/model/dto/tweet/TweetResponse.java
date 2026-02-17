@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 public record TweetResponse(
         Long id,
-        String content,         // Will be NULL for a Retweet
+        String content, // Will be NULL for a Retweet
         String mediaType,
         String mediaUrl,
         UserResponse user,
@@ -15,8 +15,9 @@ public record TweetResponse(
         boolean likedByMe,
         boolean retweetedByMe,
         TweetResponse originalTweet, // Null if not a retweet
-        LocalDateTime createdAt
-) {
+        Long replyToTweetId,
+        String replyToUserHandle,
+        LocalDateTime createdAt) {
     public boolean isRetweet() {
         return originalTweet != null && (content == null || content.isBlank());
     }

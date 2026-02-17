@@ -83,7 +83,7 @@ public class AuthController {
         ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, token)
                 .httpOnly(true)
                 .secure(isProd) // HTTPS only in prod
-                .path("/")
+                .path("/api/v1/auth/refresh")
                 .maxAge(durationMs / 1000)
                 .sameSite(isProd ? "None" : "Lax") // "None" + Secure allows cross-site in prod if needed
                 .build();
@@ -95,7 +95,7 @@ public class AuthController {
         ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, "")
                 .httpOnly(true)
                 .secure(isProduction())
-                .path("/")
+                .path("/api/v1/auth/refresh")
                 .maxAge(0) // Immediately expires the cookie
                 .sameSite(isProduction() ? "None" : "Lax")
                 .build();

@@ -13,7 +13,7 @@ services:
       POSTGRES_PASSWORD: rootpass
     networks:
       - twitter_dev_network
-  
+
 networks:
   twitter_dev_network:
 

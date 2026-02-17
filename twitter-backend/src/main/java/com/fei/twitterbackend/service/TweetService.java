@@ -78,9 +78,8 @@ public class TweetService {
         try {
             // 4. Save to DB (Transactional)
             // transactionTemplate handles the transaction boundary explicitly
-            return transactionTemplate.execute(status ->
-                    saveTweetToDb(user, request, cleanContent, finalMediaUrl, mediaType)
-            );
+            return transactionTemplate
+                    .execute(status -> saveTweetToDb(user, request, cleanContent, finalMediaUrl, mediaType));
 
         } catch (Exception e) {
             // 5. Rollback Compensation
@@ -94,7 +93,8 @@ public class TweetService {
     }
 
     // Internal Transactional Logic
-    private TweetResponse saveTweetToDb(User user, TweetRequest request, String content, String mediaUrl, MediaType mediaType) {
+    private TweetResponse saveTweetToDb(User user, TweetRequest request, String content, String mediaUrl,
+            MediaType mediaType) {
         Tweet parent = null;
 
         if (request.parentId() != null) {
@@ -174,24 +174,31 @@ public class TweetService {
         Tweet tweet = tweetRepository.findById(tweetId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tweet", "id", tweetId));
 
-        boolean likedByMe = false;
-        boolean retweetedByMe = false;
-        boolean isFollowingAuthor = false;
+        Set<Long> likedTweetIds = new HashSet<>();
+        Set<Long> retweetedTweetIds = new HashSet<>();
+        Set<Long> followedAuthorIds = new HashSet<>();
 
         if (currentUser != null) {
             Long currentUserId = currentUser.getId();
-            Long authorId = tweet.getUser().getId();
 
-            likedByMe = likeRepository.existsByUserIdAndTweetId(currentUser.getId(), tweetId);
-            retweetedByMe = tweetRepository.existsByUserIdAndRetweetId(currentUser.getId(), tweetId);
+            // Gather IDs to check (Main Tweet + Potential Original Tweet)
+            List<Long> tweetsToCheck = new ArrayList<>();
+            tweetsToCheck.add(tweet.getId());
 
-            // Only check follow if looking at someone else's tweet
-            if (!currentUserId.equals(authorId)) {
-                isFollowingAuthor = followRepository.isFollowing(currentUserId, authorId);
+            List<Long> authorsToCheck = new ArrayList<>();
+            authorsToCheck.add(tweet.getUser().getId());
+
+            if (tweet.getRetweet() != null) {
+                tweetsToCheck.add(tweet.getRetweet().getId());
+                authorsToCheck.add(tweet.getRetweet().getUser().getId());
             }
+
+            likedTweetIds = likeRepository.findLikedTweetIdsByUserId(currentUserId, tweetsToCheck);
+            retweetedTweetIds = tweetRepository.findRetweetedTweetIdsByUserId(currentUserId, tweetsToCheck);
+            followedAuthorIds = followRepository.findFollowedUserIds(currentUserId, authorsToCheck);
         }
 
-        return tweetMapper.toResponse(tweet, likedByMe, retweetedByMe, isFollowingAuthor);
+        return tweetMapper.toResponse(tweet, likedTweetIds, retweetedTweetIds, followedAuthorIds);
     }
 
     @Transactional(readOnly = true)
@@ -209,10 +216,12 @@ public class TweetService {
 
     // Creation Hashtag
     private void processHashtagsForCreate(Tweet tweet, String content) {
-        if (content == null) return;
+        if (content == null)
+            return;
 
         Set<String> tagTexts = hashtagParser.parseHashtags(content);
-        if (tagTexts.isEmpty()) return;
+        if (tagTexts.isEmpty())
+            return;
 
         List<Hashtag> existingHashtags = hashtagRepository.findByTextIn(new ArrayList<>(tagTexts));
         Map<String, Hashtag> existingMap = existingHashtags.stream()
@@ -231,7 +240,8 @@ public class TweetService {
     // Deletion Hashtag
     private void removeHashtagsForDelete(Tweet tweet) {
         Set<Hashtag> tags = tweet.getHashtags();
-        if (tags.isEmpty()) return;
+        if (tags.isEmpty())
+            return;
 
         for (Hashtag tag : new HashSet<>(tags)) {
             int newCount = Math.max(0, tag.getUsageCount() - 1);
@@ -246,10 +256,10 @@ public class TweetService {
         tweet.getHashtags().clear();
     }
 
-
     // Helper to normalize the content
     private String getCleanContent(String content) {
-        if (content == null) return null;
+        if (content == null)
+            return null;
         String trimmed = content.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }

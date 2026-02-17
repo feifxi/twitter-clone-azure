@@ -2,34 +2,37 @@
 
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api'; // Import your configured axios instance
+import { axiosInstance } from '@/api/axiosInstance';
+import { useAuthStore } from '@/store/useAuthStore';
+import type { AuthResponse } from '@/types';
+
+import { useUIStore } from '@/store/useUIStore';
+
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function GoogleLoginBtn() {
   const router = useRouter();
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const closeSignInModal = useUIStore((s) => s.closeSignInModal);
+  const queryClient = useQueryClient();
 
   const handleSuccess = async (credentialResponse: CredentialResponse) => {
+    const googleToken = credentialResponse.credential;
+    if (!googleToken) return;
     try {
-      // 1. Get Google Token
-      const googleToken = credentialResponse.credential;
-    
-      console.log(googleToken)
-      return
-
-      // 2. Exchange for Your Backend Tokens
-      const res = await api.post('/auth/google', {
+      const { data } = await axiosInstance.post<AuthResponse>('/auth/google', {
         token: googleToken,
       });
-
-      const { accessToken, refreshToken, user } = res.data;
-
-      // 3. Save to Storage (For MVP, localStorage is fine)
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('user', JSON.stringify(user)); // Optional: Store user info
-
-      // 4. Redirect to Feed
-      router.push('/feed');
+      setAuth(data.accessToken, data.user);
       
+      // Invalidate queries to refresh data with new auth state
+      await queryClient.invalidateQueries({ queryKey: ['feeds'] });
+      await queryClient.invalidateQueries({ queryKey: ['discovery'] });
+      await queryClient.invalidateQueries({ queryKey: ['users'] });
+      await queryClient.invalidateQueries({ queryKey: ['search'] });
+
+      closeSignInModal();
+      router.push('/');
     } catch (error) {
       console.error('Login Failed:', error);
       alert('Login failed. Please try again.');
@@ -37,13 +40,15 @@ export default function GoogleLoginBtn() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="w-full [&_iframe]:min-h-[44px]! [&_iframe]:w-full!">
       <GoogleLogin
         onSuccess={handleSuccess}
         onError={() => console.log('Google Login Failed')}
-        useOneTap // Optional: Shows the popup automatically
-        theme="filled_blue"
+        theme="filled_black"
         shape="pill"
+        size="large"
+        width="100%"
+        text="signup_with"
       />
     </div>
   );

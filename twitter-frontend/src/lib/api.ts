@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useUIStore } from '@/store/useUIStore';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -33,7 +34,7 @@ api.interceptors.response.use(
 
       try {
         const refreshToken = localStorage.getItem('refreshToken');
-        
+
         // Call your Backend Refresh Endpoint
         const { data } = await axios.post(`${API_URL}/auth/refresh`, {
           refreshToken,
@@ -46,11 +47,12 @@ api.interceptors.response.use(
         // Update header and retry original request
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
         return api(originalRequest);
-        
+
       } catch (refreshError) {
         // If refresh fails (token expired/revoked), logout user
         localStorage.clear();
-        window.location.href = '/login';
+        // window.location.href = '/login';
+        useUIStore.getState().openSignInModal();
         return Promise.reject(refreshError);
       }
     }
