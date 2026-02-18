@@ -1,16 +1,13 @@
-name: Trigger auto deployment for ca-chntwt-web-dev
+name: Deploy Frontend (Web)
 
-# When this action will be executed
 on:
-  # Automatically trigger it when detected changes in repo
   push:
     branches: 
       [ main ]
     paths:
-    - '**'
-    - '.github/workflows/ca-chntwt-web-dev-AutoDeployTrigger-07f8d9c3-b52c-4c95-b894-29afc11468a4.yml'
+    - 'twitter-frontend/**'
+    - '.github/workflows/deploy-frontend.yml'
 
-  # Allow manual trigger 
   workflow_dispatch:      
 
 jobs:
@@ -35,8 +32,7 @@ jobs:
         uses: azure/container-apps-deploy-action@v2
         with:
           appSourcePath: ${{ github.workspace }}/twitter-frontend
-          _dockerfilePathKey_: _dockerfilePath_
-          _targetLabelKey_: _targetLabel_
+          _dockerfilePathKey_: dockerfile
           registryUrl: crchntwtdevsea001.azurecr.io
           registryUsername: ${{ secrets.CACHNTWTWEBDEV_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.CACHNTWTWEBDEV_REGISTRY_PASSWORD }}
@@ -44,6 +40,5 @@ jobs:
           resourceGroup: rg-chntwt-dev-sea
           imageToBuild: crchntwtdevsea001.azurecr.io/ca-chntwt-web-dev:${{ github.sha }}
           _buildArgumentsKey_: |
-            _buildArgumentsValues_
-
-
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
