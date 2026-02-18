@@ -35,10 +35,10 @@ The application follows a microservices-ready architecture deployed on Azure:
 
 ```mermaid
 graph TD
-    User[User Browser] -->|HTTPS| Frontend[Frontend Container App (Next.js)]
-    Frontend -->|REST API| Backend[Backend Container App (Spring Boot)]
-    Backend -->|SQL| DB[(Azure PostgreSQL)]
-    Backend -->|Blobs| Storage[(Azure Blob Storage)]
+    User["User Browser"] -->|HTTPS| Frontend["Frontend Container App (Next.js)"]
+    Frontend -->|REST API| Backend["Backend Container App (Spring Boot)"]
+    Backend -->|SQL| DB[("Azure PostgreSQL")]
+    Backend -->|Blobs| Storage[("Azure Blob Storage")]
 ```
 
 ## ✨ Features
