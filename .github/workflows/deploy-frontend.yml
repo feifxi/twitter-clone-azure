@@ -39,6 +39,6 @@ jobs:
           containerAppName: ca-chntwt-web-dev
           resourceGroup: rg-chntwt-dev-sea
           imageToBuild: crchntwtdevsea001.azurecr.io/ca-chntwt-web-dev:${{ github.sha }}
-          buildArgs: |
+          buildArguments: |
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
