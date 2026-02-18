@@ -32,13 +32,13 @@ jobs:
         uses: azure/container-apps-deploy-action@v2
         with:
           appSourcePath: ${{ github.workspace }}/twitter-frontend
-          _dockerfilePathKey_: dockerfile
+          dockerfilePath: dockerfile
           registryUrl: crchntwtdevsea001.azurecr.io
           registryUsername: ${{ secrets.CACHNTWTWEBDEV_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.CACHNTWTWEBDEV_REGISTRY_PASSWORD }}
           containerAppName: ca-chntwt-web-dev
           resourceGroup: rg-chntwt-dev-sea
           imageToBuild: crchntwtdevsea001.azurecr.io/ca-chntwt-web-dev:${{ github.sha }}
-          _buildArgumentsKey_: |
+          buildArgs: |
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
