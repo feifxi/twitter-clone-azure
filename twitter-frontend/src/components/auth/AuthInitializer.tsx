@@ -1,0 +1,48 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useAuthStore } from '@/store/useAuthStore';
+import { LoadingScreen } from '@/components/ui/LoadingScreen';
+import { axiosInstance } from '@/api/axiosInstance';
+import type { UserResponse } from '@/types';
+
+export function AuthInitializer({ children }: { children: React.ReactNode }) {
+  const setInitialized = useAuthStore((s) => s.setInitialized);
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const logout = useAuthStore((s) => s.logout);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  
+  // Local state to prevent hydration mismatch for isInitialized which starts false
+  const [mounted, setMounted] = useState(false);
+  const isInitialized = useAuthStore((s) => s.isInitialized);
+
+  useEffect(() => {
+    setMounted(true);
+
+    const init = async () => {
+        // Prevent re-running if already initialized
+        if (useAuthStore.getState().isInitialized) return;
+
+        if (accessToken) {
+            try {
+                // Verify token and get fresh user data
+                const { data } = await axiosInstance.get<UserResponse>('/auth/me');
+                setAuth(accessToken, data);
+            } catch (error) {
+                console.error('Auth initialization failed:', error);
+                // If token is invalid (401), logout
+                logout();
+            }
+        }
+        setInitialized(true);
+    };
+
+    init();
+  }, [accessToken, setAuth, logout, setInitialized]);
+
+  if (!mounted || !isInitialized) {
+    return <LoadingScreen />;
+  }
+
+  return <>{children}</>;
+}

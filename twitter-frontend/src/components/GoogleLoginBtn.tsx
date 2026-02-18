@@ -1,6 +1,7 @@
 'use client';
 
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { axiosInstance } from '@/api/axiosInstance';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -16,9 +17,13 @@ export default function GoogleLoginBtn() {
   const closeSignInModal = useUIStore((s) => s.closeSignInModal);
   const queryClient = useQueryClient();
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleSuccess = async (credentialResponse: CredentialResponse) => {
     const googleToken = credentialResponse.credential;
     if (!googleToken) return;
+    
+    setIsLoading(true);
     try {
       const { data } = await axiosInstance.post<AuthResponse>('/auth/google', {
         token: googleToken,
@@ -36,11 +41,13 @@ export default function GoogleLoginBtn() {
     } catch (error) {
       console.error('Login Failed:', error);
       alert('Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="w-full [&_iframe]:min-h-[44px]! [&_iframe]:w-full!">
+    <div className="w-full relative [&_iframe]:min-h-[44px]! [&_iframe]:w-full!">
       <GoogleLogin
         onSuccess={handleSuccess}
         onError={() => console.log('Google Login Failed')}
@@ -49,6 +56,11 @@ export default function GoogleLoginBtn() {
         size="large"
         text="signup_with"
       />
+      {isLoading && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full z-10 cursor-not-allowed">
+           <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+        </div>
+      )}
     </div>
   );
 }
