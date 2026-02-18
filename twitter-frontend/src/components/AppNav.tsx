@@ -20,8 +20,6 @@ import { useUnreadCount } from '@/hooks/useNotifications';
 import { useNotificationSSE } from '@/hooks/useNotificationSSE';
 import { useUIStore } from '@/store/useUIStore';
 
-const CHANOMBOT_URL = process.env.NEXT_PUBLIC_CHANOMBOT_URL;
-
 export function AppNav() {
   const pathname = usePathname();
   const { user, isLoggedIn, logout } = useAuth();
@@ -37,7 +35,7 @@ export function AppNav() {
     { label: 'Explore', icon: Search, href: '/explore' },
     { label: 'Notifications', icon: Bell, href: user ? '/notifications' : '#', onClick: user ? undefined : openSignInModal },
     { label: 'Messages', icon: Mail, href: '/messages' },
-    { label: 'ChanomBot', icon: BotMessageSquare, href: CHANOMBOT_URL || '/' }, // Placeholder
+    { label: 'ChanomBot', icon: BotMessageSquare, href: 'https://chanom-gpt.vercel.app' }, // Placeholder
     { label: 'Connect', icon: Users, href: '/connect_people' },
     { label: 'Profile', icon: User, href: user ? `/${user.username}` : '#', onClick: user ? undefined : openSignInModal },
     { label: 'More', icon: MoreHorizontal, href: '/brainrot' },
@@ -180,7 +178,7 @@ export function AppNav() {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center justify-center xl:justify-between w-fit xl:w-full h-auto p-3 rounded-full hover:bg-accent/50 mb-4"
+              className="flex items-center justify-center xl:justify-between w-fit xl:w-full h-auto p-3 rounded-full hover:bg-accent/50 mb-4 cursor-pointer"
             >
               <div className="flex items-center gap-3 truncate">
                 <Avatar className="w-10 h-10 border border-border/50">
@@ -224,7 +222,7 @@ export function AppNav() {
       ) : (
         <div className="w-full xl:w-[240px] mb-4">
             <Button 
-                className="w-full rounded-full font-bold h-[48px] text-[15px]" 
+                className="w-full rounded-full font-bold h-[48px] text-[15px] cursor-pointer" 
                 onClick={openSignInModal}
             >
                 Sign in

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { XLogo } from '../XLogo';
 import GoogleLoginBtn from '../GoogleLoginBtn';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
@@ -62,6 +62,9 @@ export function SignInModal() {
               <DialogTitle className="text-3xl font-bold text-left mb-8">
                 Sign in to X
               </DialogTitle>
+              <DialogDescription className="sr-only">
+                Sign in to your X account using Google or your credentials.
+              </DialogDescription>
             </DialogHeader>
 
             <div className="flex flex-col gap-4 flex-1">

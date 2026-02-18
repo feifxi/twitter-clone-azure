@@ -47,7 +47,6 @@ export default function GoogleLoginBtn() {
         theme="filled_black"
         shape="pill"
         size="large"
-        width="100%"
         text="signup_with"
       />
     </div>

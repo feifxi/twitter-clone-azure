@@ -37,7 +37,7 @@ spring:
           account-key: ${AZURE_STORAGE_ACCOUNT_ACCESS_KEY}
           container-name: ${AZURE_STORAGE_CONTAINER_NAME:tweet-media}
   flyway:
-    enabled: false
+    enabled: true
   web:
     error:
       include-stacktrace: never
