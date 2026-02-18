@@ -54,6 +54,7 @@ export default function GoogleLoginBtn() {
         theme="filled_black"
         shape="pill"
         size="large"
+        width={'100% !important'}
         text="signup_with"
       />
       {isLoading && (

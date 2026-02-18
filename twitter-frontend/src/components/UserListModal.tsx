@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { useInView } from 'react-intersection-observer';
 import { useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface UserListModalProps {
   userId: number | null;
@@ -15,6 +16,7 @@ interface UserListModalProps {
 
 export function UserListModal({ userId, type, isOpen, onClose }: UserListModalProps) {
   const { ref, inView } = useInView();
+  const { user: currentUser } = useAuth();
 
   const isFollowers = type === 'followers';
   const queryHook = isFollowers ? useUserFollowers : useUserFollowing;
@@ -75,7 +77,9 @@ export function UserListModal({ userId, type, isOpen, onClose }: UserListModalPr
                     {user.bio && <p className="text-[#e7e9ea] text-[14px] truncate mt-0.5">{user.bio}</p>}
                   </div>
 
-                  <FollowButton userId={user.id} isFollowing={user.followedByMe} />
+                  {currentUser?.id !== user.id && (
+                    <FollowButton userId={user.id} isFollowing={user.followedByMe} />
+                  )}
                 </div>
               ))}
               
