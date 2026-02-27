@@ -1,0 +1,85 @@
+package server
+
+import (
+	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+)
+
+type searchQueryRequest struct {
+	Query string `form:"q" binding:"required"`
+}
+
+func (server *Server) searchUsers(ctx *gin.Context) {
+	var req searchQueryRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	page, size, ok := parsePageAndSize(ctx)
+	if !ok {
+		return
+	}
+	var viewerID *int64
+	if id, ok := getCurrentUserID(ctx); ok {
+		viewerID = &id
+	}
+	users, followingMap, err := server.usecase.SearchUsers(ctx, req.Query, page, size, viewerID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	response := make([]userResponse, 0, len(users))
+	for _, user := range users {
+		var following *bool
+		if v, ok := followingMap[user.ID]; ok {
+			f := v
+			following = &f
+		}
+		response = append(response, newUserResponse(user, following))
+	}
+	ctx.JSON(http.StatusOK, response)
+}
+
+func (server *Server) searchTweets(ctx *gin.Context) {
+	var req searchQueryRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	page, size, ok := parsePageAndSize(ctx)
+	if !ok {
+		return
+	}
+	tweets, err := server.usecase.SearchTweets(ctx, req.Query, page, size)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	response := make([]tweetResponse, 0, len(tweets))
+	for _, tweet := range tweets {
+		response = append(response, newTweetResponse(tweet))
+	}
+	ctx.JSON(http.StatusOK, response)
+}
+
+func (server *Server) searchHashtags(ctx *gin.Context) {
+	query := strings.TrimSpace(ctx.Query("q"))
+	limit := int32(5)
+	if rawLimit := strings.TrimSpace(ctx.Query("limit")); rawLimit != "" {
+		if parsed, err := strconv.ParseInt(rawLimit, 10, 32); err == nil && parsed > 0 {
+			limit = int32(parsed)
+		}
+	}
+	if limit > maxSize {
+		limit = maxSize
+	}
+	hashtags, err := server.usecase.SearchHashtags(ctx, query, limit)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, hashtags)
+}

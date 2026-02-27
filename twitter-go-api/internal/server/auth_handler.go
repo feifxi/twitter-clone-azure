@@ -1,0 +1,106 @@
+package server
+
+import (
+	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+)
+
+type googleLoginRequest struct {
+	IDToken string `json:"id_token" binding:"required"`
+}
+
+type authResponse struct {
+	AccessToken string       `json:"access_token"`
+	User        userResponse `json:"user"`
+}
+
+func (server *Server) loginGoogle(ctx *gin.Context) {
+	var req googleLoginRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	authData, err := server.usecase.LoginWithGoogle(ctx, req.IDToken)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	server.setSessionCookies(ctx, authData.AccessToken, authData.RefreshToken)
+	ctx.JSON(http.StatusOK, authResponse{AccessToken: authData.AccessToken, User: newUserResponse(authData.User, nil)})
+}
+
+func (server *Server) refreshToken(ctx *gin.Context) {
+	refreshToken, err := ctx.Cookie("refresh_token")
+	if err != nil || strings.TrimSpace(refreshToken) == "" {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "missing refresh token"})
+		return
+	}
+
+	authData, err := server.usecase.RefreshSession(ctx, refreshToken)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	server.setSessionCookies(ctx, authData.AccessToken, authData.RefreshToken)
+	ctx.JSON(http.StatusOK, gin.H{"access_token": authData.AccessToken})
+}
+
+func (server *Server) logout(ctx *gin.Context) {
+	userID, ok := getCurrentUserID(ctx)
+	if ok {
+		server.usecase.Logout(ctx, &userID, nil)
+	} else if refreshToken, err := ctx.Cookie("refresh_token"); err == nil {
+		server.usecase.Logout(ctx, nil, &refreshToken)
+	}
+
+	server.clearSessionCookies(ctx)
+	ctx.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func (server *Server) setSessionCookies(ctx *gin.Context, accessToken, refreshToken string) {
+	ctx.SetSameSite(server.cookieSameSite())
+	ctx.SetCookie(
+		"access_token",
+		accessToken,
+		server.config.TokenDurationMinutes*60,
+		"/",
+		server.config.CookieDomain,
+		server.config.CookieSecure,
+		true,
+	)
+
+	ctx.SetSameSite(server.cookieSameSite())
+	ctx.SetCookie(
+		"refresh_token",
+		refreshToken,
+		server.config.RefreshTokenDurationDays*24*60*60,
+		"/api/v1/auth/refresh",
+		server.config.CookieDomain,
+		server.config.CookieSecure,
+		true,
+	)
+}
+
+func (server *Server) clearSessionCookies(ctx *gin.Context) {
+	ctx.SetSameSite(server.cookieSameSite())
+	ctx.SetCookie("access_token", "", -1, "/", server.config.CookieDomain, server.config.CookieSecure, true)
+
+	ctx.SetSameSite(server.cookieSameSite())
+	ctx.SetCookie("refresh_token", "", -1, "/api/v1/auth/refresh", server.config.CookieDomain, server.config.CookieSecure, true)
+}
+
+func (server *Server) cookieSameSite() http.SameSite {
+	switch strings.ToLower(strings.TrimSpace(server.config.CookieSameSite)) {
+	case "none":
+		return http.SameSiteNoneMode
+	case "strict":
+		return http.SameSiteStrictMode
+	default:
+		return http.SameSiteLaxMode
+	}
+}
