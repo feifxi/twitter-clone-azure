@@ -28,7 +28,7 @@ WORKDIR /app
 COPY --from=builder /app/main .
 
 # Copy database migrations
-COPY db/migration ./db/migration
+COPY twitter-go-api/db/migration ./db/migration
 
 # Expose port 8080 to the outside world
 EXPOSE 8080
