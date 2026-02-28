@@ -43,12 +43,12 @@ export function SignUpModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-       <DialogContent showCloseButton={false} className="sm:max-w-[600px] bg-black text-[#e7e9ea] border-[#2f3336] p-0 gap-0 overflow-hidden h-[650px] flex flex-col">
+       <DialogContent showCloseButton={false} className="sm:max-w-[600px] bg-background text-foreground border-border p-0 gap-0 overflow-hidden h-[650px] flex flex-col">
         {/* Header */}
         <div className="flex items-center h-[53px] px-4 shrink-0 relative">
           <button 
             onClick={handleClose}
-            className="p-2 rounded-full hover:bg-[#eff3f41a] transition-colors -ml-2"
+            className="p-2 rounded-full hover:bg-card transition-colors -ml-2"
           >
              <X size={20} />
           </button>
@@ -68,39 +68,39 @@ export function SignUpModal() {
               <Input
                 type="text"
                 placeholder="Name"
-                 className="bg-black border-[#333639] focus-visible:ring-1 focus-visible:ring-[#1d9bf0] h-[56px] text-lg"
+                 className="bg-background border-border focus-visible:ring-1 focus-visible:ring-primary h-[56px] text-lg"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
               <Input
                 type="email"
                 placeholder="Email"
-                 className="bg-black border-[#333639] focus-visible:ring-1 focus-visible:ring-[#1d9bf0] h-[56px] text-lg"
+                 className="bg-background border-border focus-visible:ring-1 focus-visible:ring-primary h-[56px] text-lg"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
               
               <div className="mt-4">
                 <h3 className="font-bold text-[15px] mb-1">Date of birth</h3>
-                <p className="text text-[#71767b] text-[14px] mb-4">
+                <p className="text text-muted-foreground text-[14px] mb-4">
                   This will not be shown publicly. Confirm your own age, even if this account is for a business, a pet, or something else.
                 </p>
                 
                 <div className="grid grid-cols-4 gap-3">
                    <div className="col-span-2">
-                        <select className="w-full h-[56px] bg-black border border-[#333639] rounded-[4px] px-2 text-[#e7e9ea] focus:border-[#1d9bf0] outline-none appearance-none">
+                        <select className="w-full h-[56px] bg-background border border-border rounded-[4px] px-2 text-foreground focus:border-primary outline-none appearance-none">
                             <option value="" disabled selected>Month</option>
                              {months.map(m => <option key={m} value={m}>{m}</option>)}
                         </select>
                    </div>
                     <div className="col-span-1">
-                         <select className="w-full h-[56px] bg-black border border-[#333639] rounded-[4px] px-2 text-[#e7e9ea] focus:border-[#1d9bf0] outline-none appearance-none">
+                         <select className="w-full h-[56px] bg-background border border-border rounded-[4px] px-2 text-foreground focus:border-primary outline-none appearance-none">
                             <option value="" disabled selected>Day</option>
                              {days.map(d => <option key={d} value={d}>{d}</option>)}
                         </select>
                    </div>
                     <div className="col-span-1">
-                        <select className="w-full h-[56px] bg-black border border-[#333639] rounded-[4px] px-2 text-[#e7e9ea] focus:border-[#1d9bf0] outline-none appearance-none">
+                        <select className="w-full h-[56px] bg-background border border-border rounded-[4px] px-2 text-foreground focus:border-primary outline-none appearance-none">
                             <option value="" disabled selected>Year</option>
                             {years.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
@@ -110,15 +110,15 @@ export function SignUpModal() {
             </div>
 
             <Button 
-                className="cursor-pointer w-full rounded-full bg-[#eff3f4] text-black hover:bg-[#d7dbdc] h-[52px] font-bold text-[17px] mt-8"
+                className="cursor-pointer w-full rounded-full bg-foreground text-background hover:bg-foreground/90 h-[52px] font-bold text-[17px] mt-8"
                 disabled={!name || !email}
                 onClick={handleNext}
             >
               Next
             </Button>
             
-            <p className="text-[#71767b] text-[15px] mt-4 text-center">
-              Have an account already? <span className="text-[#1d9bf0] cursor-pointer hover:underline" onClick={handleSignInClick}>Log in</span>
+            <p className="text-muted-foreground text-[15px] mt-4 text-center">
+              Have an account already? <span className="text-primary cursor-pointer hover:underline" onClick={handleSignInClick}>Log in</span>
             </p>
 
           </div>

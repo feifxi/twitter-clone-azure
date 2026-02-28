@@ -67,22 +67,22 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] bg-black border-[#2f3336] p-0 gap-0 top-[5%] translate-y-0 sm:top-[10%] min-h-[400px] flex flex-col">
+      <DialogContent className="sm:max-w-[600px] bg-background border-border p-0 gap-0 top-[5%] translate-y-0 sm:top-[10%] min-h-[400px] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between h-[53px] px-4 shrink-0 border-b border-[#2f3336]">
+        <div className="flex items-center justify-between h-[53px] px-4 shrink-0 border-b border-border">
             <div className="flex items-center gap-4">
                 <button
                     onClick={onClose}
-                    className="p-2 rounded-full hover:bg-[#eff3f41a] transition-colors -ml-2"
+                    className="p-2 rounded-full hover:bg-card transition-colors -ml-2"
                 >
-                    <X size={20} className="text-[#e7e9ea]" />
+                    <X size={20} className="text-foreground" />
                 </button>
-                <DialogTitle className="text-[20px] font-bold text-[#e7e9ea]">Edit Profile</DialogTitle>
+                <DialogTitle className="text-[20px] font-bold text-foreground">Edit Profile</DialogTitle>
             </div>
             <Button
                 onClick={handleSubmit}
                 disabled={!displayName.trim() || updateMutation.isPending}
-                className="rounded-full bg-[#eff3f4] text-black hover:bg-[#d7dbdc] h-[32px] font-bold text-[14px] px-4"
+                className="rounded-full bg-primary text-foreground hover:bg-primary/90 h-[32px] font-bold text-[14px] px-4"
             >
                 {updateMutation.isPending ? 'Saving...' : 'Save'}
             </Button>
@@ -91,10 +91,10 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
         {/* Content */}
         <div className="p-4 flex flex-col gap-6">
             {/* Banner (Placeholder) */}
-            <div className="h-[200px] bg-[#333639] -mt-4 -mx-4 mb-10 relative">
+            <div className="h-[200px] bg-card -mt-4 -mx-4 mb-10 relative">
                 {/* Avatar Overlay */}
                 <div className="absolute -bottom-[40px] left-4">
-                     <div className="w-[112px] h-[112px] rounded-full border-4 border-black bg-[#2f3336] relative overflow-hidden group">
+                     <div className="w-[112px] h-[112px] rounded-full border-4 border-black bg-card relative overflow-hidden group">
                         <img 
                             src={previewUrl ?? undefined} 
                             alt="" 
@@ -115,19 +115,19 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
             </div>
 
             <div className="flex flex-col gap-6 mt-4">
-                <div className="border border-[#333639] rounded px-3 py-1 focus-within:border-[#1d9bf0] focus-within:ring-1 focus-within:ring-[#1d9bf0]">
-                    <label className="block text-[#71767b] text-[13px]">Name</label>
+                <div className="border border-border rounded px-3 py-1 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
+                    <label className="block text-muted-foreground text-[13px]">Name</label>
                     <input 
-                        className="w-full bg-transparent text-[#e7e9ea] text-[17px] outline-none"
+                        className="w-full bg-transparent text-foreground text-[17px] outline-none"
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
                     />
                 </div>
 
-                <div className="border border-[#333639] rounded px-3 py-1 focus-within:border-[#1d9bf0] focus-within:ring-1 focus-within:ring-[#1d9bf0]">
-                    <label className="block text-[#71767b] text-[13px]">Bio</label>
+                <div className="border border-border rounded px-3 py-1 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
+                    <label className="block text-muted-foreground text-[13px]">Bio</label>
                     <textarea 
-                        className="w-full bg-transparent text-[#e7e9ea] text-[17px] outline-none resize-none h-[80px]"
+                        className="w-full bg-transparent text-foreground text-[17px] outline-none resize-none h-[80px]"
                         value={bio}
                         onChange={(e) => setBio(e.target.value)}
                     />

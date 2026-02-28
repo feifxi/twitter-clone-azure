@@ -9,7 +9,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const queryClient = new QueryClient();
 
+import { useEffect } from 'react';
+import { setTheme } from '@/theme/applyTheme';
+import { useThemeStore } from '@/store/useThemeStore';
+
 export function Providers({ children }: { children: React.ReactNode }) {
+  const theme = useThemeStore((s) => s.theme);
+
+  useEffect(() => {
+    setTheme(theme);
+  }, [theme]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>

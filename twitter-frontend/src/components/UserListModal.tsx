@@ -35,8 +35,8 @@ export function UserListModal({ userId, type, isOpen, onClose }: UserListModalPr
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[480px] p-0 gap-0 bg-black border-[#2f3336] text-[#e7e9ea] h-[600px] flex flex-col">
-        <DialogHeader className="px-4 py-3 border-b border-[#2f3336]">
+      <DialogContent className="sm:max-w-[480px] p-0 gap-0 bg-background border-border text-foreground h-[600px] flex flex-col">
+        <DialogHeader className="px-4 py-3 border-b border-border">
           <DialogTitle className="text-xl font-bold">
             {isFollowers ? 'Followers' : 'Following'}
           </DialogTitle>
@@ -44,9 +44,9 @@ export function UserListModal({ userId, type, isOpen, onClose }: UserListModalPr
         
         <div className="flex-1 overflow-y-auto min-h-0">
           {isLoading ? (
-             <div className="p-4 text-center text-[#71767b]">Loading...</div>
+             <div className="p-4 text-center text-muted-foreground">Loading...</div>
           ) : users.length === 0 ? (
-            <div className="p-8 text-center text-[#71767b]">
+            <div className="p-8 text-center text-muted-foreground">
               <p className="font-bold text-lg mb-2">
                 {isFollowers ? 'Looking empty here' : 'Be the first to follow'}
               </p>
@@ -59,7 +59,7 @@ export function UserListModal({ userId, type, isOpen, onClose }: UserListModalPr
           ) : (
             <div className="flex flex-col">
               {users.map((user) => (
-                <div key={user.id} className="flex items-center gap-3 px-4 py-3 hover:bg-[#eff3f41a] transition-colors">
+                <div key={user.id} className="flex items-center gap-3 px-4 py-3 hover:bg-card transition-colors">
                   <Link href={`/${user.username}`} onClick={onClose} className="shrink-0">
                     <Avatar className="w-10 h-10">
                       <AvatarImage src={user.avatarUrl ?? undefined} />
@@ -69,12 +69,12 @@ export function UserListModal({ userId, type, isOpen, onClose }: UserListModalPr
                   
                   <div className="flex-1 min-w-0">
                     <Link href={`/${user.username}`} onClick={onClose} className="block group">
-                      <div className="font-bold text-[#e7e9ea] truncate group-hover:underline">
+                      <div className="font-bold text-foreground truncate group-hover:underline">
                         {user.displayName}
                       </div>
-                      <div className="text-[#71767b] truncate">@{user.username}</div>
+                      <div className="text-muted-foreground truncate">@{user.username}</div>
                     </Link>
-                    {user.bio && <p className="text-[#e7e9ea] text-[14px] truncate mt-0.5">{user.bio}</p>}
+                    {user.bio && <p className="text-foreground text-[14px] truncate mt-0.5">{user.bio}</p>}
                   </div>
 
                   {currentUser?.id !== user.id && (
@@ -85,7 +85,7 @@ export function UserListModal({ userId, type, isOpen, onClose }: UserListModalPr
               
               {/* Infinite scroll loader */}
               <div ref={ref} className="h-10 flex items-center justify-center p-4">
-                {isFetchingNextPage && <div className="w-6 h-6 border-2 border-[#1d9bf0] border-t-transparent rounded-full animate-spin" />}
+                {isFetchingNextPage && <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />}
               </div>
             </div>
           )}

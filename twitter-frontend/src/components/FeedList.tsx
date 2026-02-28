@@ -46,7 +46,7 @@ export function FeedList({
 
   if (tweets.length === 0) {
     return (
-      <div className="py-12 text-center text-[#71767b] text-[15px]">
+      <div className="py-12 text-center text-muted-foreground text-[15px]">
         No tweets yet.
       </div>
     );
@@ -64,11 +64,11 @@ export function FeedList({
         </div>
       )}
       {hasNextPage && !isFetchingNextPage && fetchNextPage && (
-        <div className="flex justify-center py-4 border-b border-[#2f3336]">
+        <div className="flex justify-center py-4 border-b border-border">
           <button
             type="button"
             onClick={() => fetchNextPage()}
-            className="py-2 px-4 rounded-full text-[15px] font-medium text-[#1d9bf0] hover:bg-[#1d9bf0]/10 transition-colors"
+            className="py-2 px-4 rounded-full text-[15px] font-medium text-primary hover:bg-primary/10 transition-colors"
           >
             Load more
           </button>

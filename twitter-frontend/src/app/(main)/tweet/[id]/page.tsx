@@ -26,32 +26,32 @@ export default function TweetDetailPage({
 
   if (Number.isNaN(tweetId)) {
     return (
-      <div className="p-4 text-[#f4212e] text-[15px]">Invalid tweet ID.</div>
+      <div className="p-4 text-destructive text-[15px]">Invalid tweet ID.</div>
     );
   }
 
   return (
     <div className="min-h-screen">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-30 bg-black/60 backdrop-blur-md border-b border-[#2f3336] px-4 py-3 flex items-center gap-6">
+      <div className="sticky top-0 z-30 bg-background/60 backdrop-blur-md border-b border-border px-4 py-3 flex items-center gap-6">
         <button
           onClick={() => router.back()}
-          className="p-2 -ml-2 rounded-full hover:bg-white/10 transition-colors"
+          className="p-2 -ml-2 rounded-full hover:bg-card transition-colors"
           aria-label="Back"
         >
-          <ArrowLeft className="w-5 h-5 text-[#e7e9ea]" />
+          <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
-        <h1 className="text-[20px] font-bold text-[#e7e9ea]">Post</h1>
+        <h1 className="text-[20px] font-bold text-foreground">Post</h1>
       </div>
 
       {tweetLoading || !tweet ? (
-        <div className="border-b border-[#2f3336]">
+        <div className="border-b border-border">
           <TweetCardSkeleton />
         </div>
       ) : (
         <>
           <TweetCard tweet={tweet} />
-          <div className="border-b border-[#2f3336]">
+          <div className="border-b border-border">
             <CreateTweet
               isReply
               replyToId={tweet.id}
@@ -59,7 +59,7 @@ export default function TweetDetailPage({
               className="px-4 py-2 border-none"
             />
           </div>
-          <p className="px-4 py-2 text-[#71767b] text-[15px] font-medium">
+          <p className="px-4 py-2 text-muted-foreground text-[15px] font-medium">
             Replies
           </p>
           {repliesQuery.isLoading ? (
@@ -68,7 +68,7 @@ export default function TweetDetailPage({
               <TweetCardSkeleton />
             </div>
           ) : replyList.length === 0 ? (
-            <p className="p-4 text-[#71767b] text-[15px]">No replies yet.</p>
+            <p className="p-4 text-muted-foreground text-[15px]">No replies yet.</p>
           ) : (
             <div>
               {replyList.map((r) => (

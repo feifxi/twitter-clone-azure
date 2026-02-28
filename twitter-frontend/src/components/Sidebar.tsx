@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useDebounce } from '@/hooks/useDebounce';
 import { FollowButton } from '@/components/FollowButton';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import type { TrendingHashtagDTO } from '@/types';
 
 export function Sidebar() {
@@ -174,9 +175,10 @@ export function Sidebar() {
 
   return (
     <div className="sticky top-0 p-4 py-2 h-screen overflow-y-auto no-scrollbar pb-10">
-      {/* Search Bar */}
-      <div className="mb-4 sticky top-0 bg-background z-20 py-1" ref={searchRef}>
-        <form onSubmit={handleSearch} className="relative">
+      {/* Top Bar with Theme Toggle and Search */}
+      <div className="mb-4 sticky top-0 bg-background z-20 py-1 flex items-center gap-2" ref={searchRef}>
+        <ThemeToggle />
+        <form onSubmit={handleSearch} className="relative flex-1">
           <div className={`flex items-center gap-3 rounded-full bg-secondary/50 border border-transparent px-4 py-2.5 transition-colors ${
             isFocused ? 'bg-background border-primary ring-1 ring-primary' : ''
           }`}>
@@ -193,7 +195,7 @@ export function Sidebar() {
 
           {/* Search Dropdown */}
           {isFocused && query && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-black border border-[#2f3336] rounded-lg shadow-xl overflow-hidden min-h-[100px] z-50 max-h-[400px] overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-xl overflow-hidden min-h-[100px] z-50 max-h-[400px] overflow-y-auto">
               {isSearchLoading || isHashtagLoading ? (
                 <div className="p-4 text-center text-muted-foreground">Loading...</div>
               ) : (
@@ -210,7 +212,7 @@ export function Sidebar() {
                     <li key={u.id}>
                       <Link
                         href={`/${u.username}`}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-[#eff3f41a] transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-card transition-colors"
                         onClick={() => setIsFocused(false)}
                       >
                         <Avatar className="w-10 h-10">
@@ -218,8 +220,8 @@ export function Sidebar() {
                           <AvatarFallback>{u.displayName[0]}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <div className="font-bold text-[#e7e9ea] truncate">{u.displayName}</div>
-                          <div className="text-[#71767b] truncate">@{u.username}</div>
+                          <div className="font-bold text-foreground truncate">{u.displayName}</div>
+                          <div className="text-muted-foreground truncate">@{u.username}</div>
                         </div>
                       </Link>
                     </li>
@@ -227,30 +229,30 @@ export function Sidebar() {
 
                   {/* Hashtag Results */}
                   {hashtagResults && hashtagResults.length > 0 && (
-                    <li className="px-4 py-2 text-sm text-muted-foreground font-bold bg-secondary/30 border-t border-[#2f3336]">Hashtags</li>
+                    <li className="px-4 py-2 text-sm text-muted-foreground font-bold bg-secondary/30 border-t border-border">Hashtags</li>
                   )}
                   {hashtagResults?.map((h: TrendingHashtagDTO) => (
                     <li key={h.hashtag}>
                       <Link
                         href={`/search?q=${encodeURIComponent('#' + h.hashtag)}`}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-[#eff3f41a] transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-card transition-colors"
                         onClick={() => setIsFocused(false)}
                       >
-                        <div className="w-10 h-10 rounded-full bg-[#1d9bf0]/10 flex items-center justify-center">
-                          <Search className="w-5 h-5 text-[#1d9bf0]" />
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Search className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-bold text-[#e7e9ea] truncate">#{h.hashtag}</div>
-                          <div className="text-[#71767b] truncate">{h.recentCount} posts</div>
+                          <div className="font-bold text-foreground truncate">#{h.hashtag}</div>
+                          <div className="text-muted-foreground truncate">{h.recentCount} posts</div>
                         </div>
                       </Link>
                     </li>
                   ))}
 
-                  <li className="border-t border-[#2f3336]">
+                  <li className="border-t border-border">
                     <Link
                       href={`/search?q=${encodeURIComponent(query)}`}
-                      className="block px-4 py-3 text-[#1d9bf0] hover:bg-[#eff3f41a] transition-colors"
+                      className="block px-4 py-3 text-primary hover:bg-card transition-colors"
                       onClick={() => setIsFocused(false)}
                     >
                       Search for "{query}"

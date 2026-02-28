@@ -33,24 +33,24 @@ function HomeContent() {
   return (
     <div className="min-h-screen">
       {/* Tab bar: flattened, blur */}
-      <div className="sticky top-0 z-30 bg-black/80 backdrop-blur-md border-b border-border">
+      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex">
           <button
             type="button"
             onClick={() => handleTabChange('for-you')}
-            className={`flex-1 py-4 text-[15px] font-bold transition-colors hover:bg-white/3 cursor-pointer ${
+            className={`flex-1 py-4 text-[15px] font-bold transition-colors hover:bg-card/50 cursor-pointer ${
               currentTab === 'for-you'
                 ? 'text-foreground border-b-2 border-primary'
                 : 'text-muted-foreground'
             }`}
-          >
+          > 
             For you
           </button>
           <button
             type="button"
             onClick={() => handleTabChange('following')}
             disabled={!isLoggedIn}
-            className={`flex-1 py-4 text-[15px] font-bold transition-colors hover:bg-white/3 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+            className={`flex-1 py-4 text-[15px] font-bold transition-colors hover:bg-card/50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
               currentTab === 'following'
                 ? 'text-foreground border-b-2 border-primary'
                 : 'text-muted-foreground'
@@ -61,11 +61,11 @@ function HomeContent() {
         </div>
       </div>
       {currentTab === 'following' && !isLoggedIn && (
-        <div className="p-4 text-center text-[#71767b] text-[15px]">
+        <div className="p-4 text-center text-muted-foreground text-[15px]">
           Sign in to see tweets from people you follow.
         </div>
       )}
-      <div className="hidden sm:block border-b border-[#2f3336]">
+      <div className="hidden sm:block border-b border-border">
         {isLoggedIn && <CreateTweet />}
       </div>
       {(currentTab !== 'following' || isLoggedIn) && (
@@ -83,7 +83,7 @@ function HomeContent() {
 
 export default function HomePage() {
   return (
-    <Suspense fallback={<div className="p-4 text-center text-[#71767b]">Loading...</div>}>
+    <Suspense fallback={<div className="p-4 text-center text-muted-foreground">Loading...</div>}>
       <HomeContent />
     </Suspense>
   );

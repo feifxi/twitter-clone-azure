@@ -41,17 +41,17 @@ export function SignInModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent showCloseButton={false} className="sm:max-w-[600px] bg-black text-[#e7e9ea] border-[#2f3336] p-0 gap-0 overflow-hidden h-[650px] flex flex-col">
+      <DialogContent showCloseButton={false} className="sm:max-w-[600px] bg-background text-foreground border-border p-0 gap-0 overflow-hidden h-[650px] flex flex-col">
         {/* Header with Logo */}
         <div className="flex items-center h-[53px] px-4 shrink-0 relative">
           <button 
             onClick={handleClose}
-            className="p-2 rounded-full hover:bg-[#eff3f41a] transition-colors -ml-2"
+            className="p-2 rounded-full hover:bg-card transition-colors -ml-2"
           >
             <X size={20} />
           </button>
           <div className="absolute left-1/2 -translate-x-1/2">
-            <XLogo className="w-8 h-8 text-[#e7e9ea]" />
+            <XLogo className="w-8 h-8 text-foreground" />
           </div>
         </div>
 
@@ -71,29 +71,29 @@ export function SignInModal() {
               <GoogleLoginBtn />
 
               <div className="flex items-center gap-2 my-4">
-                <span className="flex-1 h-px bg-[#2f3336]" />
-                <span className="text-[#e7e9ea] text-[15px]">or</span>
-                <span className="flex-1 h-px bg-[#2f3336]" />
+                <span className="flex-1 h-px bg-border" />
+                <span className="text-foreground text-[15px]">or</span>
+                <span className="flex-1 h-px bg-border" />
               </div>
 
               <div className="space-y-4">
                  <Input
                   type="text"
                   placeholder="Phone, email, or username"
-                  className="bg-black border-[#333639] focus-visible:ring-1 focus-visible:ring-[#1d9bf0] h-[56px] text-lg"
+                  className="bg-background border-border focus-visible:ring-1 focus-visible:ring-primary h-[56px] text-lg"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                 />
                 <Button 
                     variant="default"
-                    className="w-full rounded-full bg-[#eff3f4] text-black hover:bg-[#d7dbdc] h-[36px] font-bold text-[15px] cursor-pointer"
+                    className="w-full rounded-full bg-foreground text-background hover:bg-foreground/90 h-[36px] font-bold text-[15px] cursor-pointer"
                     onClick={handleNext}
                 >
                     Next
                 </Button>
                  <Button 
                     variant="outline"
-                    className="w-full rounded-full border-[#536471] text-white hover:bg-[#eff3f41a] h-[36px] font-bold text-[15px] cursor-pointer"
+                    className="w-full rounded-full border-border text-foreground hover:bg-card h-[36px] font-bold text-[15px] cursor-pointer"
                     onClick={handleForgot}
                 >
                     Forgot password?
@@ -101,8 +101,8 @@ export function SignInModal() {
               </div>
             </div>
             
-             <p className="text-[#71767b] text-[15px] mt-12">
-              Don't have an account? <span className="text-[#1d9bf0] cursor-pointer hover:underline" onClick={handleSignUpClick}>Sign up</span>
+             <p className="text-muted-foreground text-[15px] mt-12">
+              Don't have an account? <span className="text-primary cursor-pointer hover:underline" onClick={handleSignUpClick}>Sign up</span>
             </p>
 
           </div>

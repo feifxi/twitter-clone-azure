@@ -43,9 +43,9 @@ function ProfileContent({ params }: { params: Promise<{ username: string }> }) {
   if (userLoading || !user) {
     return (
       <div className="p-4">
-        <div className="h-32 w-32 rounded-full bg-[#2f3336] animate-pulse" />
-        <div className="h-6 w-48 bg-[#2f3336] rounded mt-4 animate-pulse" />
-        <div className="h-4 w-32 bg-[#2f3336]/60 rounded mt-2 animate-pulse" />
+        <div className="h-32 w-32 rounded-full bg-card animate-pulse" />
+        <div className="h-6 w-48 bg-card rounded mt-4 animate-pulse" />
+        <div className="h-4 w-32 bg-card/60 rounded mt-2 animate-pulse" />
       </div>
     );
   }
@@ -54,16 +54,16 @@ function ProfileContent({ params }: { params: Promise<{ username: string }> }) {
 
   return (
     <div className="min-h-screen">
-      <div className="sticky top-0 z-30 bg-black/60 backdrop-blur-md px-4 py-1 flex items-center gap-6 border-b border-[#2f3336]">
+      <div className="sticky top-0 z-30 bg-background/60 backdrop-blur-md px-4 py-1 flex items-center gap-6 border-b border-border">
           <div 
               onClick={() => router.back()} 
-              className="p-2 rounded-full hover:bg-white/10 cursor-pointer transition-colors -ml-2"
+              className="p-2 rounded-full hover:bg-card cursor-pointer transition-colors -ml-2"
           >
-              <ArrowLeft className="w-5 h-5 text-white" />
+              <ArrowLeft className="w-5 h-5 text-foreground" />
           </div>
           <div className="flex flex-col">
-              <h2 className="font-bold text-[20px] leading-6 text-[#e7e9ea]">{user.displayName}</h2>
-              <span className="text-[13px] text-[#71767b]">@{user.username}</span> 
+              <h2 className="font-bold text-[20px] leading-6 text-foreground">{user.displayName}</h2>
+              <span className="text-[13px] text-muted-foreground">@{user.username}</span> 
           </div>
       </div>
       <div className="p-4 flex flex-col gap-4">
@@ -71,29 +71,29 @@ function ProfileContent({ params }: { params: Promise<{ username: string }> }) {
           <img
             src={user.avatarUrl ?? undefined}
             alt={user.displayName}
-            className="w-20 h-20 rounded-full object-cover bg-[#2f3336]"
+            className="w-20 h-20 rounded-full object-cover bg-card"
           />
           <div className="flex-1">
-            <h1 className="text-[#e7e9ea] font-bold text-[20px]">
+            <h1 className="text-foreground font-bold text-[20px]">
               {user.displayName}
             </h1>
-            <p className="text-[#71767b] text-[15px]">@{user.username}</p>
+            <p className="text-muted-foreground text-[15px]">@{user.username}</p>
             {user.bio && (
-              <p className="text-[#e7e9ea] text-[15px] mt-1">{user.bio}</p>
+              <p className="text-foreground text-[15px] mt-1">{user.bio}</p>
             )}
-            <div className="flex gap-4 mt-2 text-[#71767b] text-[15px]">
+            <div className="flex gap-4 mt-2 text-muted-foreground text-[15px]">
               <button 
                 className="hover:underline cursor-pointer"
                 onClick={() => setListType('following')}
               >
-                <strong className="text-[#e7e9ea]">{user.followingCount}</strong>{' '}
+                <strong className="text-foreground">{user.followingCount}</strong>{' '}
                 Following
               </button>
               <button 
                 className="hover:underline cursor-pointer"
                 onClick={() => setListType('followers')}
               >
-                <strong className="text-[#e7e9ea]">{user.followersCount}</strong>{' '}
+                <strong className="text-foreground">{user.followersCount}</strong>{' '}
                 Followers
               </button>
             </div>
@@ -105,7 +105,7 @@ function ProfileContent({ params }: { params: Promise<{ username: string }> }) {
             {isLoggedIn && isOwnProfile && (
                 <button
                     type="button"
-                    className="mt-2 py-1.5 px-4 rounded-full border border-[#536471] text-[#e7e9ea] font-bold text-[14px] hover:bg-[#eff3f41a] transition-colors"
+                    className="mt-2 py-1.5 px-4 rounded-full border border-border text-foreground font-bold text-[14px] hover:bg-card transition-colors"
                     onClick={() => setShowEditProfile(true)}
                 >
                     Edit profile
@@ -125,16 +125,16 @@ function ProfileContent({ params }: { params: Promise<{ username: string }> }) {
           />
         )}
 
-        <div className="flex border-b border-[#2f3336]">
+        <div className="flex border-b border-border">
           {(['tweets', 'media'] as const).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => handleTabChange(t)}
-              className={`flex-1 py-4 text-[15px] font-bold capitalize transition-colors hover:bg-[#080808] cursor-pointer ${
+              className={`flex-1 py-4 text-[15px] font-bold capitalize transition-colors hover:bg-card cursor-pointer ${
                 currentTab === t
-                  ? 'text-[#e7e9ea] border-b-2 border-[#1d9bf0]'
-                  : 'text-[#71767b]'
+                  ? 'text-foreground border-b-2 border-primary'
+                  : 'text-muted-foreground'
               }`}
             >
               {t}
@@ -156,7 +156,7 @@ function ProfileContent({ params }: { params: Promise<{ username: string }> }) {
 
 export default function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
     return (
-        <Suspense fallback={<div className="p-4 text-center text-[#71767b]">Loading...</div>}>
+        <Suspense fallback={<div className="p-4 text-center text-muted-foreground">Loading...</div>}>
             <ProfileContent params={params} />
         </Suspense>
     );

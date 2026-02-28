@@ -12,14 +12,14 @@ interface ComposeTweetModalProps {
 export function ComposeTweetModal({ isOpen, onClose }: ComposeTweetModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent showCloseButton={false} className="sm:max-w-[600px] bg-black border-[#2f3336] p-0 gap-0 top-[5%] translate-y-0 sm:top-[10%] min-h-[300px] flex flex-col">
+      <DialogContent showCloseButton={false} className="sm:max-w-[600px] bg-background border-border p-0 gap-0 top-[5%] translate-y-0 sm:top-[10%] min-h-[300px] flex flex-col">
         <DialogTitle className="sr-only">Compose new tweet</DialogTitle>
         <div className="flex items-center h-[53px] px-4 shrink-0">
           <button
              onClick={onClose}
-             className="p-2 rounded-full hover:bg-[#eff3f41a] transition-colors -ml-2"
+             className="p-2 rounded-full hover:bg-card transition-colors -ml-2"
           >
-             <X size={20} className="text-[#e7e9ea] cursor-pointer" />
+             <X size={20} className="text-foreground cursor-pointer" />
           </button>
         </div>
         

@@ -71,7 +71,7 @@ export function CreateTweet({
     return text.split(/(\s+)/).map((part, index) => {
       if (part.startsWith('#') && part.length > 1) {
         return (
-          <span key={index} className="text-[#1d9bf0]">
+          <span key={index} className="text-primary">
             {part}
           </span>
         );
@@ -83,7 +83,7 @@ export function CreateTweet({
   if (!user) return null;
 
   return (
-    <div className={`flex gap-3 px-4 py-3 border-b border-[#2f3336] ${className || ''}`}>
+    <div className={`flex gap-3 px-4 py-3 border-b border-border ${className || ''}`}>
       <div className="shrink-0">
         <Avatar className="w-10 h-10">
           <AvatarImage src={user.avatarUrl ?? undefined} alt={user.displayName} />
@@ -94,7 +94,7 @@ export function CreateTweet({
         <div className="relative min-h-[52px]">
           {/* Highlighter Layer */}
           <div 
-            className="absolute inset-0 whitespace-pre-wrap wrap-break-word text-[20px] font-normal text-[#e7e9ea] pointer-events-none"
+            className="absolute inset-0 whitespace-pre-wrap wrap-break-word text-[20px] font-normal text-foreground pointer-events-none"
             aria-hidden="true"
           >
             {renderHighlightedText(content)}
@@ -107,13 +107,14 @@ export function CreateTweet({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={placeholder}
-            className="w-full bg-transparent text-[20px] font-normal text-[#e7e9ea] placeholder-[#71767b] border-none outline-none resize-none overflow-hidden min-h-[52px]"
+            className="w-full bg-transparent text-[20px] font-normal text-foreground placeholder-muted-foreground border-none outline-none resize-none overflow-hidden min-h-[52px]"
             style={{ 
                 // Color must be transparent so the highlighter shows through, 
                 // BUT the caret color needs to be visible.
                 // Standard approach: make text transparent but caret visible.
-                color: 'transparent', 
-                caretColor: '#e7e9ea',
+                 // color must be transparent so the highlighter shows through
+                 color: 'transparent', 
+                 caretColor: 'var(--color-foreground)',
             }}
             // Auto-resize height
             onInput={(e) => {
@@ -129,7 +130,7 @@ export function CreateTweet({
             <img
               src={previewUrl}
               alt="Media preview"
-              className="rounded-2xl max-h-[300px] object-cover border border-[#2f3336]"
+              className="rounded-2xl max-h-[300px] object-cover border border-border"
             />
             <button
               onClick={clearMedia}
@@ -140,11 +141,11 @@ export function CreateTweet({
           </div>
         )}
 
-        <div className="flex items-center justify-between mt-2 border-t border-[#2f3336] pt-3">
-          <div className="flex items-center gap-2 text-[#1d9bf0]">
+        <div className="flex items-center justify-between mt-2 border-t border-border pt-3">
+          <div className="flex items-center gap-2 text-primary">
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="p-2 hover:bg-[#1d9bf0]/10 rounded-full transition-colors"
+              className="p-2 hover:bg-primary/10 rounded-full transition-colors"
               title="Media"
             >
               <Image className="w-5 h-5 cursor-pointer" />
@@ -161,7 +162,7 @@ export function CreateTweet({
             <Button
               onClick={handleSubmit}
               disabled={(!content.trim() && !media) || createMutation.isPending}
-              className="rounded-full bg-[#1d9bf0] hover:bg-[#1a8cd8] font-bold text-white px-4 py-1.5 h-auto text-[15px] cursor-pointer"
+              className="rounded-full bg-primary hover:bg-primary/90 font-bold text-foreground px-4 py-1.5 h-auto text-[15px] cursor-pointer"
             >
               {createMutation.isPending ? 'Posting...' : isReply ? 'Reply' : 'Post'}
             </Button>

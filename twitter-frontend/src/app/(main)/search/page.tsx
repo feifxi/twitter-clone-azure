@@ -68,55 +68,55 @@ import type { PageResponse, TweetResponse } from '@/types';
 
   return (
     <div className="min-h-screen">
-      <div className="sticky top-0 z-30 bg-black/60 backdrop-blur-md border-b border-[#2f3336] px-4 py-3">
+      <div className="sticky top-0 z-30 bg-background/60 backdrop-blur-md border-b border-border px-4 py-3">
         <div className="flex items-center gap-4">
             <div 
                 onClick={() => router.back()} 
-                className="p-2 rounded-full hover:bg-white/10 cursor-pointer transition-colors -ml-2"
+                className="p-2 rounded-full hover:bg-card transition-colors -ml-2"
             >
-                <ArrowLeft className="w-5 h-5 text-white" />
+                <ArrowLeft className="w-5 h-5 text-foreground" />
             </div>
         <form onSubmit={handleSearch} className="flex-1">
-            <div className="flex items-center gap-2 rounded-full bg-[#202327] border border-transparent focus-within:border-[#1d9bf0] focus-within:bg-transparent px-4 py-2.5">
-            <Search className="w-5 h-5 text-[#71767b] shrink-0" />
+            <div className="flex items-center gap-2 rounded-full bg-card border border-transparent focus-within:border-primary focus-within:bg-transparent px-4 py-2.5">
+            <Search className="w-5 h-5 text-muted-foreground shrink-0" />
             <input
                 type="search"
                 placeholder="Search"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="flex-1 min-w-0 bg-transparent text-[#e7e9ea] text-[15px] placeholder:text-[#71767b] outline-none border-none"
+                className="flex-1 min-w-0 bg-transparent text-foreground text-[15px] placeholder:text-muted-foreground outline-none border-none"
             />
             </div>
         </form>
       </div>
         
         {/* Tabs */}
-        <div className="flex mt-3 border-b border-[#2f3336]">
+        <div className="flex mt-3 border-b border-border">
             {/* Tweets Tab */}
             <button
                 onClick={() => setActiveTab('tweets')}
-                className={`cursor-pointer flex-1 py-4 text-[15px] font-bold relative hover:bg-white/5 transition-colors ${activeTab === 'tweets' ? 'text-[#e7e9ea]' : 'text-[#71767b]'}`}
+                className={`cursor-pointer flex-1 py-4 text-[15px] font-bold relative hover:bg-card transition-colors ${activeTab === 'tweets' ? 'text-foreground' : 'text-muted-foreground'}`}
             >
                 Top
                 {activeTab === 'tweets' && (
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-[#1d9bf0] rounded-full" />
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-primary rounded-full" />
                 )}
             </button>
             {/* People Tab */}
              <button
                 onClick={() => setActiveTab('people')}
-                className={`cursor-pointer flex-1 py-4 text-[15px] font-bold relative hover:bg-white/5 transition-colors ${activeTab === 'people' ? 'text-[#e7e9ea]' : 'text-[#71767b]'}`}
+                className={`cursor-pointer flex-1 py-4 text-[15px] font-bold relative hover:bg-card transition-colors ${activeTab === 'people' ? 'text-foreground' : 'text-muted-foreground'}`}
             >
                 People
                 {activeTab === 'people' && (
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-[#1d9bf0] rounded-full" />
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-primary rounded-full" />
                 )}
             </button>
         </div>
       </div>
 
       {q.length === 0 ? (
-        <p className="p-4 text-[#71767b] text-[15px]">
+        <p className="p-4 text-muted-foreground text-[15px]">
           Enter a search term.
         </p>
       ) : (
@@ -126,12 +126,12 @@ import type { PageResponse, TweetResponse } from '@/types';
             ) : (
                 <div className="flex flex-col">
                     {isUserLoading ? (
-                         <div className="p-4 text-center text-[#71767b]">Loading...</div>
+                         <div className="p-4 text-center text-muted-foreground">Loading...</div>
                     ) : users.length === 0 ? (
-                        <div className="p-4 text-center text-[#71767b]">No people found for "{q}"</div>
+                        <div className="p-4 text-center text-muted-foreground">No people found for "{q}"</div>
                     ) : (
                         users.map((u) => (
-                            <div key={u.id} className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors cursor-pointer border-b border-[#2f3336]">
+                            <div key={u.id} className="flex items-center gap-3 px-4 py-3 hover:bg-card transition-colors cursor-pointer border-b border-border">
                                  <Link href={`/${u.username}`} className="shrink-0">
                                     <Avatar className="w-10 h-10">
                                         <AvatarImage src={u.avatarUrl ?? undefined} />
@@ -139,11 +139,11 @@ import type { PageResponse, TweetResponse } from '@/types';
                                     </Avatar>
                                 </Link>
                                 <div className="flex-1 min-w-0">
-                                    <Link href={`/${u.username}`} className="font-bold text-[#e7e9ea] hover:underline block truncate">
+                                    <Link href={`/${u.username}`} className="font-bold text-foreground hover:underline block truncate">
                                         {u.displayName}
                                     </Link>
-                                    <div className="text-[#71767b] truncate">@{u.username}</div>
-                                    {u.bio && <p className="text-[#e7e9ea] text-[14px] mt-1">{u.bio}</p>}
+                                    <div className="text-muted-foreground truncate">@{u.username}</div>
+                                    {u.bio && <p className="text-foreground text-[14px] mt-1">{u.bio}</p>}
                                 </div>
                                 {currentUser?.id !== u.id && (
                                     <FollowButton userId={u.id} isFollowing={u.followedByMe} />
@@ -163,7 +163,7 @@ export default function SearchPage() {
   return (
     <Suspense
       fallback={
-        <div className="p-4 text-[#71767b] text-[15px]">Loading...</div>
+        <div className="p-4 text-muted-foreground text-[15px]">Loading...</div>
       }
     >
       <SearchContent />

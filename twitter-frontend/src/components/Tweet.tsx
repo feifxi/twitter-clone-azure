@@ -144,7 +144,7 @@ export function Tweet({ tweet }: TweetProps) {
 
   return (
     <article
-        className="px-4 py-3 border-b border-border hover:bg-white/3 transition-colors cursor-pointer flex gap-3 relative"
+        className="px-4 py-3 border-b border-border hover:bg-card/50 transition-colors cursor-pointer flex gap-3 relative"
         onClick={handleCardClick}
     >
         {/* Main Link Wrapper (absolute to cover everything except buttons) */}
@@ -190,14 +190,14 @@ export function Tweet({ tweet }: TweetProps) {
                     <MoreHorizontal className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[200px] bg-black border-[#2f3336] text-[#e7e9ea]">
+              <DropdownMenuContent align="end" className="w-[200px] bg-background border-border text-foreground">
                  {currentUser?.id === user.id && (
                   <DropdownMenuItem 
                     onClick={(e) => {
                       stopProp(e);
                       deleteMutation.mutate(displayTweet.id);
                     }}
-                    className="text-red-500 focus:text-red-500 focus:bg-[#eff3f41a] cursor-pointer gap-2 font-bold"
+                    className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer gap-2 font-bold"
                   >
                     <Trash2 className="w-4 h-4" />
                     Delete
@@ -206,7 +206,7 @@ export function Tweet({ tweet }: TweetProps) {
                  {/* Can add more generic options here like 'Not interested' etc for non-owners */}
                   {currentUser?.id !== user.id && (
                      <DropdownMenuItem 
-                      className="text-[#e7e9ea] focus:bg-[#eff3f41a] cursor-pointer font-bold"
+                      className="text-foreground focus:bg-card cursor-pointer font-bold"
                       onClick={stopProp}
                     >
                       Not interested in this Post
@@ -231,7 +231,7 @@ export function Tweet({ tweet }: TweetProps) {
                   <Link 
                     key={index} 
                     href={`/search?q=${encodeURIComponent(part)}`}
-                    className="text-[#1d9bf0] hover:underline cursor-pointer"
+                    className="text-primary hover:underline cursor-pointer"
                     onClick={stopProp}
                   >
                     {part}
@@ -283,7 +283,7 @@ export function Tweet({ tweet }: TweetProps) {
                  variant="ghost"
                  size="sm"
                  className={cn(
-                    "group flex items-center gap-1 text-muted-foreground hover:bg-white/3 rounded-full px-2 h-8 cursor-pointer",
+                    "group flex items-center gap-1 text-muted-foreground hover:bg-pink-500/10 rounded-full px-2 h-8 cursor-pointer",
                     isLiked ? "text-pink-600" : "hover:text-pink-600"
                  )}
                  onClick={handleLike}

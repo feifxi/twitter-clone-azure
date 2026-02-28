@@ -19,6 +19,7 @@ import { ComposeTweetModal } from '@/components/ComposeTweetModal';
 import { useUnreadCount } from '@/hooks/useNotifications';
 import { useNotificationSSE } from '@/hooks/useNotificationSSE';
 import { useUIStore } from '@/store/useUIStore';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export function AppNav() {
   const pathname = usePathname();
@@ -77,7 +78,7 @@ export function AppNav() {
                     <div className="relative hidden xl:block cursor-pointer">
                         <span className="text-[20px] mr-4 leading-6">{item.label}</span>
                          {item.label === 'Notifications' && (unreadCount ?? 0) > 0 && (
-                            <div className="absolute -top-1 -right-1 xl:top-0 xl:-right-2 w-4 h-4 rounded-full bg-[#1d9bf0] flex items-center justify-center text-[10px] text-white font-bold">
+                            <div className="absolute -top-1 -right-1 xl:top-0 xl:-right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center text-[10px] text-foreground font-bold">
                                 {unreadCount}
                             </div>
                         )}
@@ -138,7 +139,7 @@ export function AppNav() {
                 <div className="relative">
                     <span className="text-[20px] mr-4 leading-6 hidden xl:block">{item.label}</span>
                     {item.label === 'Notifications' && (unreadCount ?? 0) > 0 && (
-                        <div className="absolute -top-1 -right-1 xl:top-0 xl:-right-2 w-4 h-4 rounded-full bg-[#1d9bf0] flex items-center justify-center text-[10px] text-white font-bold">
+                        <div className="absolute -top-1 -right-1 xl:top-0 xl:-right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center text-[10px] text-foreground font-bold">
                             {unreadCount}
                         </div>
                     )}
@@ -172,8 +173,10 @@ export function AppNav() {
         <ComposeTweetModal isOpen={showCompose} onClose={() => setShowCompose(false)} />
       </div>
 
-      {/* User Profile / Logout */}
-      {isLoggedIn && user ? (
+      {/* User Profile / Logout / Theme Toggle */}
+      <div className="flex flex-col items-center xl:items-start w-full gap-2">
+        <ThemeToggle className="mb-2" />
+        {isLoggedIn && user ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -220,15 +223,16 @@ export function AppNav() {
           </DropdownMenuContent>
         </DropdownMenu>
       ) : (
-        <div className="w-full xl:w-[240px] mb-4">
-            <Button 
-                className="w-full rounded-full font-bold h-[48px] text-[15px] cursor-pointer" 
-                onClick={openSignInModal}
-            >
-                Sign in
-            </Button>
-        </div>
-      )}
+          <div className="w-full xl:w-[240px] mb-4">
+              <Button 
+                  className="w-full rounded-full font-bold h-[48px] text-[15px] cursor-pointer" 
+                  onClick={openSignInModal}
+              >
+                  Sign in
+              </Button>
+          </div>
+        )}
+      </div>
     </nav>
   );
 }

@@ -21,14 +21,14 @@ function BrainrotContent() {
   const items = data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
-    <div className="h-[calc(100vh-60px)] xl:h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar bg-black">
+    <div className="h-[calc(100vh-60px)] xl:h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar bg-background">
       {/* 1. TikTok Video */}
       <div className="h-full w-full snap-start flex flex-col items-center justify-center p-4 relative">
          <div className="relative w-full h-full flex items-center justify-center">
             <TikTokEmbed />
-            <div className="absolute bottom-20 left-4 right-4 p-4 bg-black/60 backdrop-blur-sm rounded-xl">
-                <p className="text-white font-bold text-lg">Peak edit of the year</p>
-                <p className="text-gray-300 text-sm">@dwsy.ae</p>
+            <div className="absolute bottom-20 left-4 right-4 p-4 bg-background/60 backdrop-blur-sm rounded-xl">
+                <p className="text-foreground font-bold text-lg">Peak edit of the year</p>
+                <p className="text-muted-foreground text-sm">@dwsy.ae</p>
             </div>
          </div>
       </div>
@@ -37,7 +37,7 @@ function BrainrotContent() {
       {items.map((item, i) => (
         <div 
             key={`${item.id}-${i}`} 
-            className="h-full w-full snap-start flex flex-col items-center justify-center relative bg-black border-b border-[#2f3336]/30"
+            className="h-full w-full snap-start flex flex-col items-center justify-center relative bg-background border-b border-border/30"
         >
             <div className="relative w-full h-full flex items-center justify-center p-2">
               <img
@@ -62,7 +62,7 @@ function BrainrotContent() {
 
 export default function BrainrotPage() {
   return (
-    <Suspense fallback={<div className="h-screen w-full flex items-center justify-center bg-black text-white">Loading brainrot...</div>}>
+    <Suspense fallback={<div className="h-screen w-full flex items-center justify-center bg-background text-foreground">Loading brainrot...</div>}>
       <BrainrotContent />
     </Suspense>
   );
