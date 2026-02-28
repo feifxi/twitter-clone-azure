@@ -27,9 +27,6 @@ WORKDIR /app
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder /app/main .
 
-# Copy environment variables file
-COPY app.env .
-
 # Copy database migrations
 COPY db/migration ./db/migration
 
