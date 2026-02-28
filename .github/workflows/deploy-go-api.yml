@@ -1,4 +1,4 @@
-name: Trigger auto deployment for ca-chntwt-go-api-dev
+name: Deploy Backend (Go API)
 
 # When this action will be executed
 on:
@@ -7,7 +7,7 @@ on:
     branches: 
       [ main ]
     paths:
-    - '**'
+    - 'twitter-go-api/**'
     - '.github/workflows/ca-chntwt-go-api-dev-AutoDeployTrigger-65bde776-8740-4e7a-b5af-c7d69eaf2bb0.yml'
 
   # Allow manual trigger 
@@ -35,15 +35,10 @@ jobs:
         uses: azure/container-apps-deploy-action@v2
         with:
           appSourcePath: ${{ github.workspace }}/twitter-go-api
-          _dockerfilePathKey_: _dockerfilePath_
-          _targetLabelKey_: _targetLabel_
+          dockerfilePath: Dockerfile
           registryUrl: crchntwtdevsea001.azurecr.io
           registryUsername: ${{ secrets.CACHNTWTGOAPIDEV_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.CACHNTWTGOAPIDEV_REGISTRY_PASSWORD }}
           containerAppName: ca-chntwt-go-api-dev
           resourceGroup: rg-chntwt-dev-sea
           imageToBuild: crchntwtdevsea001.azurecr.io/ca-chntwt-go-api-dev:${{ github.sha }}
-          _buildArgumentsKey_: |
-            _buildArgumentsValues_
-
-
