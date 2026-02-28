@@ -8,7 +8,7 @@ on:
       [ main ]
     paths:
     - 'twitter-go-api/**'
-    - '.github/workflows/ca-chntwt-go-api-dev-AutoDeployTrigger-65bde776-8740-4e7a-b5af-c7d69eaf2bb0.yml'
+    - '.github/workflows/deploy-go-api.yml'
 
   # Allow manual trigger 
   workflow_dispatch:      
