@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,13 +20,13 @@ type authResponse struct {
 func (server *Server) loginGoogle(ctx *gin.Context) {
 	var req googleLoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		writeError(ctx, apperr.BadRequest("invalid request payload"))
 		return
 	}
 
 	authData, err := server.usecase.LoginWithGoogle(ctx, req.IDToken)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 
@@ -36,13 +37,13 @@ func (server *Server) loginGoogle(ctx *gin.Context) {
 func (server *Server) refreshToken(ctx *gin.Context) {
 	refreshToken, err := ctx.Cookie("refresh_token")
 	if err != nil || strings.TrimSpace(refreshToken) == "" {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "missing refresh token"})
+		writeError(ctx, apperr.Unauthorized("missing refresh token"))
 		return
 	}
 
 	authData, err := server.usecase.RefreshSession(ctx, refreshToken)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 

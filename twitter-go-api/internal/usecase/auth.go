@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/chanombude/twitter-go-api/internal/db"
 	"github.com/google/uuid"
 	"google.golang.org/api/idtoken"
@@ -22,12 +23,12 @@ type AuthResult struct {
 func (u *Usecase) LoginWithGoogle(ctx context.Context, idToken string) (AuthResult, error) {
 	payload, err := idtoken.Validate(context.Background(), idToken, u.config.GoogleClientID)
 	if err != nil {
-		return AuthResult{}, err
+		return AuthResult{}, apperr.Unauthorized("invalid google token")
 	}
 
 	email, ok := payload.Claims["email"].(string)
 	if !ok || strings.TrimSpace(email) == "" {
-		return AuthResult{}, errors.New("invalid google token payload")
+		return AuthResult{}, apperr.Unauthorized("invalid google token")
 	}
 
 	name, _ := payload.Claims["name"].(string)
@@ -64,12 +65,12 @@ func (u *Usecase) LoginWithGoogle(ctx context.Context, idToken string) (AuthResu
 func (u *Usecase) RefreshSession(ctx context.Context, refreshToken string) (AuthResult, error) {
 	session, err := u.store.GetRefreshToken(ctx, refreshToken)
 	if err != nil {
-		return AuthResult{}, errors.New("refresh token not found or revoked")
+		return AuthResult{}, apperr.Unauthorized("refresh token not found or revoked")
 	}
 
 	if time.Now().After(session.ExpiryDate) {
 		_ = u.store.DeleteRefreshToken(ctx, refreshToken)
-		return AuthResult{}, errors.New("refresh token expired")
+		return AuthResult{}, apperr.Unauthorized("refresh token expired")
 	}
 
 	accessToken, newRefreshToken, err := u.issueSession(ctx, session.UserID)

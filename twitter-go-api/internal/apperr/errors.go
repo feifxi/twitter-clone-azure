@@ -1,0 +1,104 @@
+package apperr
+
+import (
+	"errors"
+	"fmt"
+)
+
+type Kind string
+
+const (
+	KindBadRequest   Kind = "BAD_REQUEST"
+	KindUnauthorized Kind = "UNAUTHORIZED"
+	KindForbidden    Kind = "FORBIDDEN"
+	KindNotFound     Kind = "NOT_FOUND"
+	KindConflict     Kind = "CONFLICT"
+	KindInternal     Kind = "INTERNAL"
+)
+
+type Error struct {
+	Kind    Kind
+	Message string
+	Err     error
+}
+
+func (e *Error) Error() string {
+	if e == nil {
+		return ""
+	}
+	if e.Err != nil {
+		return e.Err.Error()
+	}
+	if e.Message != "" {
+		return e.Message
+	}
+	return string(e.Kind)
+}
+
+func (e *Error) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.Err
+}
+
+func E(kind Kind, message string, err error) *Error {
+	return &Error{Kind: kind, Message: message, Err: err}
+}
+
+func BadRequest(message string) *Error {
+	return E(KindBadRequest, message, nil)
+}
+
+func Unauthorized(message string) *Error {
+	return E(KindUnauthorized, message, nil)
+}
+
+func Forbidden(message string) *Error {
+	return E(KindForbidden, message, nil)
+}
+
+func NotFound(message string) *Error {
+	return E(KindNotFound, message, nil)
+}
+
+func Conflict(message string) *Error {
+	return E(KindConflict, message, nil)
+}
+
+func Internal(message string, err error) *Error {
+	if err == nil {
+		err = errors.New(message)
+	}
+	return E(KindInternal, message, err)
+}
+
+func Wrap(kind Kind, message string, err error) error {
+	if err == nil {
+		return nil
+	}
+	return E(kind, message, err)
+}
+
+func KindOf(err error) (Kind, bool) {
+	var appErr *Error
+	if errors.As(err, &appErr) {
+		return appErr.Kind, true
+	}
+	return "", false
+}
+
+func MessageOf(err error) string {
+	var appErr *Error
+	if errors.As(err, &appErr) && appErr.Message != "" {
+		return appErr.Message
+	}
+	return ""
+}
+
+func Withf(err error, format string, args ...any) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf(format+": %w", append(args, err)...)
+}

@@ -1,10 +1,10 @@
 package server
 
 import (
-	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/chanombude/twitter-go-api/internal/middleware"
 	"github.com/chanombude/twitter-go-api/internal/token"
 	"github.com/gin-gonic/gin"
@@ -31,7 +31,7 @@ func getCurrentUserID(ctx *gin.Context) (int64, bool) {
 func mustCurrentUserID(ctx *gin.Context) (int64, bool) {
 	userID, ok := getCurrentUserID(ctx)
 	if !ok {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+		writeError(ctx, apperr.Unauthorized("authentication required"))
 		return 0, false
 	}
 	return userID, true
@@ -44,7 +44,7 @@ func parsePageAndSize(ctx *gin.Context) (int32, int32, bool) {
 	if rawPage := strings.TrimSpace(ctx.Query("page")); rawPage != "" {
 		value, err := strconv.ParseInt(rawPage, 10, 32)
 		if err != nil || value < 0 {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "page must be >= 0"})
+			writeError(ctx, apperr.BadRequest("page must be >= 0"))
 			return 0, 0, false
 		}
 		page = int32(value)
@@ -53,7 +53,7 @@ func parsePageAndSize(ctx *gin.Context) (int32, int32, bool) {
 	if rawSize := strings.TrimSpace(ctx.Query("size")); rawSize != "" {
 		value, err := strconv.ParseInt(rawSize, 10, 32)
 		if err != nil || value <= 0 {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "size must be > 0"})
+			writeError(ctx, apperr.BadRequest("size must be > 0"))
 			return 0, 0, false
 		}
 		size = int32(value)

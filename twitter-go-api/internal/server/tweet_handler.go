@@ -1,13 +1,11 @@
 package server
 
 import (
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"net/http"
-	"strings"
 	"time"
 
+	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/chanombude/twitter-go-api/internal/db"
 	"github.com/chanombude/twitter-go-api/internal/usecase"
 	"github.com/gin-gonic/gin"
@@ -74,19 +72,19 @@ func (server *Server) createTweet(ctx *gin.Context) {
 	}
 
 	if err := ctx.Request.ParseMultipartForm(20 << 20); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to parse multipart form"})
+		writeError(ctx, apperr.BadRequest("failed to parse multipart form"))
 		return
 	}
 
 	dataBlob := ctx.Request.FormValue("data")
 	if dataBlob == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "missing data field in form"})
+		writeError(ctx, apperr.BadRequest("missing data field in form"))
 		return
 	}
 
 	var req createTweetRequest
 	if err := json.Unmarshal([]byte(dataBlob), &req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid json in data field"})
+		writeError(ctx, apperr.BadRequest("invalid json in data field"))
 		return
 	}
 
@@ -102,14 +100,7 @@ func (server *Server) createTweet(ctx *gin.Context) {
 
 	tweet, err := server.usecase.CreateTweet(ctx, input)
 	if err != nil {
-		status := http.StatusInternalServerError
-		if strings.Contains(err.Error(), "tweet must include") || strings.Contains(err.Error(), "only images") {
-			status = http.StatusBadRequest
-		}
-		if errors.Is(err, sql.ErrNoRows) {
-			status = http.StatusNotFound
-		}
-		ctx.JSON(status, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusCreated, newTweetResponse(tweet))
@@ -122,16 +113,12 @@ type tweetURIRequest struct {
 func (server *Server) getTweet(ctx *gin.Context) {
 	var req tweetURIRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		writeError(ctx, apperr.BadRequest("invalid tweet id"))
 		return
 	}
 	tweet, err := server.usecase.GetTweet(ctx, req.ID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "tweet not found"})
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, newTweetResponse(tweet))
@@ -140,7 +127,7 @@ func (server *Server) getTweet(ctx *gin.Context) {
 func (server *Server) deleteTweet(ctx *gin.Context) {
 	var req tweetURIRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		writeError(ctx, apperr.BadRequest("invalid tweet id"))
 		return
 	}
 	userID, ok := mustCurrentUserID(ctx)
@@ -148,15 +135,7 @@ func (server *Server) deleteTweet(ctx *gin.Context) {
 		return
 	}
 	if err := server.usecase.DeleteTweet(ctx, userID, req.ID); err != nil {
-		if strings.Contains(err.Error(), "only delete") {
-			ctx.JSON(http.StatusForbidden, errorResponse(err))
-			return
-		}
-		if errors.Is(err, sql.ErrNoRows) {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "tweet not found"})
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
@@ -169,7 +148,7 @@ type getRepliesRequest struct {
 func (server *Server) getReplies(ctx *gin.Context) {
 	var req getRepliesRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		writeError(ctx, apperr.BadRequest("invalid tweet id"))
 		return
 	}
 	page, size, ok := parsePageAndSize(ctx)
@@ -178,7 +157,7 @@ func (server *Server) getReplies(ctx *gin.Context) {
 	}
 	tweets, err := server.usecase.ListReplies(ctx, req.ID, page, size)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	response := make([]tweetResponse, 0, len(tweets))
@@ -191,7 +170,7 @@ func (server *Server) getReplies(ctx *gin.Context) {
 func (server *Server) likeTweet(ctx *gin.Context) {
 	var req tweetURIRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		writeError(ctx, apperr.BadRequest("invalid tweet id"))
 		return
 	}
 	userID, ok := mustCurrentUserID(ctx)
@@ -199,11 +178,7 @@ func (server *Server) likeTweet(ctx *gin.Context) {
 		return
 	}
 	if err := server.usecase.LikeTweet(ctx, userID, req.ID); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "tweet not found"})
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
@@ -212,7 +187,7 @@ func (server *Server) likeTweet(ctx *gin.Context) {
 func (server *Server) unlikeTweet(ctx *gin.Context) {
 	var req tweetURIRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		writeError(ctx, apperr.BadRequest("invalid tweet id"))
 		return
 	}
 	userID, ok := mustCurrentUserID(ctx)
@@ -220,7 +195,7 @@ func (server *Server) unlikeTweet(ctx *gin.Context) {
 		return
 	}
 	if err := server.usecase.UnlikeTweet(ctx, userID, req.ID); err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
@@ -229,7 +204,7 @@ func (server *Server) unlikeTweet(ctx *gin.Context) {
 func (server *Server) retweet(ctx *gin.Context) {
 	var req tweetURIRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		writeError(ctx, apperr.BadRequest("invalid tweet id"))
 		return
 	}
 	userID, ok := mustCurrentUserID(ctx)
@@ -238,11 +213,7 @@ func (server *Server) retweet(ctx *gin.Context) {
 	}
 	tweet, err := server.usecase.Retweet(ctx, userID, req.ID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "tweet not found"})
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, newTweetResponse(tweet))
@@ -251,7 +222,7 @@ func (server *Server) retweet(ctx *gin.Context) {
 func (server *Server) undoRetweet(ctx *gin.Context) {
 	var req tweetURIRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		writeError(ctx, apperr.BadRequest("invalid tweet id"))
 		return
 	}
 	userID, ok := mustCurrentUserID(ctx)
@@ -259,11 +230,7 @@ func (server *Server) undoRetweet(ctx *gin.Context) {
 		return
 	}
 	if err := server.usecase.UndoRetweet(ctx, userID, req.ID); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "tweet not found"})
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"success": true})

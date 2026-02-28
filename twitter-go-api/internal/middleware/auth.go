@@ -19,13 +19,19 @@ func AuthMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		accessToken, err := resolveAccessToken(ctx)
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"code":    "UNAUTHORIZED",
+				"message": "authentication required",
+			})
 			return
 		}
 
 		payload, err := tokenMaker.VerifyToken(accessToken)
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"code":    "UNAUTHORIZED",
+				"message": "invalid or expired access token",
+			})
 			return
 		}
 
@@ -69,8 +75,4 @@ func resolveAccessToken(ctx *gin.Context) (string, error) {
 	}
 
 	return "", errors.New("invalid authorization header format")
-}
-
-func errorResponse(err error) gin.H {
-	return gin.H{"error": err.Error()}
 }

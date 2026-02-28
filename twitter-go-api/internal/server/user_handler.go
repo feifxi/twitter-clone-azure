@@ -1,12 +1,11 @@
 package server
 
 import (
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"strings"
 
+	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/chanombude/twitter-go-api/internal/usecase"
 	"github.com/gin-gonic/gin"
 )
@@ -19,11 +18,7 @@ func (server *Server) getMe(ctx *gin.Context) {
 
 	user, err := server.usecase.GetMe(ctx, userID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 
@@ -37,7 +32,7 @@ type getUserRequest struct {
 func (server *Server) getUser(ctx *gin.Context) {
 	var req getUserRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		writeError(ctx, apperr.BadRequest("invalid user id"))
 		return
 	}
 
@@ -48,11 +43,7 @@ func (server *Server) getUser(ctx *gin.Context) {
 
 	user, following, err := server.usecase.GetUser(ctx, req.ID, viewerID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 
@@ -75,13 +66,13 @@ func (server *Server) updateProfile(ctx *gin.Context) {
 
 	if strings.HasPrefix(ctx.GetHeader("Content-Type"), "multipart/form-data") {
 		if err := ctx.Request.ParseMultipartForm(20 << 20); err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid multipart payload"})
+			writeError(ctx, apperr.BadRequest("invalid multipart payload"))
 			return
 		}
 
 		if dataBlob := ctx.Request.FormValue("data"); dataBlob != "" {
 			if err := json.Unmarshal([]byte(dataBlob), &request); err != nil {
-				ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid json in data field"})
+				writeError(ctx, apperr.BadRequest("invalid json in data field"))
 				return
 			}
 		}
@@ -91,7 +82,7 @@ func (server *Server) updateProfile(ctx *gin.Context) {
 			defer file.Close()
 			contentType := header.Header.Get("Content-Type")
 			if !strings.HasPrefix(contentType, "image/") {
-				ctx.JSON(http.StatusBadRequest, gin.H{"error": "avatar must be an image"})
+				writeError(ctx, apperr.BadRequest("avatar must be an image"))
 				return
 			}
 			input.Avatar = &usecase.AvatarUpload{
@@ -102,7 +93,7 @@ func (server *Server) updateProfile(ctx *gin.Context) {
 		}
 	} else {
 		if err := ctx.ShouldBindJSON(&request); err != nil {
-			ctx.JSON(http.StatusBadRequest, errorResponse(err))
+			writeError(ctx, apperr.BadRequest("invalid request payload"))
 			return
 		}
 	}
@@ -112,7 +103,7 @@ func (server *Server) updateProfile(ctx *gin.Context) {
 
 	updatedUser, err := server.usecase.UpdateProfile(ctx, userID, input)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 
@@ -122,7 +113,7 @@ func (server *Server) updateProfile(ctx *gin.Context) {
 func (server *Server) followUser(ctx *gin.Context) {
 	var req getUserRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		writeError(ctx, apperr.BadRequest("invalid user id"))
 		return
 	}
 
@@ -131,17 +122,13 @@ func (server *Server) followUser(ctx *gin.Context) {
 		return
 	}
 	if followerID == req.ID {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "cannot follow yourself"})
+		writeError(ctx, apperr.BadRequest("cannot follow yourself"))
 		return
 	}
 
 	_, err := server.usecase.FollowUser(ctx, followerID, req.ID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
@@ -150,7 +137,7 @@ func (server *Server) followUser(ctx *gin.Context) {
 func (server *Server) unfollowUser(ctx *gin.Context) {
 	var req getUserRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		writeError(ctx, apperr.BadRequest("invalid user id"))
 		return
 	}
 
@@ -160,7 +147,7 @@ func (server *Server) unfollowUser(ctx *gin.Context) {
 	}
 
 	if err := server.usecase.UnfollowUser(ctx, followerID, req.ID); err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
@@ -173,7 +160,7 @@ type listFollowRequest struct {
 func (server *Server) listFollowers(ctx *gin.Context) {
 	var req listFollowRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		writeError(ctx, apperr.BadRequest("invalid user id"))
 		return
 	}
 	page, size, ok := parsePageAndSize(ctx)
@@ -188,7 +175,7 @@ func (server *Server) listFollowers(ctx *gin.Context) {
 
 	users, followingMap, err := server.usecase.ListFollowers(ctx, req.ID, page, size, viewerID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 
@@ -207,7 +194,7 @@ func (server *Server) listFollowers(ctx *gin.Context) {
 func (server *Server) listFollowing(ctx *gin.Context) {
 	var req listFollowRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		writeError(ctx, apperr.BadRequest("invalid user id"))
 		return
 	}
 	page, size, ok := parsePageAndSize(ctx)
@@ -222,7 +209,7 @@ func (server *Server) listFollowing(ctx *gin.Context) {
 
 	users, followingMap, err := server.usecase.ListFollowing(ctx, req.ID, page, size, viewerID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 

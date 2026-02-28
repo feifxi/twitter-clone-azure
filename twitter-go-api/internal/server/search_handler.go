@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,7 +16,7 @@ type searchQueryRequest struct {
 func (server *Server) searchUsers(ctx *gin.Context) {
 	var req searchQueryRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		writeError(ctx, apperr.BadRequest("missing query parameter q"))
 		return
 	}
 	page, size, ok := parsePageAndSize(ctx)
@@ -28,7 +29,7 @@ func (server *Server) searchUsers(ctx *gin.Context) {
 	}
 	users, followingMap, err := server.usecase.SearchUsers(ctx, req.Query, page, size, viewerID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	response := make([]userResponse, 0, len(users))
@@ -46,7 +47,7 @@ func (server *Server) searchUsers(ctx *gin.Context) {
 func (server *Server) searchTweets(ctx *gin.Context) {
 	var req searchQueryRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		writeError(ctx, apperr.BadRequest("missing query parameter q"))
 		return
 	}
 	page, size, ok := parsePageAndSize(ctx)
@@ -55,7 +56,7 @@ func (server *Server) searchTweets(ctx *gin.Context) {
 	}
 	tweets, err := server.usecase.SearchTweets(ctx, req.Query, page, size)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	response := make([]tweetResponse, 0, len(tweets))
@@ -78,7 +79,7 @@ func (server *Server) searchHashtags(ctx *gin.Context) {
 	}
 	hashtags, err := server.usecase.SearchHashtags(ctx, query, limit)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, hashtags)

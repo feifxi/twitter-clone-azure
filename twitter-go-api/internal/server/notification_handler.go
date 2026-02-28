@@ -125,7 +125,7 @@ func (server *Server) listNotifications(ctx *gin.Context) {
 	}
 	notifications, err := server.usecase.ListNotifications(ctx, userID, page, size)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	response := make([]notificationResponse, 0, len(notifications))
@@ -142,7 +142,7 @@ func (server *Server) getUnreadNotificationCount(ctx *gin.Context) {
 	}
 	count, err := server.usecase.CountUnreadNotifications(ctx, userID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, count)
@@ -154,7 +154,7 @@ func (server *Server) markNotificationRead(ctx *gin.Context) {
 		return
 	}
 	if err := server.usecase.MarkAllNotificationsRead(ctx, userID); err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"success": true})

@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 
+	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,7 +14,7 @@ func (server *Server) getGlobalFeed(ctx *gin.Context) {
 	}
 	tweets, err := server.usecase.GetGlobalFeed(ctx, page, size)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	response := make([]tweetResponse, 0, len(tweets))
@@ -34,7 +35,7 @@ func (server *Server) getFollowingFeed(ctx *gin.Context) {
 	}
 	tweets, err := server.usecase.GetFollowingFeed(ctx, userID, page, size)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	response := make([]tweetResponse, 0, len(tweets))
@@ -51,7 +52,7 @@ type userFeedRequest struct {
 func (server *Server) getUserFeed(ctx *gin.Context) {
 	var req userFeedRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		writeError(ctx, apperr.BadRequest("invalid user id"))
 		return
 	}
 	page, size, ok := parsePageAndSize(ctx)
@@ -60,7 +61,7 @@ func (server *Server) getUserFeed(ctx *gin.Context) {
 	}
 	tweets, err := server.usecase.GetUserFeed(ctx, req.UserID, page, size)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	response := make([]tweetResponse, 0, len(tweets))

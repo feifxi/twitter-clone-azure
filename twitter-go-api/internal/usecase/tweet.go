@@ -7,6 +7,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/chanombude/twitter-go-api/internal/db"
 )
 
@@ -41,7 +42,7 @@ func (u *Usecase) CreateTweet(ctx context.Context, input CreateTweetInput) (db.T
 		case strings.HasPrefix(contentType, "video/"):
 			mediaType = sql.NullString{String: "VIDEO", Valid: true}
 		default:
-			return db.Tweet{}, errors.New("only images or videos are allowed")
+			return db.Tweet{}, apperr.BadRequest("only images or videos are allowed")
 		}
 
 		uploadedURL, err := u.storage.UploadFile(ctx, input.Media.Reader, input.Media.Filename, contentType)
@@ -52,7 +53,7 @@ func (u *Usecase) CreateTweet(ctx context.Context, input CreateTweetInput) (db.T
 	}
 
 	if trimmedContent == "" && !mediaURL.Valid {
-		return db.Tweet{}, errors.New("tweet must include text or media")
+		return db.Tweet{}, apperr.BadRequest("tweet must include text or media")
 	}
 
 	parentID := sql.NullInt64{Valid: false}
@@ -122,7 +123,7 @@ func (u *Usecase) DeleteTweet(ctx context.Context, userID, tweetID int64) error 
 		return err
 	}
 	if tweet.UserID != userID {
-		return errors.New("you can only delete your own tweets")
+		return apperr.Forbidden("you can only delete your own tweets")
 	}
 
 	if tweet.RetweetID.Valid {

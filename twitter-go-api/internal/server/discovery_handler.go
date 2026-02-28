@@ -20,7 +20,7 @@ func (server *Server) getTrendingHashtags(ctx *gin.Context) {
 	}
 	hashtags, err := server.usecase.GetTrendingHashtags(ctx, limit)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	ctx.JSON(http.StatusOK, hashtags)
@@ -37,7 +37,7 @@ func (server *Server) getSuggestedUsers(ctx *gin.Context) {
 	}
 	users, followingMap, err := server.usecase.GetSuggestedUsers(ctx, page, size, viewerID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		writeError(ctx, err)
 		return
 	}
 	response := make([]userResponse, 0, len(users))

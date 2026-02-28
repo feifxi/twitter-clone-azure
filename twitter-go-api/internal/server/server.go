@@ -119,10 +119,6 @@ func (server *Server) HTTPServer(address string) *http.Server {
 	}
 }
 
-func errorResponse(err error) gin.H {
-	return gin.H{"error": err.Error()}
-}
-
 func (server *Server) publishNotification(notification db.Notification) {
 	sendNotificationToUser(notification.RecipientID, newNotificationResponse(notification))
 }
