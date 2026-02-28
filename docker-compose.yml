@@ -14,6 +14,14 @@ services:
     networks:
       - twitter_dev_network
 
+  redis:
+    container_name: twitter-dev-redis
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - twitter_dev_network
+
 networks:
   twitter_dev_network:
 

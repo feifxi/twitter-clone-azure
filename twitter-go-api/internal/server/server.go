@@ -8,12 +8,14 @@ import (
 
 	"github.com/chanombude/twitter-go-api/internal/config"
 	db "github.com/chanombude/twitter-go-api/internal/db"
+	"github.com/chanombude/twitter-go-api/internal/logger"
 	"github.com/chanombude/twitter-go-api/internal/middleware"
 	"github.com/chanombude/twitter-go-api/internal/service"
 	"github.com/chanombude/twitter-go-api/internal/token"
 	"github.com/chanombude/twitter-go-api/internal/usecase"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 type Server struct {
@@ -25,7 +27,7 @@ type Server struct {
 	router     *gin.Engine
 }
 
-func NewServer(config config.Config, store db.Querier) (*Server, error) {
+func NewServer(config config.Config, store db.Querier, redisClient *redis.Client) (*Server, error) {
 	tokenMaker, err := token.NewJWTMaker(config.TokenSymmetricKey)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create token maker: %w", err)
@@ -42,14 +44,16 @@ func NewServer(config config.Config, store db.Querier) (*Server, error) {
 		tokenMaker: tokenMaker,
 		storage:    storageService,
 	}
-	server.usecase = usecase.New(config, store, tokenMaker, storageService, server.publishNotification)
+	server.usecase = usecase.New(config, store, tokenMaker, storageService, redisClient, server.publishNotification)
 
 	server.setupRouter()
 	return server, nil
 }
 
 func (server *Server) setupRouter() {
-	router := gin.Default()
+	router := gin.New()
+	router.Use(logger.GinMiddleware())
+	router.Use(gin.Recovery())
 
 	allowOrigins := []string{"http://localhost:3000"}
 	if strings.TrimSpace(server.config.FrontendURL) != "" {
@@ -114,8 +118,11 @@ func (server *Server) setupRouter() {
 
 func (server *Server) HTTPServer(address string) *http.Server {
 	return &http.Server{
-		Addr:    address,
-		Handler: server.router,
+		Addr:         address,
+		Handler:      server.router,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 }
 

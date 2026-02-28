@@ -1,9 +1,6 @@
 package server
 
 import (
-	"strconv"
-	"strings"
-
 	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/chanombude/twitter-go-api/internal/middleware"
 	"github.com/chanombude/twitter-go-api/internal/token"
@@ -38,34 +35,26 @@ func mustCurrentUserID(ctx *gin.Context) (int64, bool) {
 }
 
 func parsePageAndSize(ctx *gin.Context) (int32, int32, bool) {
+	type paginationQuery struct {
+		Page *int32 `form:"page" binding:"omitempty,min=0"`
+		Size *int32 `form:"size" binding:"omitempty,min=1"`
+	}
+
+	var req paginationQuery
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		writeError(ctx, err)
+		return 0, 0, false
+	}
+
 	page := defaultPage
+	if req.Page != nil {
+		page = *req.Page
+	}
+
 	size := defaultSize
-
-	if rawPage := strings.TrimSpace(ctx.Query("page")); rawPage != "" {
-		value, err := strconv.ParseInt(rawPage, 10, 32)
-		if err != nil || value < 0 {
-			writeError(ctx, apperr.BadRequest("page must be >= 0"))
-			return 0, 0, false
-		}
-		page = int32(value)
-	}
-
-	if rawSize := strings.TrimSpace(ctx.Query("size")); rawSize != "" {
-		value, err := strconv.ParseInt(rawSize, 10, 32)
-		if err != nil || value <= 0 {
-			writeError(ctx, apperr.BadRequest("size must be > 0"))
-			return 0, 0, false
-		}
-		size = int32(value)
-	}
-
-	if size > maxSize {
-		size = maxSize
+	if req.Size != nil {
+		size = min(*req.Size, maxSize)
 	}
 
 	return page, size, true
-}
-
-func toOffset(page, size int32) int32 {
-	return page * size
 }

@@ -32,7 +32,7 @@ type getUserRequest struct {
 func (server *Server) getUser(ctx *gin.Context) {
 	var req getUserRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		writeError(ctx, apperr.BadRequest("invalid user id"))
+		writeError(ctx, err)
 		return
 	}
 
@@ -52,7 +52,7 @@ func (server *Server) getUser(ctx *gin.Context) {
 
 type updateProfileRequest struct {
 	Bio         *string `json:"bio"`
-	DisplayName *string `json:"display_name"`
+	DisplayName *string `json:"displayName"`
 }
 
 func (server *Server) updateProfile(ctx *gin.Context) {
@@ -93,7 +93,7 @@ func (server *Server) updateProfile(ctx *gin.Context) {
 		}
 	} else {
 		if err := ctx.ShouldBindJSON(&request); err != nil {
-			writeError(ctx, apperr.BadRequest("invalid request payload"))
+			writeError(ctx, err)
 			return
 		}
 	}
@@ -113,7 +113,7 @@ func (server *Server) updateProfile(ctx *gin.Context) {
 func (server *Server) followUser(ctx *gin.Context) {
 	var req getUserRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		writeError(ctx, apperr.BadRequest("invalid user id"))
+		writeError(ctx, err)
 		return
 	}
 
@@ -137,7 +137,7 @@ func (server *Server) followUser(ctx *gin.Context) {
 func (server *Server) unfollowUser(ctx *gin.Context) {
 	var req getUserRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		writeError(ctx, apperr.BadRequest("invalid user id"))
+		writeError(ctx, err)
 		return
 	}
 
@@ -160,7 +160,7 @@ type listFollowRequest struct {
 func (server *Server) listFollowers(ctx *gin.Context) {
 	var req listFollowRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		writeError(ctx, apperr.BadRequest("invalid user id"))
+		writeError(ctx, err)
 		return
 	}
 	page, size, ok := parsePageAndSize(ctx)
@@ -189,7 +189,7 @@ func (server *Server) listFollowers(ctx *gin.Context) {
 func (server *Server) listFollowing(ctx *gin.Context) {
 	var req listFollowRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		writeError(ctx, apperr.BadRequest("invalid user id"))
+		writeError(ctx, err)
 		return
 	}
 	page, size, ok := parsePageAndSize(ctx)

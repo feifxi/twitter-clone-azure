@@ -11,7 +11,7 @@ import (
 
 type createTweetRequest struct {
 	Content  *string `json:"content"`
-	ParentID *int64  `json:"parent_id"`
+	ParentID *int64  `json:"parentId"`
 }
 
 func (server *Server) createTweet(ctx *gin.Context) {
@@ -52,7 +52,7 @@ func (server *Server) createTweet(ctx *gin.Context) {
 		writeError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusCreated, newTweetResponse(tweet, nil, nil))
+	ctx.JSON(http.StatusCreated, newTweetResponse(tweet))
 }
 
 type tweetURIRequest struct {
@@ -62,7 +62,7 @@ type tweetURIRequest struct {
 func (server *Server) getTweet(ctx *gin.Context) {
 	var req tweetURIRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		writeError(ctx, apperr.BadRequest("invalid tweet id"))
+		writeError(ctx, err)
 		return
 	}
 	var viewerID *int64
@@ -74,13 +74,13 @@ func (server *Server) getTweet(ctx *gin.Context) {
 		writeError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusOK, newTweetResponse(tweet, nil, nil))
+	ctx.JSON(http.StatusOK, newTweetResponse(tweet))
 }
 
 func (server *Server) deleteTweet(ctx *gin.Context) {
 	var req tweetURIRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		writeError(ctx, apperr.BadRequest("invalid tweet id"))
+		writeError(ctx, err)
 		return
 	}
 	userID, ok := mustCurrentUserID(ctx)
@@ -101,7 +101,7 @@ type getRepliesRequest struct {
 func (server *Server) getReplies(ctx *gin.Context) {
 	var req getRepliesRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		writeError(ctx, apperr.BadRequest("invalid tweet id"))
+		writeError(ctx, err)
 		return
 	}
 	page, size, ok := parsePageAndSize(ctx)
@@ -119,7 +119,7 @@ func (server *Server) getReplies(ctx *gin.Context) {
 	}
 	response := make([]tweetResponse, 0, len(tweets))
 	for _, t := range tweets {
-		response = append(response, newTweetResponse(t, nil, nil))
+		response = append(response, newTweetResponse(t))
 	}
 	ctx.JSON(http.StatusOK, response)
 }
@@ -127,7 +127,7 @@ func (server *Server) getReplies(ctx *gin.Context) {
 func (server *Server) likeTweet(ctx *gin.Context) {
 	var req tweetURIRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		writeError(ctx, apperr.BadRequest("invalid tweet id"))
+		writeError(ctx, err)
 		return
 	}
 	userID, ok := mustCurrentUserID(ctx)
@@ -144,7 +144,7 @@ func (server *Server) likeTweet(ctx *gin.Context) {
 func (server *Server) unlikeTweet(ctx *gin.Context) {
 	var req tweetURIRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		writeError(ctx, apperr.BadRequest("invalid tweet id"))
+		writeError(ctx, err)
 		return
 	}
 	userID, ok := mustCurrentUserID(ctx)
@@ -161,7 +161,7 @@ func (server *Server) unlikeTweet(ctx *gin.Context) {
 func (server *Server) retweet(ctx *gin.Context) {
 	var req tweetURIRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		writeError(ctx, apperr.BadRequest("invalid tweet id"))
+		writeError(ctx, err)
 		return
 	}
 	userID, ok := mustCurrentUserID(ctx)
@@ -173,13 +173,13 @@ func (server *Server) retweet(ctx *gin.Context) {
 		writeError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusOK, newTweetResponse(tweet, nil, nil))
+	ctx.JSON(http.StatusOK, newTweetResponse(tweet))
 }
 
 func (server *Server) undoRetweet(ctx *gin.Context) {
 	var req tweetURIRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		writeError(ctx, apperr.BadRequest("invalid tweet id"))
+		writeError(ctx, err)
 		return
 	}
 	userID, ok := mustCurrentUserID(ctx)

@@ -3,7 +3,6 @@ package server
 import (
 	"net/http"
 
-	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,7 +22,7 @@ func (server *Server) getGlobalFeed(ctx *gin.Context) {
 	}
 	response := make([]tweetResponse, 0, len(tweets))
 	for _, t := range tweets {
-		response = append(response, newTweetResponse(t, nil, nil))
+		response = append(response, newTweetResponse(t))
 	}
 	ctx.JSON(http.StatusOK, response)
 }
@@ -44,7 +43,7 @@ func (server *Server) getFollowingFeed(ctx *gin.Context) {
 	}
 	response := make([]tweetResponse, 0, len(tweets))
 	for _, t := range tweets {
-		response = append(response, newTweetResponse(t, nil, nil))
+		response = append(response, newTweetResponse(t))
 	}
 	ctx.JSON(http.StatusOK, response)
 }
@@ -56,7 +55,7 @@ type userFeedRequest struct {
 func (server *Server) getUserFeed(ctx *gin.Context) {
 	var req userFeedRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		writeError(ctx, apperr.BadRequest("invalid user id"))
+		writeError(ctx, err)
 		return
 	}
 	page, size, ok := parsePageAndSize(ctx)
@@ -74,7 +73,7 @@ func (server *Server) getUserFeed(ctx *gin.Context) {
 	}
 	response := make([]tweetResponse, 0, len(tweets))
 	for _, t := range tweets {
-		response = append(response, newTweetResponse(t, nil, nil))
+		response = append(response, newTweetResponse(t))
 	}
 	ctx.JSON(http.StatusOK, response)
 }

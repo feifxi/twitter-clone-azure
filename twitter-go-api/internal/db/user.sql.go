@@ -9,6 +9,8 @@ import (
 	"context"
 	"database/sql"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -155,6 +157,71 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getUsersByIDs = `-- name: GetUsersByIDs :many
+SELECT u.id, u.username, u.email, u.display_name, u.bio, u.avatar_url, u.role, u.provider, u.followers_count, u.following_count, u.created_at, u.updated_at,
+  EXISTS(SELECT 1 FROM follows f WHERE f.following_id = u.id AND f.follower_id = $1) AS is_following
+FROM users u
+WHERE u.id = ANY($2::bigint[])
+`
+
+type GetUsersByIDsParams struct {
+	ViewerID sql.NullInt64 `json:"viewer_id"`
+	UserIds  []int64       `json:"user_ids"`
+}
+
+type GetUsersByIDsRow struct {
+	ID             int64          `json:"id"`
+	Username       string         `json:"username"`
+	Email          string         `json:"email"`
+	DisplayName    sql.NullString `json:"display_name"`
+	Bio            sql.NullString `json:"bio"`
+	AvatarUrl      sql.NullString `json:"avatar_url"`
+	Role           string         `json:"role"`
+	Provider       string         `json:"provider"`
+	FollowersCount int32          `json:"followers_count"`
+	FollowingCount int32          `json:"following_count"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	IsFollowing    bool           `json:"is_following"`
+}
+
+func (q *Queries) GetUsersByIDs(ctx context.Context, arg GetUsersByIDsParams) ([]GetUsersByIDsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUsersByIDs, arg.ViewerID, pq.Array(arg.UserIds))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetUsersByIDsRow{}
+	for rows.Next() {
+		var i GetUsersByIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.Email,
+			&i.DisplayName,
+			&i.Bio,
+			&i.AvatarUrl,
+			&i.Role,
+			&i.Provider,
+			&i.FollowersCount,
+			&i.FollowingCount,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.IsFollowing,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const isFollowing = `-- name: IsFollowing :one

@@ -9,6 +9,8 @@ import (
 	"context"
 	"database/sql"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 const createRetweet = `-- name: CreateRetweet :one
@@ -268,6 +270,79 @@ func (q *Queries) GetTweet(ctx context.Context, arg GetTweetParams) (GetTweetRow
 		&i.IsFollowing,
 	)
 	return i, err
+}
+
+const getTweetsByIDs = `-- name: GetTweetsByIDs :many
+SELECT t.id, t.user_id, t.content, t.media_type, t.media_url, t.parent_id, t.retweet_id, t.reply_count, t.retweet_count, t.like_count, t.created_at, t.updated_at, t.search_vector,
+  EXISTS(SELECT 1 FROM tweet_likes tl WHERE tl.tweet_id = t.id AND tl.user_id = $1) AS is_liked,
+  EXISTS(SELECT 1 FROM tweets tr WHERE tr.retweet_id = t.id AND tr.user_id = $1) AS is_retweeted,
+  EXISTS(SELECT 1 FROM follows f WHERE f.following_id = t.user_id AND f.follower_id = $1) AS is_following
+FROM tweets t
+WHERE t.id = ANY($2::bigint[])
+`
+
+type GetTweetsByIDsParams struct {
+	ViewerID sql.NullInt64 `json:"viewer_id"`
+	TweetIds []int64       `json:"tweet_ids"`
+}
+
+type GetTweetsByIDsRow struct {
+	ID           int64          `json:"id"`
+	UserID       int64          `json:"user_id"`
+	Content      sql.NullString `json:"content"`
+	MediaType    sql.NullString `json:"media_type"`
+	MediaUrl     sql.NullString `json:"media_url"`
+	ParentID     sql.NullInt64  `json:"parent_id"`
+	RetweetID    sql.NullInt64  `json:"retweet_id"`
+	ReplyCount   int32          `json:"reply_count"`
+	RetweetCount int32          `json:"retweet_count"`
+	LikeCount    int32          `json:"like_count"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	SearchVector interface{}    `json:"search_vector"`
+	IsLiked      bool           `json:"is_liked"`
+	IsRetweeted  bool           `json:"is_retweeted"`
+	IsFollowing  bool           `json:"is_following"`
+}
+
+func (q *Queries) GetTweetsByIDs(ctx context.Context, arg GetTweetsByIDsParams) ([]GetTweetsByIDsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTweetsByIDs, arg.ViewerID, pq.Array(arg.TweetIds))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetTweetsByIDsRow{}
+	for rows.Next() {
+		var i GetTweetsByIDsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Content,
+			&i.MediaType,
+			&i.MediaUrl,
+			&i.ParentID,
+			&i.RetweetID,
+			&i.ReplyCount,
+			&i.RetweetCount,
+			&i.LikeCount,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.SearchVector,
+			&i.IsLiked,
+			&i.IsRetweeted,
+			&i.IsFollowing,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getUserRetweet = `-- name: GetUserRetweet :one

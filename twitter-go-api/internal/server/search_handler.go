@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,7 +15,7 @@ type searchQueryRequest struct {
 func (server *Server) searchUsers(ctx *gin.Context) {
 	var req searchQueryRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		writeError(ctx, apperr.BadRequest("missing query parameter q"))
+		writeError(ctx, err)
 		return
 	}
 	page, size, ok := parsePageAndSize(ctx)
@@ -42,7 +41,7 @@ func (server *Server) searchUsers(ctx *gin.Context) {
 func (server *Server) searchTweets(ctx *gin.Context) {
 	var req searchQueryRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		writeError(ctx, apperr.BadRequest("missing query parameter q"))
+		writeError(ctx, err)
 		return
 	}
 	page, size, ok := parsePageAndSize(ctx)
@@ -60,7 +59,7 @@ func (server *Server) searchTweets(ctx *gin.Context) {
 	}
 	response := make([]tweetResponse, 0, len(tweets))
 	for _, tweet := range tweets {
-		response = append(response, newTweetResponse(tweet, nil, nil))
+		response = append(response, newTweetResponse(tweet))
 	}
 	ctx.JSON(http.StatusOK, response)
 }

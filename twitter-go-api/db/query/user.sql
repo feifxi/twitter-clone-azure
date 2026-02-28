@@ -75,3 +75,9 @@ LIMIT $1 OFFSET $2;
 SELECT EXISTS(
   SELECT 1 FROM follows WHERE follower_id = $1 AND following_id = $2
 );
+
+-- name: GetUsersByIDs :many
+SELECT u.*,
+  EXISTS(SELECT 1 FROM follows f WHERE f.following_id = u.id AND f.follower_id = sqlc.narg('viewer_id')) AS is_following
+FROM users u
+WHERE u.id = ANY(@user_ids::bigint[]);

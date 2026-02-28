@@ -10,14 +10,17 @@ import (
 	"github.com/chanombude/twitter-go-api/internal/db"
 	"github.com/chanombude/twitter-go-api/internal/service"
 	"github.com/chanombude/twitter-go-api/internal/token"
+	"github.com/redis/go-redis/v9"
 )
 
 type TweetItem struct {
 	db.Tweet
-	Author      UserItem
-	IsLiked     bool
-	IsRetweeted bool
-	IsFollowing bool
+	Author         UserItem
+	IsLiked        bool
+	IsRetweeted    bool
+	IsFollowing    bool
+	ParentUsername *string
+	OriginalTweet  *TweetItem
 }
 
 type UserItem struct {
@@ -30,15 +33,17 @@ type Usecase struct {
 	store               db.Querier
 	tokenMaker          token.Maker
 	storage             service.StorageService
+	redis               *redis.Client
 	publishNotification func(db.Notification)
 }
 
-func New(cfg config.Config, store db.Querier, tokenMaker token.Maker, storage service.StorageService, publishNotification func(db.Notification)) *Usecase {
+func New(cfg config.Config, store db.Querier, tokenMaker token.Maker, storage service.StorageService, redisClient *redis.Client, publishNotification func(db.Notification)) *Usecase {
 	return &Usecase{
 		config:              cfg,
 		store:               store,
 		tokenMaker:          tokenMaker,
 		storage:             storage,
+		redis:               redisClient,
 		publishNotification: publishNotification,
 	}
 }

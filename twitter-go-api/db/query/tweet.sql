@@ -128,3 +128,11 @@ JOIN hashtags h ON h.id = th.hashtag_id
 WHERE LOWER(h.text) = LOWER($1)
 ORDER BY t.created_at DESC
 LIMIT $2 OFFSET $3;
+
+-- name: GetTweetsByIDs :many
+SELECT t.*,
+  EXISTS(SELECT 1 FROM tweet_likes tl WHERE tl.tweet_id = t.id AND tl.user_id = sqlc.narg('viewer_id')) AS is_liked,
+  EXISTS(SELECT 1 FROM tweets tr WHERE tr.retweet_id = t.id AND tr.user_id = sqlc.narg('viewer_id')) AS is_retweeted,
+  EXISTS(SELECT 1 FROM follows f WHERE f.following_id = t.user_id AND f.follower_id = sqlc.narg('viewer_id')) AS is_following
+FROM tweets t
+WHERE t.id = ANY(@tweet_ids::bigint[]);

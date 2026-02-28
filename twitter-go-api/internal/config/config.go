@@ -18,6 +18,8 @@ type Config struct {
 	GoogleClientID           string `mapstructure:"GOOGLE_CLIENT_ID"`
 	AzureStorageConnString   string `mapstructure:"AZURE_STORAGE_CONNECTION_STRING"`
 	AzureStorageContainer    string `mapstructure:"AZURE_STORAGE_CONTAINER_NAME"`
+	RedisAddress             string `mapstructure:"REDIS_ADDRESS"`
+	RedisPassword            string `mapstructure:"REDIS_PASSWORD"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

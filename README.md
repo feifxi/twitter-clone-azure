@@ -1,6 +1,6 @@
 # Twitter Clone (Azure Deployment)
 
-A full-stack, pixel-perfect Twitter/X clone built with **Next.js 15** and **Spring Boot 3**, designed for cloud-native deployment on **Azure Container Apps**.
+A full-stack, pixel-perfect Twitter/X clone built with **Next.js 15** and a dual-backend architecture supporting both **Java (Spring Boot)** and **Go (Golang)**. It is designed for high-performance cloud-native deployment on **Azure Container Apps**.
 
 ## 🚀 Tech Stack
 
@@ -12,13 +12,25 @@ A full-stack, pixel-perfect Twitter/X clone built with **Next.js 15** and **Spri
 -   **Authentication**: Custom JWT Auth + Google OAuth
 -   **Build**: Docker (Multi-stage)
 
-### Backend
--   **Framework**: Spring Boot 3.4
+### Backends (Dual-Architecture)
+This project natively supports two interchangeable backends. You can run the frontend against either one!
+
+**Option 1: Java (Spring Boot)**
+-   **Framework**: Spring Boot 3
 -   **Language**: Java 21
--   **Database**: PostgreSQL
+-   **Database**: PostgreSQL (Spring Data JPA)
+
+**Option 2: Go (High Performance API)**
+-   **Framework**: Gin Web Framework
+-   **Language**: Go 1.22+
+-   **Database**: PostgreSQL (with sqlc)
+-   **Architecture**: Optimized Memory Batching (DataLoader pattern), Redis Caching
+-   **Logging**: Structured Telemetry (Zerolog)
+
+**Common Backend Features (Both)**
 -   **Storage**: Azure Blob Storage (for media)
--   **Security**: Spring Security 6, JWT, OAuth2 (Google)
--   **Build**: Maven, Docker
+-   **Security**: Custom JWT Tokens, OAuth2 (Google)
+-   **Build**: Make, Docker
 
 ### DevOps & Cloud
 -   **Containerization**: Docker
@@ -46,18 +58,28 @@ A full-stack, pixel-perfect Twitter/X clone built with **Next.js 15** and **Spri
 -   Java 21 (JDK)
 -   Docker & Docker Compose
 
-### 1. Database Setup
-Run PostgreSQL locally using Docker Compose:
+### 1. Database & Cache Setup
+Run PostgreSQL and Redis locally using Docker Compose:
 ```bash
 docker-compose up -d
 ```
 
-### 2. Backend Setup
+### 2. Backend Setup (Choose One)
+
+**To run the Java (Spring Boot) backend `(Port 8080)`:**
 Navigate to `twitter-backend`:
 1.  Configure `src/main/resources/application.yml` (or use env vars) to point to your local DB.
 2.  Run the application:
     ```bash
     ./mvnw spring-boot:run
+    ```
+
+**To run the Go backend `(Port 8080)`:**
+Navigate to `twitter-go-api`:
+1.  Configure `app.env` to point to your local DB and Redis.
+2.  Run the application:
+    ```bash
+    make run
     ```
 
 ### 3. Frontend Setup

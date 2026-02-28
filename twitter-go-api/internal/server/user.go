@@ -8,12 +8,12 @@ type userResponse struct {
 	ID             int64   `json:"id"`
 	Username       string  `json:"username"`
 	Email          string  `json:"email"`
-	DisplayName    *string `json:"display_name"`
+	DisplayName    *string `json:"displayName"`
 	Bio            *string `json:"bio"`
-	AvatarUrl      *string `json:"avatar_url"`
-	IsFollowing    bool    `json:"is_following"`
-	FollowersCount int32   `json:"followers_count"`
-	FollowingCount int32   `json:"following_count"`
+	AvatarUrl      *string `json:"avatarUrl"`
+	IsFollowing    bool    `json:"isFollowing"`
+	FollowersCount int32   `json:"followersCount"`
+	FollowingCount int32   `json:"followingCount"`
 }
 
 func newUserResponse(user usecase.UserItem) userResponse {

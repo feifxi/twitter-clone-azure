@@ -122,9 +122,8 @@ func (u *Usecase) GetTweet(ctx context.Context, tweetID int64, viewerID *int64) 
 	if err != nil {
 		return TweetItem{}, err
 	}
-	userRow, _ := u.store.GetUser(ctx, db.GetUserParams{ID: r.UserID, ViewerID: vID})
-	return TweetItem{
-		Tweet: db.Tweet{
+	tweets := []db.Tweet{
+		{
 			ID:           r.ID,
 			UserID:       r.UserID,
 			Content:      r.Content,
@@ -138,27 +137,17 @@ func (u *Usecase) GetTweet(ctx context.Context, tweetID int64, viewerID *int64) 
 			CreatedAt:    r.CreatedAt,
 			UpdatedAt:    r.UpdatedAt,
 		},
-		Author: UserItem{
-			User: db.User{
-				ID:             userRow.ID,
-				Username:       userRow.Username,
-				Email:          userRow.Email,
-				DisplayName:    userRow.DisplayName,
-				Bio:            userRow.Bio,
-				AvatarUrl:      userRow.AvatarUrl,
-				Role:           userRow.Role,
-				Provider:       userRow.Provider,
-				FollowersCount: userRow.FollowersCount,
-				FollowingCount: userRow.FollowingCount,
-				CreatedAt:      userRow.CreatedAt,
-				UpdatedAt:      userRow.UpdatedAt,
-			},
-			IsFollowing: userRow.IsFollowing,
-		},
-		IsLiked:     r.IsLiked,
-		IsRetweeted: r.IsRetweeted,
-		IsFollowing: r.IsFollowing,
-	}, nil
+	}
+	items, err := u.populateTweetItems(ctx, tweets, viewerID)
+	if err != nil || len(items) == 0 {
+		return TweetItem{}, err
+	}
+
+	items[0].IsLiked = r.IsLiked
+	items[0].IsRetweeted = r.IsRetweeted
+	items[0].IsFollowing = r.IsFollowing
+
+	return items[0], nil
 }
 
 func (u *Usecase) DeleteTweet(ctx context.Context, userID, tweetID int64) error {
@@ -209,46 +198,36 @@ func (u *Usecase) ListReplies(ctx context.Context, tweetID int64, page, size int
 	if err != nil {
 		return nil, err
 	}
-	items := make([]TweetItem, 0, len(rows))
+	// Map raw rows to db.Tweet slice so it can be passed to dataloader
+	tweets := make([]db.Tweet, 0, len(rows))
 	for _, r := range rows {
-		userRow, _ := u.store.GetUser(ctx, db.GetUserParams{ID: r.UserID, ViewerID: vID})
-		items = append(items, TweetItem{
-			Tweet: db.Tweet{
-				ID:           r.ID,
-				UserID:       r.UserID,
-				Content:      r.Content,
-				MediaType:    r.MediaType,
-				MediaUrl:     r.MediaUrl,
-				ParentID:     r.ParentID,
-				RetweetID:    r.RetweetID,
-				ReplyCount:   r.ReplyCount,
-				RetweetCount: r.RetweetCount,
-				LikeCount:    r.LikeCount,
-				CreatedAt:    r.CreatedAt,
-				UpdatedAt:    r.UpdatedAt,
-			},
-			Author: UserItem{
-				User: db.User{
-					ID:             userRow.ID,
-					Username:       userRow.Username,
-					Email:          userRow.Email,
-					DisplayName:    userRow.DisplayName,
-					Bio:            userRow.Bio,
-					AvatarUrl:      userRow.AvatarUrl,
-					Role:           userRow.Role,
-					Provider:       userRow.Provider,
-					FollowersCount: userRow.FollowersCount,
-					FollowingCount: userRow.FollowingCount,
-					CreatedAt:      userRow.CreatedAt,
-					UpdatedAt:      userRow.UpdatedAt,
-				},
-				IsFollowing: userRow.IsFollowing,
-			},
-			IsLiked:     r.IsLiked,
-			IsRetweeted: r.IsRetweeted,
-			IsFollowing: r.IsFollowing,
+		tweets = append(tweets, db.Tweet{
+			ID:           r.ID,
+			UserID:       r.UserID,
+			Content:      r.Content,
+			MediaType:    r.MediaType,
+			MediaUrl:     r.MediaUrl,
+			ParentID:     r.ParentID,
+			RetweetID:    r.RetweetID,
+			ReplyCount:   r.ReplyCount,
+			RetweetCount: r.RetweetCount,
+			LikeCount:    r.LikeCount,
+			CreatedAt:    r.CreatedAt,
+			UpdatedAt:    r.UpdatedAt,
 		})
 	}
+
+	items, err := u.populateTweetItems(ctx, tweets, viewerID)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, r := range rows {
+		items[i].IsLiked = r.IsLiked
+		items[i].IsRetweeted = r.IsRetweeted
+		items[i].IsFollowing = r.IsFollowing
+	}
+
 	return items, nil
 }
 

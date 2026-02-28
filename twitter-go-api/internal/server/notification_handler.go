@@ -23,12 +23,12 @@ var (
 
 type notificationResponse struct {
 	ID          int64     `json:"id"`
-	RecipientID int64     `json:"recipient_id"`
-	ActorID     int64     `json:"actor_id"`
-	TweetID     *int64    `json:"tweet_id,omitempty"`
+	RecipientID int64     `json:"recipientId"`
+	ActorID     int64     `json:"actorId"`
+	TweetID     *int64    `json:"tweetId,omitempty"`
 	Type        string    `json:"type"`
-	IsRead      bool      `json:"is_read"`
-	CreatedAt   time.Time `json:"created_at"`
+	IsRead      bool      `json:"isRead"`
+	CreatedAt   time.Time `json:"createdAt"`
 }
 
 func newNotificationResponse(n db.Notification) notificationResponse {

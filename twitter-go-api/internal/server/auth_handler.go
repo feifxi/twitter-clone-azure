@@ -9,18 +9,18 @@ import (
 )
 
 type googleLoginRequest struct {
-	IDToken string `json:"id_token" binding:"required"`
+	IDToken string `json:"idToken" binding:"required"`
 }
 
 type authResponse struct {
-	AccessToken string       `json:"access_token"`
+	AccessToken string       `json:"accessToken"`
 	User        userResponse `json:"user"`
 }
 
 func (server *Server) loginGoogle(ctx *gin.Context) {
 	var req googleLoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		writeError(ctx, apperr.BadRequest("invalid request payload"))
+		writeError(ctx, err)
 		return
 	}
 

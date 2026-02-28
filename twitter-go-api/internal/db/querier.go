@@ -25,11 +25,13 @@ type Querier interface {
 	GetTopHashtagsAllTime(ctx context.Context, limit int32) ([]Hashtag, error)
 	GetTrendingHashtagsLast24h(ctx context.Context, limit int32) ([]Hashtag, error)
 	GetTweet(ctx context.Context, arg GetTweetParams) (GetTweetRow, error)
+	GetTweetsByIDs(ctx context.Context, arg GetTweetsByIDsParams) ([]GetTweetsByIDsRow, error)
 	GetUnreadNotificationCount(ctx context.Context, recipientID int64) (int64, error)
 	GetUser(ctx context.Context, arg GetUserParams) (GetUserRow, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	GetUserRetweet(ctx context.Context, arg GetUserRetweetParams) (Tweet, error)
+	GetUsersByIDs(ctx context.Context, arg GetUsersByIDsParams) ([]GetUsersByIDsRow, error)
 	IncrementParentReplyCount(ctx context.Context, id int64) error
 	IsFollowing(ctx context.Context, arg IsFollowingParams) (bool, error)
 	IsTweetLiked(ctx context.Context, arg IsTweetLikedParams) (bool, error)

@@ -7,24 +7,24 @@ import (
 )
 
 type tweetResponse struct {
-	ID           int64          `json:"id"`
-	Content      *string        `json:"content"`
-	MediaType    *string        `json:"media_type"`
-	MediaUrl     *string        `json:"media_url"`
-	User         userResponse   `json:"user"`
-	ReplyCount   int32          `json:"reply_count"`
-	LikeCount    int32          `json:"like_count"`
-	RetweetCount int32          `json:"retweet_count"`
-	IsLiked      bool           `json:"is_liked"`
-	IsRetweeted  bool           `json:"is_retweeted"`
-	Original     *tweetResponse `json:"original,omitempty"`
-	ParentID     *int64         `json:"parent_id"`
-	ParentHandle *string        `json:"parent_handle"`
-	CreatedAt    time.Time      `json:"created_at"`
+	ID             int64          `json:"id"`
+	Content        *string        `json:"content"`
+	MediaType      *string        `json:"mediaType"`
+	MediaUrl       *string        `json:"mediaUrl"`
+	User           userResponse   `json:"user"`
+	ReplyCount     int32          `json:"replyCount"`
+	LikeCount      int32          `json:"likeCount"`
+	RetweetCount   int32          `json:"retweetCount"`
+	IsLiked        bool           `json:"isLiked"`
+	IsRetweeted    bool           `json:"isRetweeted"`
+	Original       *tweetResponse `json:"original,omitempty"`
+	ParentID       *int64         `json:"parentId"`
+	ParentUsername *string        `json:"parentUsername"`
+	CreatedAt      time.Time      `json:"createdAt"`
 }
 
 // Converts a Tweet DB model into a structured API response.
-func newTweetResponse(tweet usecase.TweetItem, originalTweet *tweetResponse, parentHandle *string) tweetResponse {
+func newTweetResponse(tweet usecase.TweetItem) tweetResponse {
 	var content, mediaType, mediaurl *string
 	if tweet.Content.Valid {
 		content = &tweet.Content.String
@@ -41,20 +41,26 @@ func newTweetResponse(tweet usecase.TweetItem, originalTweet *tweetResponse, par
 		parentId = &tweet.ParentID.Int64
 	}
 
+	var originalResp *tweetResponse
+	if tweet.OriginalTweet != nil {
+		orig := newTweetResponse(*tweet.OriginalTweet)
+		originalResp = &orig
+	}
+
 	return tweetResponse{
-		ID:           tweet.ID,
-		Content:      content,
-		MediaType:    mediaType,
-		MediaUrl:     mediaurl,
-		User:         newUserResponse(tweet.Author),
-		ReplyCount:   tweet.ReplyCount,
-		LikeCount:    tweet.LikeCount,
-		RetweetCount: tweet.RetweetCount,
-		IsLiked:      tweet.IsLiked,
-		IsRetweeted:  tweet.IsRetweeted,
-		Original:     originalTweet,
-		ParentID:     parentId,
-		ParentHandle: parentHandle,
-		CreatedAt:    tweet.CreatedAt,
+		ID:             tweet.ID,
+		Content:        content,
+		MediaType:      mediaType,
+		MediaUrl:       mediaurl,
+		User:           newUserResponse(tweet.Author),
+		ReplyCount:     tweet.ReplyCount,
+		LikeCount:      tweet.LikeCount,
+		RetweetCount:   tweet.RetweetCount,
+		IsLiked:        tweet.IsLiked,
+		IsRetweeted:    tweet.IsRetweeted,
+		Original:       originalResp,
+		ParentID:       parentId,
+		ParentUsername: tweet.ParentUsername,
+		CreatedAt:      tweet.CreatedAt,
 	}
 }
