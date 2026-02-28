@@ -32,6 +32,24 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.SetDefault("COOKIE_SAME_SITE", "Lax")
 	viper.SetDefault("COOKIE_SECURE", false)
 
+	// Explicitly bind environment variables so viper.Unmarshal detects them
+	// without needing a physical app.env file (which is excluded in CI/CD).
+	viper.BindEnv("ENVIRONMENT")
+	viper.BindEnv("DATABASE_URL")
+	viper.BindEnv("HTTP_SERVER_ADDRESS")
+	viper.BindEnv("FRONTEND_URL")
+	viper.BindEnv("COOKIE_DOMAIN")
+	viper.BindEnv("COOKIE_SAME_SITE")
+	viper.BindEnv("COOKIE_SECURE")
+	viper.BindEnv("TOKEN_SYMMETRIC_KEY")
+	viper.BindEnv("TOKEN_DURATION_MINUTES")
+	viper.BindEnv("REFRESH_TOKEN_DURATION_DAYS")
+	viper.BindEnv("GOOGLE_CLIENT_ID")
+	viper.BindEnv("AZURE_STORAGE_CONNECTION_STRING")
+	viper.BindEnv("AZURE_STORAGE_CONTAINER_NAME")
+	viper.BindEnv("REDIS_ADDRESS")
+	viper.BindEnv("REDIS_PASSWORD")
+
 	viper.AutomaticEnv()
 
 	err = viper.ReadInConfig()
