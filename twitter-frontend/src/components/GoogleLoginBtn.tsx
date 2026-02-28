@@ -1,7 +1,7 @@
 'use client';
 
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { axiosInstance } from '@/api/axiosInstance';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -18,6 +18,22 @@ export default function GoogleLoginBtn() {
   const queryClient = useQueryClient();
 
   const [isLoading, setIsLoading] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [buttonWidth, setButtonWidth] = useState<number>(364); // Default to PC width
+
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setButtonWidth(containerRef.current.offsetWidth);
+      }
+    };
+    
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    if (containerRef.current) observer.observe(containerRef.current);
+    
+    return () => observer.disconnect();
+  }, []);
 
   const handleSuccess = async (credentialResponse: CredentialResponse) => {
     const googleToken = credentialResponse.credential;
@@ -30,7 +46,6 @@ export default function GoogleLoginBtn() {
       });
       setAuth(data.accessToken, data.user);
       
-      // Invalidate queries to refresh data with new auth state
       await queryClient.invalidateQueries({ queryKey: ['feeds'] });
       await queryClient.invalidateQueries({ queryKey: ['discovery'] });
       await queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -47,14 +62,15 @@ export default function GoogleLoginBtn() {
   };
 
   return (
-    <div className="w-full flex justify-center relative rounded-full overflow-hidden">
+    <div ref={containerRef} className="w-full h-[40px] relative overflow-hidden flex justify-center rounded-full">
       <GoogleLogin
+        key={buttonWidth}
         onSuccess={handleSuccess}
         onError={() => console.log('Google Login Failed')}
         theme="filled_black"
         shape="pill"
         size="large"
-        width="364"
+        width={buttonWidth.toString()}
         text="signup_with"
       />
       {isLoading && (

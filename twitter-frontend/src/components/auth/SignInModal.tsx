@@ -54,8 +54,8 @@ export function SignInModal() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 flex flex-col px-20 pb-12 pt-4">
-          <div className="w-full max-w-[364px] mx-auto flex flex-col flex-1">
+        <div className="flex-1 flex flex-col px-8 sm:px-20 pb-12 pt-4">
+          <div className="w-full sm:w-[364px] mx-auto flex flex-col flex-1">
             <DialogHeader className="mb-8">
               <DialogTitle className="text-3xl font-bold text-left mb-8">
                 Sign in to X
