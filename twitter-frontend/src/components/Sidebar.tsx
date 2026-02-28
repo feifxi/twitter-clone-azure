@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useDebounce } from '@/hooks/useDebounce';
 import { FollowButton } from '@/components/FollowButton';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import type { TrendingHashtagDTO } from '@/types';
 
 export function Sidebar() {
@@ -175,9 +174,8 @@ export function Sidebar() {
 
   return (
     <div className="sticky top-0 p-4 py-2 h-screen overflow-y-auto no-scrollbar pb-10">
-      {/* Top Bar with Theme Toggle and Search */}
+      {/* Top Bar with Search */}
       <div className="mb-4 sticky top-0 bg-background z-20 py-1 flex items-center gap-2" ref={searchRef}>
-        <ThemeToggle />
         <form onSubmit={handleSearch} className="relative flex-1">
           <div className={`flex items-center gap-3 rounded-full bg-secondary/50 border border-transparent px-4 py-2.5 transition-colors ${
             isFocused ? 'bg-background border-primary ring-1 ring-primary' : ''

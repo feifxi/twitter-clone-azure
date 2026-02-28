@@ -92,7 +92,7 @@ export function AppNav() {
              return (
                  <DropdownMenu key={item.label}>
                     <DropdownMenuTrigger asChild>
-                        <button className="group flex items-center w-fit xl:w-full outline-none">
+                        <button className="group flex items-center w-fit xl:w-full outline-none cursor-pointer">
                             <div className={`flex items-center xl:gap-5 px-3 py-3 rounded-full transition-colors group-hover:bg-accent/50 ${isActive ? 'font-bold' : 'font-normal'}`}>
                                 <item.icon className={`w-7 h-7 ${isActive ? 'fill-current' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
                                 <div className="relative hidden xl:block cursor-pointer">
