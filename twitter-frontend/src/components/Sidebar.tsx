@@ -71,8 +71,8 @@ export function Sidebar() {
       {/* Top Bar with Search */}
       <div className="mb-4 sticky top-0 bg-background z-20 py-1 flex items-center gap-2" ref={searchRef}>
         <form onSubmit={handleSearch} className="relative flex-1">
-          <div className={`flex items-center gap-3 rounded-full bg-secondary/50 border border-transparent px-4 py-2.5 transition-colors ${
-            isFocused ? 'bg-background border-primary ring-1 ring-primary' : ''
+          <div className={`flex items-center gap-3 rounded-full bg-secondary/50 border px-4 py-2.5 transition-colors ${
+            isFocused ? 'bg-background border-primary' : 'border-border'
           }`}>
             <Search className={`w-5 h-5 shrink-0 ${isFocused ? 'text-primary' : 'text-muted-foreground'}`} />
             <input

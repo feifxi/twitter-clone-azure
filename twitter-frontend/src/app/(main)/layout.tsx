@@ -2,6 +2,7 @@
 
 import { AppNav } from '@/components/AppNav';
 import { Sidebar } from '@/components/Sidebar';
+import { MobileNav } from '@/components/MobileNav';
 
 import { usePathname } from 'next/navigation';
 
@@ -21,11 +22,11 @@ export default function MainLayout({
       {/* Left gutter: flex grow so content is centered, then fixed columns */}
       <div className={`flex justify-center flex-1 min-w-0 ${isMessagesPage ? 'max-w-[1500px]' : 'max-w-[1280px]'}`}>
         {/* Left Sidebar */}
-        <aside className="w-[68px] xl:w-[275px] shrink-0 flex justify-end">
+        <aside className="hidden sm:flex w-[68px] xl:w-[275px] shrink-0 justify-end">
           <AppNav />
         </aside>
         {/* Main Feed */}
-        <main className={`w-full border-x border-border min-h-screen ${isMessagesPage ? 'max-w-[1000px] flex-1' : 'max-w-[600px]'}`}>
+        <main className={`w-full border-x border-border min-h-screen pb-[60px] sm:pb-0 ${isMessagesPage ? 'max-w-[1000px] flex-1' : 'max-w-[600px]'}`}>
           {children}
         </main>
         {/* Right Sidebar: hidden on smaller screens, and hidden on messages page */}
@@ -35,6 +36,7 @@ export default function MainLayout({
           </aside>
         )}
       </div>
+      <MobileNav />
     </div>
   );
 }
