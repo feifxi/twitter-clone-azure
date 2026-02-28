@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useUserFollowers, useUserFollowing } from '@/hooks/useProfile';
 import { FollowButton } from '@/components/FollowButton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -40,6 +40,9 @@ export function UserListModal({ userId, type, isOpen, onClose }: UserListModalPr
           <DialogTitle className="text-xl font-bold">
             {isFollowers ? 'Followers' : 'Following'}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            List of users {isFollowers ? 'following this account' : 'this account is following'}
+          </DialogDescription>
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto min-h-0">

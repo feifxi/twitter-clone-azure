@@ -6,6 +6,7 @@ import { CreateTweet } from './CreateTweet';
 import { Tweet } from './Tweet';
 import type { TweetResponse } from '@/types';
 import { X } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface ReplyModalProps {
   tweet: TweetResponse | null;
@@ -36,9 +37,10 @@ export function ReplyModal({ tweet, isOpen, onClose }: ReplyModalProps) {
               {/* Original Tweet Preview (simplified) */}
               <div className="flex gap-3 relative">
                   <div className="flex flex-col items-center">
-                      <div className="w-10 h-10 rounded-full bg-card overflow-hidden shrink-0">
-                          <img src={tweet.user.avatarUrl ?? undefined} alt="" className="w-full h-full object-cover"/>
-                      </div>
+                      <Avatar className="w-10 h-10 shrink-0">
+                          <AvatarImage src={tweet.user.avatarUrl ?? undefined} className="object-cover" />
+                          <AvatarFallback className="font-bold">{tweet.user.displayName[0]}</AvatarFallback>
+                      </Avatar>
                       <div className="w-0.5 grow bg-card my-2" />
                   </div>
                   <div className="flex-1 pb-4">
