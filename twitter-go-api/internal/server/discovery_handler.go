@@ -35,19 +35,14 @@ func (server *Server) getSuggestedUsers(ctx *gin.Context) {
 	if id, ok := getCurrentUserID(ctx); ok {
 		viewerID = &id
 	}
-	users, followingMap, err := server.usecase.GetSuggestedUsers(ctx, page, size, viewerID)
+	users, err := server.usecase.GetSuggestedUsers(ctx, page, size, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 	response := make([]userResponse, 0, len(users))
 	for _, user := range users {
-		var following *bool
-		if v, ok := followingMap[user.ID]; ok {
-			f := v
-			following = &f
-		}
-		response = append(response, newUserResponse(user, following))
+		response = append(response, newUserResponse(user))
 	}
 	ctx.JSON(http.StatusOK, response)
 }

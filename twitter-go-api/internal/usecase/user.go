@@ -21,25 +21,37 @@ type UpdateProfileInput struct {
 	Avatar      *AvatarUpload
 }
 
-func (u *Usecase) GetUser(ctx context.Context, targetUserID int64, viewerID *int64) (db.User, *bool, error) {
-	user, err := u.store.GetUser(ctx, targetUserID)
+func (u *Usecase) GetUser(ctx context.Context, targetUserID int64, viewerID *int64) (UserItem, error) {
+	vID := sql.NullInt64{Valid: false}
+	if viewerID != nil {
+		vID = sql.NullInt64{Int64: *viewerID, Valid: true}
+	}
+	user, err := u.store.GetUser(ctx, db.GetUserParams{ID: targetUserID, ViewerID: vID})
 	if err != nil {
-		return db.User{}, nil, err
+		return UserItem{}, err
 	}
 
-	var following *bool
-	if viewerID != nil && *viewerID != targetUserID {
-		value, err := u.store.IsFollowing(ctx, db.IsFollowingParams{FollowerID: *viewerID, FollowingID: targetUserID})
-		if err == nil {
-			following = &value
-		}
-	}
-
-	return user, following, nil
+	return UserItem{
+		User: db.User{
+			ID:             user.ID,
+			Username:       user.Username,
+			Email:          user.Email,
+			DisplayName:    user.DisplayName,
+			Bio:            user.Bio,
+			AvatarUrl:      user.AvatarUrl,
+			Role:           user.Role,
+			Provider:       user.Provider,
+			FollowersCount: user.FollowersCount,
+			FollowingCount: user.FollowingCount,
+			CreatedAt:      user.CreatedAt,
+			UpdatedAt:      user.UpdatedAt,
+		},
+		IsFollowing: user.IsFollowing,
+	}, nil
 }
 
 func (u *Usecase) UpdateProfile(ctx context.Context, userID int64, input UpdateProfileInput) (db.User, error) {
-	existingUser, err := u.store.GetUser(ctx, userID)
+	existingUser, err := u.store.GetUser(ctx, db.GetUserParams{ID: userID})
 	if err != nil {
 		return db.User{}, err
 	}
@@ -85,7 +97,7 @@ func (u *Usecase) UpdateProfile(ctx context.Context, userID int64, input UpdateP
 }
 
 func (u *Usecase) FollowUser(ctx context.Context, followerID, targetUserID int64) (bool, error) {
-	targetUser, err := u.store.GetUser(ctx, targetUserID)
+	targetUser, err := u.store.GetUser(ctx, db.GetUserParams{ID: targetUserID, ViewerID: sql.NullInt64{Valid: false}})
 	if err != nil {
 		return false, err
 	}
@@ -106,50 +118,78 @@ func (u *Usecase) UnfollowUser(ctx context.Context, followerID, targetUserID int
 	return err
 }
 
-func (u *Usecase) ListFollowers(ctx context.Context, targetUserID int64, page, size int32, viewerID *int64) ([]db.User, map[int64]bool, error) {
+func (u *Usecase) ListFollowers(ctx context.Context, targetUserID int64, page, size int32, viewerID *int64) ([]UserItem, error) {
+	vID := sql.NullInt64{Valid: false}
+	if viewerID != nil {
+		vID = sql.NullInt64{Int64: *viewerID, Valid: true}
+	}
 	users, err := u.store.ListFollowersUsers(ctx, db.ListFollowersUsersParams{
 		FollowingID: targetUserID,
 		Limit:       size,
 		Offset:      page * size,
+		ViewerID:    vID,
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	followingMap := make(map[int64]bool)
-	if viewerID != nil {
-		for _, user := range users {
-			if *viewerID == user.ID {
-				continue
-			}
-			isFollowing, err := u.store.IsFollowing(ctx, db.IsFollowingParams{FollowerID: *viewerID, FollowingID: user.ID})
-			if err == nil {
-				followingMap[user.ID] = isFollowing
-			}
-		}
+
+	items := make([]UserItem, 0, len(users))
+	for _, u := range users {
+		items = append(items, UserItem{
+			User: db.User{
+				ID:             u.ID,
+				Username:       u.Username,
+				Email:          u.Email,
+				DisplayName:    u.DisplayName,
+				Bio:            u.Bio,
+				AvatarUrl:      u.AvatarUrl,
+				Role:           u.Role,
+				Provider:       u.Provider,
+				FollowersCount: u.FollowersCount,
+				FollowingCount: u.FollowingCount,
+				CreatedAt:      u.CreatedAt,
+				UpdatedAt:      u.UpdatedAt,
+			},
+			IsFollowing: u.IsFollowing,
+		})
 	}
-	return users, followingMap, nil
+	return items, nil
 }
 
-func (u *Usecase) ListFollowing(ctx context.Context, targetUserID int64, page, size int32, viewerID *int64) ([]db.User, map[int64]bool, error) {
+func (u *Usecase) ListFollowing(ctx context.Context, targetUserID int64, page, size int32, viewerID *int64) ([]UserItem, error) {
+	vID := sql.NullInt64{Valid: false}
+	if viewerID != nil {
+		vID = sql.NullInt64{Int64: *viewerID, Valid: true}
+	}
 	users, err := u.store.ListFollowingUsers(ctx, db.ListFollowingUsersParams{
 		FollowerID: targetUserID,
 		Limit:      size,
 		Offset:     page * size,
+		ViewerID:   vID,
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	followingMap := make(map[int64]bool)
-	if viewerID != nil {
-		for _, user := range users {
-			if *viewerID == user.ID {
-				continue
-			}
-			isFollowing, err := u.store.IsFollowing(ctx, db.IsFollowingParams{FollowerID: *viewerID, FollowingID: user.ID})
-			if err == nil {
-				followingMap[user.ID] = isFollowing
-			}
-		}
+
+	items := make([]UserItem, 0, len(users))
+	for _, u := range users {
+		items = append(items, UserItem{
+			User: db.User{
+				ID:             u.ID,
+				Username:       u.Username,
+				Email:          u.Email,
+				DisplayName:    u.DisplayName,
+				Bio:            u.Bio,
+				AvatarUrl:      u.AvatarUrl,
+				Role:           u.Role,
+				Provider:       u.Provider,
+				FollowersCount: u.FollowersCount,
+				FollowingCount: u.FollowingCount,
+				CreatedAt:      u.CreatedAt,
+				UpdatedAt:      u.UpdatedAt,
+			},
+			IsFollowing: u.IsFollowing,
+		})
 	}
-	return users, followingMap, nil
+	return items, nil
 }

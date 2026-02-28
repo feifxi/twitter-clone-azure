@@ -22,7 +22,7 @@ func (server *Server) getMe(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newUserResponse(user, nil))
+	ctx.JSON(http.StatusOK, newUserResponse(user))
 }
 
 type getUserRequest struct {
@@ -41,13 +41,13 @@ func (server *Server) getUser(ctx *gin.Context) {
 		viewerID = &id
 	}
 
-	user, following, err := server.usecase.GetUser(ctx, req.ID, viewerID)
+	user, err := server.usecase.GetUser(ctx, req.ID, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newUserResponse(user, following))
+	ctx.JSON(http.StatusOK, newUserResponse(user))
 }
 
 type updateProfileRequest struct {
@@ -107,7 +107,7 @@ func (server *Server) updateProfile(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, newUserResponse(updatedUser, nil))
+	ctx.JSON(http.StatusOK, newUserResponse(usecase.UserItem{User: updatedUser}))
 }
 
 func (server *Server) followUser(ctx *gin.Context) {
@@ -173,7 +173,7 @@ func (server *Server) listFollowers(ctx *gin.Context) {
 		viewerID = &id
 	}
 
-	users, followingMap, err := server.usecase.ListFollowers(ctx, req.ID, page, size, viewerID)
+	users, err := server.usecase.ListFollowers(ctx, req.ID, page, size, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
@@ -181,12 +181,7 @@ func (server *Server) listFollowers(ctx *gin.Context) {
 
 	response := make([]userResponse, 0, len(users))
 	for _, user := range users {
-		var following *bool
-		if v, ok := followingMap[user.ID]; ok {
-			f := v
-			following = &f
-		}
-		response = append(response, newUserResponse(user, following))
+		response = append(response, newUserResponse(user))
 	}
 	ctx.JSON(http.StatusOK, response)
 }
@@ -207,7 +202,7 @@ func (server *Server) listFollowing(ctx *gin.Context) {
 		viewerID = &id
 	}
 
-	users, followingMap, err := server.usecase.ListFollowing(ctx, req.ID, page, size, viewerID)
+	users, err := server.usecase.ListFollowing(ctx, req.ID, page, size, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
@@ -215,12 +210,7 @@ func (server *Server) listFollowing(ctx *gin.Context) {
 
 	response := make([]userResponse, 0, len(users))
 	for _, user := range users {
-		var following *bool
-		if v, ok := followingMap[user.ID]; ok {
-			f := v
-			following = &f
-		}
-		response = append(response, newUserResponse(user, following))
+		response = append(response, newUserResponse(user))
 	}
 	ctx.JSON(http.StatusOK, response)
 }

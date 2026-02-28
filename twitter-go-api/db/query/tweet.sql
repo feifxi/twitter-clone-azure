@@ -7,8 +7,12 @@ INSERT INTO tweets (
 RETURNING *;
 
 -- name: GetTweet :one
-SELECT * FROM tweets
-WHERE id = $1 LIMIT 1;
+SELECT ts.*,
+  EXISTS(SELECT 1 FROM tweet_likes tl WHERE tl.tweet_id = ts.id AND tl.user_id = sqlc.narg('viewer_id')) AS is_liked,
+  EXISTS(SELECT 1 FROM tweets tr WHERE tr.retweet_id = ts.id AND tr.user_id = sqlc.narg('viewer_id')) AS is_retweeted,
+  EXISTS(SELECT 1 FROM follows f WHERE f.following_id = ts.user_id AND f.follower_id = sqlc.narg('viewer_id')) AS is_following
+FROM tweets ts
+WHERE ts.id = $1 LIMIT 1;
 
 -- name: DeleteTweetByOwner :one
 DELETE FROM tweets
@@ -58,7 +62,11 @@ WHERE user_id = $1 AND retweet_id = $2
 LIMIT 1;
 
 -- name: ListForYouFeed :many
-SELECT * FROM tweets t
+SELECT t.*,
+  EXISTS(SELECT 1 FROM tweet_likes tl WHERE tl.tweet_id = t.id AND tl.user_id = sqlc.narg('viewer_id')) AS is_liked,
+  EXISTS(SELECT 1 FROM tweets tr WHERE tr.retweet_id = t.id AND tr.user_id = sqlc.narg('viewer_id')) AS is_retweeted,
+  EXISTS(SELECT 1 FROM follows f WHERE f.following_id = t.user_id AND f.follower_id = sqlc.narg('viewer_id')) AS is_following
+FROM tweets t
 WHERE t.parent_id IS NULL
 ORDER BY
   (t.like_count * 2 + t.retweet_count * 3 + t.reply_count + 1) /
@@ -67,7 +75,10 @@ ORDER BY
 LIMIT $1 OFFSET $2;
 
 -- name: ListFollowingFeed :many
-SELECT t.*
+SELECT t.*,
+  EXISTS(SELECT 1 FROM tweet_likes tl WHERE tl.tweet_id = t.id AND tl.user_id = sqlc.narg('viewer_id')) AS is_liked,
+  EXISTS(SELECT 1 FROM tweets tr WHERE tr.retweet_id = t.id AND tr.user_id = sqlc.narg('viewer_id')) AS is_retweeted,
+  true AS is_following
 FROM tweets t
 JOIN follows f ON t.user_id = f.following_id
 WHERE f.follower_id = $1
@@ -76,26 +87,41 @@ ORDER BY t.created_at DESC
 LIMIT $2 OFFSET $3;
 
 -- name: ListUserTweets :many
-SELECT * FROM tweets
-WHERE user_id = $1
-  AND parent_id IS NULL
-ORDER BY created_at DESC
+SELECT t.*,
+  EXISTS(SELECT 1 FROM tweet_likes tl WHERE tl.tweet_id = t.id AND tl.user_id = sqlc.narg('viewer_id')) AS is_liked,
+  EXISTS(SELECT 1 FROM tweets tr WHERE tr.retweet_id = t.id AND tr.user_id = sqlc.narg('viewer_id')) AS is_retweeted,
+  EXISTS(SELECT 1 FROM follows f WHERE f.following_id = t.user_id AND f.follower_id = sqlc.narg('viewer_id')) AS is_following
+FROM tweets t
+WHERE t.user_id = $1
+  AND t.parent_id IS NULL
+ORDER BY t.created_at DESC
 LIMIT $2 OFFSET $3;
 
 -- name: ListTweetReplies :many
-SELECT * FROM tweets
-WHERE parent_id = $1
-ORDER BY created_at ASC
+SELECT t.*,
+  EXISTS(SELECT 1 FROM tweet_likes tl WHERE tl.tweet_id = t.id AND tl.user_id = sqlc.narg('viewer_id')) AS is_liked,
+  EXISTS(SELECT 1 FROM tweets tr WHERE tr.retweet_id = t.id AND tr.user_id = sqlc.narg('viewer_id')) AS is_retweeted,
+  EXISTS(SELECT 1 FROM follows f WHERE f.following_id = t.user_id AND f.follower_id = sqlc.narg('viewer_id')) AS is_following
+FROM tweets t
+WHERE t.parent_id = $1
+ORDER BY t.created_at ASC
 LIMIT $2 OFFSET $3;
 
 -- name: SearchTweetsFullText :many
-SELECT * FROM tweets
-WHERE search_vector @@ to_tsquery('english', $1)
-ORDER BY ts_rank(search_vector, to_tsquery('english', $1)) DESC, created_at DESC
+SELECT t.*,
+  EXISTS(SELECT 1 FROM tweet_likes tl WHERE tl.tweet_id = t.id AND tl.user_id = sqlc.narg('viewer_id')) AS is_liked,
+  EXISTS(SELECT 1 FROM tweets tr WHERE tr.retweet_id = t.id AND tr.user_id = sqlc.narg('viewer_id')) AS is_retweeted,
+  EXISTS(SELECT 1 FROM follows f WHERE f.following_id = t.user_id AND f.follower_id = sqlc.narg('viewer_id')) AS is_following
+FROM tweets t
+WHERE t.search_vector @@ to_tsquery('english', $1)
+ORDER BY ts_rank(t.search_vector, to_tsquery('english', $1)) DESC, t.created_at DESC
 LIMIT $2 OFFSET $3;
 
 -- name: SearchTweetsByHashtag :many
-SELECT t.*
+SELECT t.*,
+  EXISTS(SELECT 1 FROM tweet_likes tl WHERE tl.tweet_id = t.id AND tl.user_id = sqlc.narg('viewer_id')) AS is_liked,
+  EXISTS(SELECT 1 FROM tweets tr WHERE tr.retweet_id = t.id AND tr.user_id = sqlc.narg('viewer_id')) AS is_retweeted,
+  EXISTS(SELECT 1 FROM follows f WHERE f.following_id = t.user_id AND f.follower_id = sqlc.narg('viewer_id')) AS is_following
 FROM tweets t
 JOIN tweet_hashtags th ON th.tweet_id = t.id
 JOIN hashtags h ON h.id = th.hashtag_id

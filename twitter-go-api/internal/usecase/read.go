@@ -8,63 +8,330 @@ import (
 	"github.com/chanombude/twitter-go-api/internal/db"
 )
 
-func (u *Usecase) GetGlobalFeed(ctx context.Context, page, size int32) ([]db.Tweet, error) {
-	return u.store.ListForYouFeed(ctx, db.ListForYouFeedParams{Limit: size, Offset: page * size})
-}
-
-func (u *Usecase) GetFollowingFeed(ctx context.Context, userID int64, page, size int32) ([]db.Tweet, error) {
-	return u.store.ListFollowingFeed(ctx, db.ListFollowingFeedParams{FollowerID: userID, Limit: size, Offset: page * size})
-}
-
-func (u *Usecase) GetUserFeed(ctx context.Context, userID int64, page, size int32) ([]db.Tweet, error) {
-	return u.store.ListUserTweets(ctx, db.ListUserTweetsParams{UserID: userID, Limit: size, Offset: page * size})
-}
-
-func (u *Usecase) SearchUsers(ctx context.Context, query string, page, size int32, viewerID *int64) ([]db.User, map[int64]bool, error) {
-	users, err := u.store.SearchUsers(ctx, db.SearchUsersParams{
-		Column1: sql.NullString{String: strings.TrimSpace(query), Valid: true},
-		Limit:   size,
-		Offset:  page * size,
+func (u *Usecase) GetGlobalFeed(ctx context.Context, page, size int32, viewerID *int64) ([]TweetItem, error) {
+	var vID sql.NullInt64
+	if viewerID != nil {
+		vID = sql.NullInt64{Int64: *viewerID, Valid: true}
+	}
+	rows, err := u.store.ListForYouFeed(ctx, db.ListForYouFeedParams{
+		Limit:    size,
+		Offset:   page * size,
+		ViewerID: vID,
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	followingMap := make(map[int64]bool)
-	if viewerID != nil {
-		for _, user := range users {
-			if user.ID == *viewerID {
-				continue
-			}
-			f, err := u.store.IsFollowing(ctx, db.IsFollowingParams{FollowerID: *viewerID, FollowingID: user.ID})
-			if err == nil {
-				followingMap[user.ID] = f
-			}
-		}
+	items := make([]TweetItem, 0, len(rows))
+	for _, r := range rows {
+		userRow, _ := u.store.GetUser(ctx, db.GetUserParams{ID: r.UserID, ViewerID: vID})
+		items = append(items, TweetItem{
+			Tweet: db.Tweet{
+				ID:           r.ID,
+				UserID:       r.UserID,
+				Content:      r.Content,
+				MediaType:    r.MediaType,
+				MediaUrl:     r.MediaUrl,
+				ParentID:     r.ParentID,
+				RetweetID:    r.RetweetID,
+				ReplyCount:   r.ReplyCount,
+				RetweetCount: r.RetweetCount,
+				LikeCount:    r.LikeCount,
+				CreatedAt:    r.CreatedAt,
+				UpdatedAt:    r.UpdatedAt,
+			},
+			Author: UserItem{
+				User: db.User{
+					ID:             userRow.ID,
+					Username:       userRow.Username,
+					Email:          userRow.Email,
+					DisplayName:    userRow.DisplayName,
+					Bio:            userRow.Bio,
+					AvatarUrl:      userRow.AvatarUrl,
+					Role:           userRow.Role,
+					FollowersCount: userRow.FollowersCount,
+					FollowingCount: userRow.FollowingCount,
+					CreatedAt:      userRow.CreatedAt,
+					UpdatedAt:      userRow.UpdatedAt,
+				},
+				IsFollowing: userRow.IsFollowing,
+			},
+			IsLiked:     r.IsLiked,
+			IsRetweeted: r.IsRetweeted,
+			IsFollowing: r.IsFollowing,
+		})
 	}
-
-	return users, followingMap, nil
+	return items, nil
 }
 
-func (u *Usecase) SearchTweets(ctx context.Context, query string, page, size int32) ([]db.Tweet, error) {
+func (u *Usecase) GetFollowingFeed(ctx context.Context, userID int64, page, size int32) ([]TweetItem, error) {
+	vID := sql.NullInt64{Int64: userID, Valid: true}
+	rows, err := u.store.ListFollowingFeed(ctx, db.ListFollowingFeedParams{
+		FollowerID: userID,
+		Limit:      size,
+		Offset:     page * size,
+		ViewerID:   vID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	items := make([]TweetItem, 0, len(rows))
+	for _, r := range rows {
+		userRow, _ := u.store.GetUser(ctx, db.GetUserParams{ID: r.UserID, ViewerID: vID})
+		items = append(items, TweetItem{
+			Tweet: db.Tweet{
+				ID:           r.ID,
+				UserID:       r.UserID,
+				Content:      r.Content,
+				MediaType:    r.MediaType,
+				MediaUrl:     r.MediaUrl,
+				ParentID:     r.ParentID,
+				RetweetID:    r.RetweetID,
+				ReplyCount:   r.ReplyCount,
+				RetweetCount: r.RetweetCount,
+				LikeCount:    r.LikeCount,
+				CreatedAt:    r.CreatedAt,
+				UpdatedAt:    r.UpdatedAt,
+			},
+			Author: UserItem{
+				User: db.User{
+					ID:             userRow.ID,
+					Username:       userRow.Username,
+					Email:          userRow.Email,
+					DisplayName:    userRow.DisplayName,
+					Bio:            userRow.Bio,
+					AvatarUrl:      userRow.AvatarUrl,
+					Role:           userRow.Role,
+					FollowersCount: userRow.FollowersCount,
+					FollowingCount: userRow.FollowingCount,
+					CreatedAt:      userRow.CreatedAt,
+					UpdatedAt:      userRow.UpdatedAt,
+				},
+				IsFollowing: userRow.IsFollowing,
+			},
+			IsLiked:     r.IsLiked,
+			IsRetweeted: r.IsRetweeted,
+			IsFollowing: r.IsFollowing,
+		})
+	}
+	return items, nil
+}
+
+func (u *Usecase) GetUserFeed(ctx context.Context, userID int64, page, size int32, viewerID *int64) ([]TweetItem, error) {
+	var vID sql.NullInt64
+	if viewerID != nil {
+		vID = sql.NullInt64{Int64: *viewerID, Valid: true}
+	}
+	rows, err := u.store.ListUserTweets(ctx, db.ListUserTweetsParams{
+		UserID:   userID,
+		Limit:    size,
+		Offset:   page * size,
+		ViewerID: vID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	items := make([]TweetItem, 0, len(rows))
+	for _, r := range rows {
+		userRow, _ := u.store.GetUser(ctx, db.GetUserParams{ID: r.UserID, ViewerID: vID})
+		items = append(items, TweetItem{
+			Tweet: db.Tweet{
+				ID:           r.ID,
+				UserID:       r.UserID,
+				Content:      r.Content,
+				MediaType:    r.MediaType,
+				MediaUrl:     r.MediaUrl,
+				ParentID:     r.ParentID,
+				RetweetID:    r.RetweetID,
+				ReplyCount:   r.ReplyCount,
+				RetweetCount: r.RetweetCount,
+				LikeCount:    r.LikeCount,
+				CreatedAt:    r.CreatedAt,
+				UpdatedAt:    r.UpdatedAt,
+			},
+			Author: UserItem{
+				User: db.User{
+					ID:             userRow.ID,
+					Username:       userRow.Username,
+					Email:          userRow.Email,
+					DisplayName:    userRow.DisplayName,
+					Bio:            userRow.Bio,
+					AvatarUrl:      userRow.AvatarUrl,
+					Role:           userRow.Role,
+					FollowersCount: userRow.FollowersCount,
+					FollowingCount: userRow.FollowingCount,
+					CreatedAt:      userRow.CreatedAt,
+					UpdatedAt:      userRow.UpdatedAt,
+				},
+				IsFollowing: userRow.IsFollowing,
+			},
+			IsLiked:     r.IsLiked,
+			IsRetweeted: r.IsRetweeted,
+			IsFollowing: r.IsFollowing,
+		})
+	}
+	return items, nil
+}
+
+func (u *Usecase) SearchUsers(ctx context.Context, query string, page, size int32, viewerID *int64) ([]UserItem, error) {
+	var vID sql.NullInt64
+	if viewerID != nil {
+		vID = sql.NullInt64{Int64: *viewerID, Valid: true}
+	}
+	rows, err := u.store.SearchUsers(ctx, db.SearchUsersParams{
+		Column1:  sql.NullString{String: strings.TrimSpace(query), Valid: true},
+		Limit:    size,
+		Offset:   page * size,
+		ViewerID: vID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	items := make([]UserItem, 0, len(rows))
+	for _, r := range rows {
+		items = append(items, UserItem{
+			User: db.User{
+				ID:             r.ID,
+				Username:       r.Username,
+				Email:          r.Email,
+				DisplayName:    r.DisplayName,
+				Bio:            r.Bio,
+				AvatarUrl:      r.AvatarUrl,
+				Role:           r.Role,
+				Provider:       r.Provider,
+				FollowersCount: r.FollowersCount,
+				FollowingCount: r.FollowingCount,
+				CreatedAt:      r.CreatedAt,
+				UpdatedAt:      r.UpdatedAt,
+			},
+			IsFollowing: r.IsFollowing,
+		})
+	}
+	return items, nil
+}
+
+func (u *Usecase) SearchTweets(ctx context.Context, query string, page, size int32, viewerID *int64) ([]TweetItem, error) {
 	trimmed := strings.TrimSpace(query)
 	if trimmed == "" {
-		return []db.Tweet{}, nil
+		return []TweetItem{}, nil
+	}
+
+	var vID sql.NullInt64
+	if viewerID != nil {
+		vID = sql.NullInt64{Int64: *viewerID, Valid: true}
 	}
 
 	if strings.HasPrefix(trimmed, "#") {
 		hashtag := strings.TrimSpace(strings.ToLower(strings.TrimLeft(trimmed, "#")))
 		if hashtag == "" {
-			return []db.Tweet{}, nil
+			return []TweetItem{}, nil
 		}
-		return u.store.SearchTweetsByHashtag(ctx, db.SearchTweetsByHashtagParams{Lower: hashtag, Limit: size, Offset: page * size})
+		rows, err := u.store.SearchTweetsByHashtag(ctx, db.SearchTweetsByHashtagParams{
+			Lower:    hashtag,
+			Limit:    size,
+			Offset:   page * size,
+			ViewerID: vID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		items := make([]TweetItem, 0, len(rows))
+		for _, r := range rows {
+			userRow, _ := u.store.GetUser(ctx, db.GetUserParams{ID: r.UserID, ViewerID: vID})
+			items = append(items, TweetItem{
+				Tweet: db.Tweet{
+					ID:           r.ID,
+					UserID:       r.UserID,
+					Content:      r.Content,
+					MediaType:    r.MediaType,
+					MediaUrl:     r.MediaUrl,
+					ParentID:     r.ParentID,
+					RetweetID:    r.RetweetID,
+					ReplyCount:   r.ReplyCount,
+					RetweetCount: r.RetweetCount,
+					LikeCount:    r.LikeCount,
+					CreatedAt:    r.CreatedAt,
+					UpdatedAt:    r.UpdatedAt,
+				},
+				Author: UserItem{
+					User: db.User{
+						ID:             userRow.ID,
+						Username:       userRow.Username,
+						Email:          userRow.Email,
+						DisplayName:    userRow.DisplayName,
+						Bio:            userRow.Bio,
+						AvatarUrl:      userRow.AvatarUrl,
+						Role:           userRow.Role,
+						Provider:       userRow.Provider,
+						FollowersCount: userRow.FollowersCount,
+						FollowingCount: userRow.FollowingCount,
+						CreatedAt:      userRow.CreatedAt,
+						UpdatedAt:      userRow.UpdatedAt,
+					},
+					IsFollowing: userRow.IsFollowing,
+				},
+				IsLiked:     r.IsLiked,
+				IsRetweeted: r.IsRetweeted,
+				IsFollowing: r.IsFollowing,
+			})
+		}
+		return items, nil
 	}
 
 	tsQuery := buildTSQuery(trimmed)
 	if tsQuery == "" {
-		return []db.Tweet{}, nil
+		return []TweetItem{}, nil
 	}
-	return u.store.SearchTweetsFullText(ctx, db.SearchTweetsFullTextParams{ToTsquery: tsQuery, Limit: size, Offset: page * size})
+	rows, err := u.store.SearchTweetsFullText(ctx, db.SearchTweetsFullTextParams{
+		ToTsquery: tsQuery,
+		Limit:     size,
+		Offset:    page * size,
+		ViewerID:  vID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	items := make([]TweetItem, 0, len(rows))
+	for _, r := range rows {
+		userRow, _ := u.store.GetUser(ctx, db.GetUserParams{ID: r.UserID, ViewerID: vID})
+		items = append(items, TweetItem{
+			Tweet: db.Tweet{
+				ID:           r.ID,
+				UserID:       r.UserID,
+				Content:      r.Content,
+				MediaType:    r.MediaType,
+				MediaUrl:     r.MediaUrl,
+				ParentID:     r.ParentID,
+				RetweetID:    r.RetweetID,
+				ReplyCount:   r.ReplyCount,
+				RetweetCount: r.RetweetCount,
+				LikeCount:    r.LikeCount,
+				CreatedAt:    r.CreatedAt,
+				UpdatedAt:    r.UpdatedAt,
+			},
+			Author: UserItem{
+				User: db.User{
+					ID:             userRow.ID,
+					Username:       userRow.Username,
+					Email:          userRow.Email,
+					DisplayName:    userRow.DisplayName,
+					Bio:            userRow.Bio,
+					AvatarUrl:      userRow.AvatarUrl,
+					Role:           userRow.Role,
+					Provider:       userRow.Provider,
+					FollowersCount: userRow.FollowersCount,
+					FollowingCount: userRow.FollowingCount,
+					CreatedAt:      userRow.CreatedAt,
+					UpdatedAt:      userRow.UpdatedAt,
+				},
+				IsFollowing: userRow.IsFollowing,
+			},
+			IsLiked:     r.IsLiked,
+			IsRetweeted: r.IsRetweeted,
+			IsFollowing: r.IsFollowing,
+		})
+	}
+	return items, nil
 }
 
 func (u *Usecase) SearchHashtags(ctx context.Context, query string, limit int32) ([]db.Hashtag, error) {
@@ -89,34 +356,52 @@ func (u *Usecase) GetTrendingHashtags(ctx context.Context, limit int32) ([]db.Ha
 	return hashtags, nil
 }
 
-func (u *Usecase) GetSuggestedUsers(ctx context.Context, page, size int32, viewerID *int64) ([]db.User, map[int64]bool, error) {
-	var (
-		users []db.User
-		err   error
-	)
+func (u *Usecase) GetSuggestedUsers(ctx context.Context, page, size int32, viewerID *int64) ([]UserItem, error) {
 	if viewerID != nil {
-		users, err = u.store.ListSuggestedUsers(ctx, db.ListSuggestedUsersParams{FollowerID: *viewerID, Limit: size, Offset: page * size})
-	} else {
-		users, err = u.store.ListTopUsers(ctx, db.ListTopUsersParams{Limit: size, Offset: page * size})
-	}
-	if err != nil {
-		return nil, nil, err
-	}
-
-	followingMap := make(map[int64]bool)
-	if viewerID != nil {
-		for _, user := range users {
-			if user.ID == *viewerID {
-				continue
-			}
-			f, err := u.store.IsFollowing(ctx, db.IsFollowingParams{FollowerID: *viewerID, FollowingID: user.ID})
-			if err == nil {
-				followingMap[user.ID] = f
-			}
+		rows, err := u.store.ListSuggestedUsers(ctx, db.ListSuggestedUsersParams{
+			FollowerID: *viewerID,
+			Limit:      size,
+			Offset:     page * size,
+			ViewerID:   sql.NullInt64{Int64: *viewerID, Valid: true},
+		})
+		if err != nil {
+			return nil, err
 		}
+		items := make([]UserItem, 0, len(rows))
+		for _, r := range rows {
+			items = append(items, UserItem{
+				User: db.User{
+					ID:             r.ID,
+					Username:       r.Username,
+					Email:          r.Email,
+					DisplayName:    r.DisplayName,
+					Bio:            r.Bio,
+					AvatarUrl:      r.AvatarUrl,
+					Role:           r.Role,
+					Provider:       r.Provider,
+					FollowersCount: r.FollowersCount,
+					FollowingCount: r.FollowingCount,
+					CreatedAt:      r.CreatedAt,
+					UpdatedAt:      r.UpdatedAt,
+				},
+				IsFollowing: r.IsFollowing,
+			})
+		}
+		return items, nil
+	} else {
+		users, err := u.store.ListTopUsers(ctx, db.ListTopUsersParams{Limit: size, Offset: page * size})
+		if err != nil {
+			return nil, err
+		}
+		items := make([]UserItem, 0, len(users))
+		for _, r := range users {
+			items = append(items, UserItem{
+				User:        r,
+				IsFollowing: false,
+			})
+		}
+		return items, nil
 	}
-
-	return users, followingMap, nil
 }
 
 func (u *Usecase) ListNotifications(ctx context.Context, userID int64, page, size int32) ([]db.Notification, error) {

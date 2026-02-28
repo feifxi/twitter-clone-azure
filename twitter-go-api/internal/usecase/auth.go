@@ -15,7 +15,7 @@ import (
 )
 
 type AuthResult struct {
-	User         db.User
+	User         UserItem
 	AccessToken  string
 	RefreshToken string
 }
@@ -59,7 +59,7 @@ func (u *Usecase) LoginWithGoogle(ctx context.Context, idToken string) (AuthResu
 		return AuthResult{}, err
 	}
 
-	return AuthResult{User: user, AccessToken: accessToken, RefreshToken: refreshToken}, nil
+	return AuthResult{User: UserItem{User: user}, AccessToken: accessToken, RefreshToken: refreshToken}, nil
 }
 
 func (u *Usecase) RefreshSession(ctx context.Context, refreshToken string) (AuthResult, error) {
@@ -78,12 +78,31 @@ func (u *Usecase) RefreshSession(ctx context.Context, refreshToken string) (Auth
 		return AuthResult{}, err
 	}
 
-	user, err := u.store.GetUser(ctx, session.UserID)
+	user, err := u.store.GetUser(ctx, db.GetUserParams{ID: session.UserID, ViewerID: sql.NullInt64{Valid: false}})
 	if err != nil {
 		return AuthResult{}, err
 	}
 
-	return AuthResult{User: user, AccessToken: accessToken, RefreshToken: newRefreshToken}, nil
+	return AuthResult{
+		User: UserItem{
+			User: db.User{
+				ID:             user.ID,
+				Username:       user.Username,
+				Email:          user.Email,
+				DisplayName:    user.DisplayName,
+				Bio:            user.Bio,
+				AvatarUrl:      user.AvatarUrl,
+				Role:           user.Role,
+				Provider:       user.Provider,
+				FollowersCount: user.FollowersCount,
+				FollowingCount: user.FollowingCount,
+				CreatedAt:      user.CreatedAt,
+				UpdatedAt:      user.UpdatedAt,
+			},
+		},
+		AccessToken:  accessToken,
+		RefreshToken: newRefreshToken,
+	}, nil
 }
 
 func (u *Usecase) Logout(ctx context.Context, userID *int64, refreshToken *string) {
@@ -96,8 +115,27 @@ func (u *Usecase) Logout(ctx context.Context, userID *int64, refreshToken *strin
 	}
 }
 
-func (u *Usecase) GetMe(ctx context.Context, userID int64) (db.User, error) {
-	return u.store.GetUser(ctx, userID)
+func (u *Usecase) GetMe(ctx context.Context, userID int64) (UserItem, error) {
+	user, err := u.store.GetUser(ctx, db.GetUserParams{ID: userID, ViewerID: sql.NullInt64{Valid: false}})
+	if err != nil {
+		return UserItem{}, err
+	}
+	return UserItem{
+		User: db.User{
+			ID:             user.ID,
+			Username:       user.Username,
+			Email:          user.Email,
+			DisplayName:    user.DisplayName,
+			Bio:            user.Bio,
+			AvatarUrl:      user.AvatarUrl,
+			Role:           user.Role,
+			Provider:       user.Provider,
+			FollowersCount: user.FollowersCount,
+			FollowingCount: user.FollowingCount,
+			CreatedAt:      user.CreatedAt,
+			UpdatedAt:      user.UpdatedAt,
+		},
+	}, nil
 }
 
 func (u *Usecase) issueSession(ctx context.Context, userID int64) (accessToken string, refreshToken string, err error) {

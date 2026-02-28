@@ -12,6 +12,19 @@ import (
 	"github.com/chanombude/twitter-go-api/internal/token"
 )
 
+type TweetItem struct {
+	db.Tweet
+	Author      UserItem
+	IsLiked     bool
+	IsRetweeted bool
+	IsFollowing bool
+}
+
+type UserItem struct {
+	db.User
+	IsFollowing bool
+}
+
 type Usecase struct {
 	config              config.Config
 	store               db.Querier

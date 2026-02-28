@@ -27,19 +27,14 @@ func (server *Server) searchUsers(ctx *gin.Context) {
 	if id, ok := getCurrentUserID(ctx); ok {
 		viewerID = &id
 	}
-	users, followingMap, err := server.usecase.SearchUsers(ctx, req.Query, page, size, viewerID)
+	users, err := server.usecase.SearchUsers(ctx, req.Query, page, size, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 	response := make([]userResponse, 0, len(users))
 	for _, user := range users {
-		var following *bool
-		if v, ok := followingMap[user.ID]; ok {
-			f := v
-			following = &f
-		}
-		response = append(response, newUserResponse(user, following))
+		response = append(response, newUserResponse(user))
 	}
 	ctx.JSON(http.StatusOK, response)
 }
@@ -54,14 +49,18 @@ func (server *Server) searchTweets(ctx *gin.Context) {
 	if !ok {
 		return
 	}
-	tweets, err := server.usecase.SearchTweets(ctx, req.Query, page, size)
+	var viewerID *int64
+	if id, ok := getCurrentUserID(ctx); ok {
+		viewerID = &id
+	}
+	tweets, err := server.usecase.SearchTweets(ctx, req.Query, page, size, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 	response := make([]tweetResponse, 0, len(tweets))
 	for _, tweet := range tweets {
-		response = append(response, newTweetResponse(tweet))
+		response = append(response, newTweetResponse(tweet, nil, nil))
 	}
 	ctx.JSON(http.StatusOK, response)
 }

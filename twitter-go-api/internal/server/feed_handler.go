@@ -12,14 +12,18 @@ func (server *Server) getGlobalFeed(ctx *gin.Context) {
 	if !ok {
 		return
 	}
-	tweets, err := server.usecase.GetGlobalFeed(ctx, page, size)
+	var viewerID *int64
+	if id, ok := getCurrentUserID(ctx); ok {
+		viewerID = &id
+	}
+	tweets, err := server.usecase.GetGlobalFeed(ctx, page, size, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 	response := make([]tweetResponse, 0, len(tweets))
 	for _, t := range tweets {
-		response = append(response, newTweetResponse(t))
+		response = append(response, newTweetResponse(t, nil, nil))
 	}
 	ctx.JSON(http.StatusOK, response)
 }
@@ -40,7 +44,7 @@ func (server *Server) getFollowingFeed(ctx *gin.Context) {
 	}
 	response := make([]tweetResponse, 0, len(tweets))
 	for _, t := range tweets {
-		response = append(response, newTweetResponse(t))
+		response = append(response, newTweetResponse(t, nil, nil))
 	}
 	ctx.JSON(http.StatusOK, response)
 }
@@ -59,14 +63,18 @@ func (server *Server) getUserFeed(ctx *gin.Context) {
 	if !ok {
 		return
 	}
-	tweets, err := server.usecase.GetUserFeed(ctx, req.UserID, page, size)
+	var viewerID *int64
+	if id, ok := getCurrentUserID(ctx); ok {
+		viewerID = &id
+	}
+	tweets, err := server.usecase.GetUserFeed(ctx, req.UserID, page, size, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 	response := make([]tweetResponse, 0, len(tweets))
 	for _, t := range tweets {
-		response = append(response, newTweetResponse(t))
+		response = append(response, newTweetResponse(t, nil, nil))
 	}
 	ctx.JSON(http.StatusOK, response)
 }

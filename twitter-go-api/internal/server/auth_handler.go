@@ -31,7 +31,7 @@ func (server *Server) loginGoogle(ctx *gin.Context) {
 	}
 
 	server.setSessionCookies(ctx, authData.AccessToken, authData.RefreshToken)
-	ctx.JSON(http.StatusOK, authResponse{AccessToken: authData.AccessToken, User: newUserResponse(authData.User, nil)})
+	ctx.JSON(http.StatusOK, authResponse{AccessToken: authData.AccessToken, User: newUserResponse(authData.User)})
 }
 
 func (server *Server) refreshToken(ctx *gin.Context) {

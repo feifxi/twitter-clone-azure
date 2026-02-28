@@ -3,10 +3,8 @@ package server
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/chanombude/twitter-go-api/internal/apperr"
-	"github.com/chanombude/twitter-go-api/internal/db"
 	"github.com/chanombude/twitter-go-api/internal/usecase"
 	"github.com/gin-gonic/gin"
 )
@@ -14,55 +12,6 @@ import (
 type createTweetRequest struct {
 	Content  *string `json:"content"`
 	ParentID *int64  `json:"parent_id"`
-}
-
-type tweetResponse struct {
-	ID           int64     `json:"id"`
-	UserID       int64     `json:"user_id"`
-	Content      *string   `json:"content"`
-	MediaType    *string   `json:"media_type"`
-	MediaUrl     *string   `json:"media_url"`
-	ParentID     *int64    `json:"parent_id"`
-	RetweetID    *int64    `json:"retweet_id"`
-	ReplyCount   int32     `json:"reply_count"`
-	RetweetCount int32     `json:"retweet_count"`
-	LikeCount    int32     `json:"like_count"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
-}
-
-func newTweetResponse(tweet db.Tweet) tweetResponse {
-	var content, mediaType, mediaURL *string
-	if tweet.Content.Valid {
-		content = &tweet.Content.String
-	}
-	if tweet.MediaType.Valid {
-		mediaType = &tweet.MediaType.String
-	}
-	if tweet.MediaUrl.Valid {
-		mediaURL = &tweet.MediaUrl.String
-	}
-	var parentID, retweetID *int64
-	if tweet.ParentID.Valid {
-		parentID = &tweet.ParentID.Int64
-	}
-	if tweet.RetweetID.Valid {
-		retweetID = &tweet.RetweetID.Int64
-	}
-	return tweetResponse{
-		ID:           tweet.ID,
-		UserID:       tweet.UserID,
-		Content:      content,
-		MediaType:    mediaType,
-		MediaUrl:     mediaURL,
-		ParentID:     parentID,
-		RetweetID:    retweetID,
-		ReplyCount:   tweet.ReplyCount,
-		RetweetCount: tweet.RetweetCount,
-		LikeCount:    tweet.LikeCount,
-		CreatedAt:    tweet.CreatedAt,
-		UpdatedAt:    tweet.UpdatedAt,
-	}
 }
 
 func (server *Server) createTweet(ctx *gin.Context) {
@@ -103,7 +52,7 @@ func (server *Server) createTweet(ctx *gin.Context) {
 		writeError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusCreated, newTweetResponse(tweet))
+	ctx.JSON(http.StatusCreated, newTweetResponse(tweet, nil, nil))
 }
 
 type tweetURIRequest struct {
@@ -116,12 +65,16 @@ func (server *Server) getTweet(ctx *gin.Context) {
 		writeError(ctx, apperr.BadRequest("invalid tweet id"))
 		return
 	}
-	tweet, err := server.usecase.GetTweet(ctx, req.ID)
+	var viewerID *int64
+	if id, ok := getCurrentUserID(ctx); ok {
+		viewerID = &id
+	}
+	tweet, err := server.usecase.GetTweet(ctx, req.ID, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusOK, newTweetResponse(tweet))
+	ctx.JSON(http.StatusOK, newTweetResponse(tweet, nil, nil))
 }
 
 func (server *Server) deleteTweet(ctx *gin.Context) {
@@ -155,14 +108,18 @@ func (server *Server) getReplies(ctx *gin.Context) {
 	if !ok {
 		return
 	}
-	tweets, err := server.usecase.ListReplies(ctx, req.ID, page, size)
+	var viewerID *int64
+	if id, ok := getCurrentUserID(ctx); ok {
+		viewerID = &id
+	}
+	tweets, err := server.usecase.ListReplies(ctx, req.ID, page, size, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 	response := make([]tweetResponse, 0, len(tweets))
 	for _, t := range tweets {
-		response = append(response, newTweetResponse(t))
+		response = append(response, newTweetResponse(t, nil, nil))
 	}
 	ctx.JSON(http.StatusOK, response)
 }
@@ -216,7 +173,7 @@ func (server *Server) retweet(ctx *gin.Context) {
 		writeError(ctx, err)
 		return
 	}
-	ctx.JSON(http.StatusOK, newTweetResponse(tweet))
+	ctx.JSON(http.StatusOK, newTweetResponse(tweet, nil, nil))
 }
 
 func (server *Server) undoRetweet(ctx *gin.Context) {

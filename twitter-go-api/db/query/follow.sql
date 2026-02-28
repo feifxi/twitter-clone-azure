@@ -34,3 +34,7 @@ update_actor AS (
   WHERE id = $1 AND EXISTS (SELECT 1 FROM deleted)
 )
 SELECT EXISTS(SELECT 1 FROM deleted);
+
+-- name: GetFollowedUserIDs :many
+SELECT following_id FROM follows
+WHERE follower_id = $1 AND following_id = ANY($2::int[]);

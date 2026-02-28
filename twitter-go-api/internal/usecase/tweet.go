@@ -26,7 +26,7 @@ type CreateTweetInput struct {
 	Media    *MediaUpload
 }
 
-func (u *Usecase) CreateTweet(ctx context.Context, input CreateTweetInput) (db.Tweet, error) {
+func (u *Usecase) CreateTweet(ctx context.Context, input CreateTweetInput) (TweetItem, error) {
 	trimmedContent := ""
 	if input.Content != nil {
 		trimmedContent = strings.TrimSpace(*input.Content)
@@ -42,24 +42,24 @@ func (u *Usecase) CreateTweet(ctx context.Context, input CreateTweetInput) (db.T
 		case strings.HasPrefix(contentType, "video/"):
 			mediaType = sql.NullString{String: "VIDEO", Valid: true}
 		default:
-			return db.Tweet{}, apperr.BadRequest("only images or videos are allowed")
+			return TweetItem{}, apperr.BadRequest("only images or videos are allowed")
 		}
 
 		uploadedURL, err := u.storage.UploadFile(ctx, input.Media.Reader, input.Media.Filename, contentType)
 		if err != nil {
-			return db.Tweet{}, err
+			return TweetItem{}, err
 		}
 		mediaURL = sql.NullString{String: uploadedURL, Valid: true}
 	}
 
 	if trimmedContent == "" && !mediaURL.Valid {
-		return db.Tweet{}, apperr.BadRequest("tweet must include text or media")
+		return TweetItem{}, apperr.BadRequest("tweet must include text or media")
 	}
 
 	parentID := sql.NullInt64{Valid: false}
 	if input.ParentID != nil {
-		if _, err := u.store.GetTweet(ctx, *input.ParentID); err != nil {
-			return db.Tweet{}, err
+		if _, err := u.store.GetTweet(ctx, db.GetTweetParams{ID: *input.ParentID}); err != nil {
+			return TweetItem{}, err
 		}
 		parentID = sql.NullInt64{Int64: *input.ParentID, Valid: true}
 	}
@@ -81,7 +81,7 @@ func (u *Usecase) CreateTweet(ctx context.Context, input CreateTweetInput) (db.T
 		if mediaURL.Valid {
 			_ = u.storage.DeleteFile(ctx, mediaURL.String)
 		}
-		return db.Tweet{}, err
+		return TweetItem{}, err
 	}
 
 	if parentID.Valid {
@@ -89,7 +89,7 @@ func (u *Usecase) CreateTweet(ctx context.Context, input CreateTweetInput) (db.T
 			log.Printf("failed to increment parent reply count: %v", err)
 		}
 
-		parentTweet, err := u.store.GetTweet(ctx, parentID.Int64)
+		parentTweet, err := u.store.GetTweet(ctx, db.GetTweetParams{ID: parentID.Int64})
 		if err == nil {
 			tweetID := tweet.ID
 			_ = u.createAndDispatchNotification(ctx, parentTweet.UserID, input.UserID, &tweetID, "REPLY")
@@ -110,15 +110,59 @@ func (u *Usecase) CreateTweet(ctx context.Context, input CreateTweetInput) (db.T
 		}
 	}
 
-	return tweet, nil
+	return u.GetTweet(ctx, tweet.ID, &input.UserID)
 }
 
-func (u *Usecase) GetTweet(ctx context.Context, tweetID int64) (db.Tweet, error) {
-	return u.store.GetTweet(ctx, tweetID)
+func (u *Usecase) GetTweet(ctx context.Context, tweetID int64, viewerID *int64) (TweetItem, error) {
+	var vID sql.NullInt64
+	if viewerID != nil {
+		vID = sql.NullInt64{Int64: *viewerID, Valid: true}
+	}
+	r, err := u.store.GetTweet(ctx, db.GetTweetParams{ID: tweetID, ViewerID: vID})
+	if err != nil {
+		return TweetItem{}, err
+	}
+	userRow, _ := u.store.GetUser(ctx, db.GetUserParams{ID: r.UserID, ViewerID: vID})
+	return TweetItem{
+		Tweet: db.Tweet{
+			ID:           r.ID,
+			UserID:       r.UserID,
+			Content:      r.Content,
+			MediaType:    r.MediaType,
+			MediaUrl:     r.MediaUrl,
+			ParentID:     r.ParentID,
+			RetweetID:    r.RetweetID,
+			ReplyCount:   r.ReplyCount,
+			RetweetCount: r.RetweetCount,
+			LikeCount:    r.LikeCount,
+			CreatedAt:    r.CreatedAt,
+			UpdatedAt:    r.UpdatedAt,
+		},
+		Author: UserItem{
+			User: db.User{
+				ID:             userRow.ID,
+				Username:       userRow.Username,
+				Email:          userRow.Email,
+				DisplayName:    userRow.DisplayName,
+				Bio:            userRow.Bio,
+				AvatarUrl:      userRow.AvatarUrl,
+				Role:           userRow.Role,
+				Provider:       userRow.Provider,
+				FollowersCount: userRow.FollowersCount,
+				FollowingCount: userRow.FollowingCount,
+				CreatedAt:      userRow.CreatedAt,
+				UpdatedAt:      userRow.UpdatedAt,
+			},
+			IsFollowing: userRow.IsFollowing,
+		},
+		IsLiked:     r.IsLiked,
+		IsRetweeted: r.IsRetweeted,
+		IsFollowing: r.IsFollowing,
+	}, nil
 }
 
 func (u *Usecase) DeleteTweet(ctx context.Context, userID, tweetID int64) error {
-	tweet, err := u.store.GetTweet(ctx, tweetID)
+	tweet, err := u.store.GetTweet(ctx, db.GetTweetParams{ID: tweetID})
 	if err != nil {
 		return err
 	}
@@ -151,16 +195,65 @@ func (u *Usecase) DeleteTweet(ctx context.Context, userID, tweetID int64) error 
 	return nil
 }
 
-func (u *Usecase) ListReplies(ctx context.Context, tweetID int64, page, size int32) ([]db.Tweet, error) {
-	return u.store.ListTweetReplies(ctx, db.ListTweetRepliesParams{
+func (u *Usecase) ListReplies(ctx context.Context, tweetID int64, page, size int32, viewerID *int64) ([]TweetItem, error) {
+	var vID sql.NullInt64
+	if viewerID != nil {
+		vID = sql.NullInt64{Int64: *viewerID, Valid: true}
+	}
+	rows, err := u.store.ListTweetReplies(ctx, db.ListTweetRepliesParams{
 		ParentID: sql.NullInt64{Int64: tweetID, Valid: true},
 		Limit:    size,
 		Offset:   page * size,
+		ViewerID: vID,
 	})
+	if err != nil {
+		return nil, err
+	}
+	items := make([]TweetItem, 0, len(rows))
+	for _, r := range rows {
+		userRow, _ := u.store.GetUser(ctx, db.GetUserParams{ID: r.UserID, ViewerID: vID})
+		items = append(items, TweetItem{
+			Tweet: db.Tweet{
+				ID:           r.ID,
+				UserID:       r.UserID,
+				Content:      r.Content,
+				MediaType:    r.MediaType,
+				MediaUrl:     r.MediaUrl,
+				ParentID:     r.ParentID,
+				RetweetID:    r.RetweetID,
+				ReplyCount:   r.ReplyCount,
+				RetweetCount: r.RetweetCount,
+				LikeCount:    r.LikeCount,
+				CreatedAt:    r.CreatedAt,
+				UpdatedAt:    r.UpdatedAt,
+			},
+			Author: UserItem{
+				User: db.User{
+					ID:             userRow.ID,
+					Username:       userRow.Username,
+					Email:          userRow.Email,
+					DisplayName:    userRow.DisplayName,
+					Bio:            userRow.Bio,
+					AvatarUrl:      userRow.AvatarUrl,
+					Role:           userRow.Role,
+					Provider:       userRow.Provider,
+					FollowersCount: userRow.FollowersCount,
+					FollowingCount: userRow.FollowingCount,
+					CreatedAt:      userRow.CreatedAt,
+					UpdatedAt:      userRow.UpdatedAt,
+				},
+				IsFollowing: userRow.IsFollowing,
+			},
+			IsLiked:     r.IsLiked,
+			IsRetweeted: r.IsRetweeted,
+			IsFollowing: r.IsFollowing,
+		})
+	}
+	return items, nil
 }
 
 func (u *Usecase) LikeTweet(ctx context.Context, userID, tweetID int64) error {
-	tweet, err := u.store.GetTweet(ctx, tweetID)
+	tweet, err := u.store.GetTweet(ctx, db.GetTweetParams{ID: tweetID})
 	if err != nil {
 		return err
 	}
@@ -183,17 +276,17 @@ func (u *Usecase) UnlikeTweet(ctx context.Context, userID, tweetID int64) error 
 	return err
 }
 
-func (u *Usecase) Retweet(ctx context.Context, userID, tweetID int64) (db.Tweet, error) {
-	targetTweet, err := u.store.GetTweet(ctx, tweetID)
+func (u *Usecase) Retweet(ctx context.Context, userID, tweetID int64) (TweetItem, error) {
+	targetTweet, err := u.store.GetTweet(ctx, db.GetTweetParams{ID: tweetID})
 	if err != nil {
-		return db.Tweet{}, err
+		return TweetItem{}, err
 	}
 
 	originalTweet := targetTweet
 	if targetTweet.RetweetID.Valid {
-		originalTweet, err = u.store.GetTweet(ctx, targetTweet.RetweetID.Int64)
+		originalTweet, err = u.store.GetTweet(ctx, db.GetTweetParams{ID: targetTweet.RetweetID.Int64})
 		if err != nil {
-			return db.Tweet{}, err
+			return TweetItem{}, err
 		}
 	}
 
@@ -202,31 +295,17 @@ func (u *Usecase) Retweet(ctx context.Context, userID, tweetID int64) (db.Tweet,
 		RetweetID: sql.NullInt64{Int64: originalTweet.ID, Valid: true},
 	})
 	if err != nil {
-		return db.Tweet{}, err
+		return TweetItem{}, err
 	}
 
 	id := originalTweet.ID
 	_ = u.createAndDispatchNotification(ctx, originalTweet.UserID, userID, &id, "RETWEET")
 
-	return db.Tweet{
-		ID:           created.ID,
-		UserID:       created.UserID,
-		Content:      created.Content,
-		MediaType:    created.MediaType,
-		MediaUrl:     created.MediaUrl,
-		ParentID:     created.ParentID,
-		RetweetID:    created.RetweetID,
-		ReplyCount:   created.ReplyCount,
-		RetweetCount: created.RetweetCount,
-		LikeCount:    created.LikeCount,
-		CreatedAt:    created.CreatedAt,
-		UpdatedAt:    created.UpdatedAt,
-		SearchVector: created.SearchVector,
-	}, nil
+	return u.GetTweet(ctx, created.ID, &userID)
 }
 
 func (u *Usecase) UndoRetweet(ctx context.Context, userID, tweetID int64) error {
-	targetTweet, err := u.store.GetTweet(ctx, tweetID)
+	targetTweet, err := u.store.GetTweet(ctx, db.GetTweetParams{ID: tweetID})
 	if err != nil {
 		return err
 	}
