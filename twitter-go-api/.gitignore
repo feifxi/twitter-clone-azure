@@ -2,7 +2,6 @@
 app.env
 
 # Build artifacts
-/api
 bin/
 
 # Runtime temp files
