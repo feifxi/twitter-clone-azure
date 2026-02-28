@@ -291,12 +291,7 @@ export function Tweet({ tweet }: TweetProps) {
                  <span className="text-[13px] transition-colors">{likeCount || ''}</span>
             </Button>
 
-            {/* View/Stats */}
-            <Button variant="ghost" size="sm" className="group flex items-center gap-1 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full px-2 h-8 cursor-pointer" onClick={stopProp}>
-                <BarChart2 className="w-[18px] h-[18px] group-hover:text-primary transition-colors" />
-            </Button>
-
-             {/* Share */}
+            {/* Share */}
              <Button variant="ghost" size="sm" className="group flex items-center gap-1 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full px-2 h-8 cursor-pointer" onClick={handleShare}>
                 <Share className="w-[18px] h-[18px] group-hover:text-primary transition-colors" />
             </Button>

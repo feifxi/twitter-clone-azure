@@ -25,7 +25,7 @@ export default function MainLayout({
           <AppNav />
         </aside>
         {/* Main Feed */}
-        <main className={`w-full border-x border-border min-h-screen ${isMessagesPage ? 'max-w-[1000px] flex-1' : 'max-w-[700px]'}`}>
+        <main className={`w-full border-x border-border min-h-screen ${isMessagesPage ? 'max-w-[1000px] flex-1' : 'max-w-[600px]'}`}>
           {children}
         </main>
         {/* Right Sidebar: hidden on smaller screens, and hidden on messages page */}
