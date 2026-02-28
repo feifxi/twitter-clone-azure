@@ -12,7 +12,6 @@ import type { PageResponse, TweetResponse } from '@/types';
   import { useSearchUsers } from '@/hooks/useDiscovery';
   import Link from 'next/link';
   import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-  import { Button } from '@/components/ui/button';
   import { FollowButton } from '@/components/FollowButton';
   import { useAuth } from '@/hooks/useAuth';
 
@@ -128,7 +127,7 @@ import type { PageResponse, TweetResponse } from '@/types';
                     {isUserLoading ? (
                          <div className="p-4 text-center text-muted-foreground">Loading...</div>
                     ) : users.length === 0 ? (
-                        <div className="p-4 text-center text-muted-foreground">No people found for "{q}"</div>
+                        <div className="p-4 text-center text-muted-foreground">No people found for &quot;{q}&quot;</div>
                     ) : (
                         users.map((u) => (
                             <div key={u.id} className="flex items-center gap-3 px-4 py-3 hover:bg-card transition-colors cursor-pointer border-b border-border">

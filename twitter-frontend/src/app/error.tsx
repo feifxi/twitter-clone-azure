@@ -26,7 +26,7 @@ export default function ErrorBoundary({
         <h1 className="text-3xl font-extrabold">Something went wrong</h1>
         
         <p className="text-muted-foreground text-[15px]">
-          Don't worry, it's not you - it's us. We encountered an unexpected error while trying to load this page.
+          Don&apos;t worry, it&apos;s not you - it&apos;s us. We encountered an unexpected error while trying to load this page.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">

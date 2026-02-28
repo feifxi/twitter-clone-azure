@@ -27,9 +27,13 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
 
   useEffect(() => {
     if (isOpen) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setDisplayName(user.displayName);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setBio(user.bio || '');
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPreviewUrl(user.avatarUrl ?? null);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setAvatar(null);
     }
   }, [isOpen, user]);

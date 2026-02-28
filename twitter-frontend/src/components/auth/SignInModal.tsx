@@ -17,11 +17,9 @@ export function SignInModal() {
   const openSignUpModal = useUIStore((s) => s.openSignUpModal);
 
   const [identifier, setIdentifier] = useState('');
-  const [step, setStep] = useState(1);
 
   // Reset state when closing
   const handleClose = () => {
-    setStep(1);
     setIdentifier('');
     onClose();
   };
@@ -102,7 +100,7 @@ export function SignInModal() {
             </div>
             
              <p className="text-muted-foreground text-[15px] mt-12">
-              Don't have an account? <span className="text-primary cursor-pointer hover:underline" onClick={handleSignUpClick}>Sign up</span>
+              Don&apos;t have an account? <span className="text-primary cursor-pointer hover:underline" onClick={handleSignUpClick}>Sign up</span>
             </p>
 
           </div>

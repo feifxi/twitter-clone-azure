@@ -111,9 +111,11 @@ export function useFollowUser() {
 
       updateUserCache(userId, true);
     },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onError: (err, userId) => {
       updateUserCache(userId, false); // Rollback
     },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onSuccess: (_, userId) => {
       // Optimistic update handles UI. No need to refetch.
       // queryClient.invalidateQueries({ queryKey: userQueryKey(userId) });
@@ -149,9 +151,11 @@ export function useUnfollowUser() {
 
       updateUserCache(userId, false);
     },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onError: (err, userId) => {
       updateUserCache(userId, true); // Rollback
     },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onSuccess: (_, userId) => {
       // No refetch
     },

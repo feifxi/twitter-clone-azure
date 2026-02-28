@@ -36,8 +36,7 @@ function formatDate(iso: string) {
         .replace(' hours', 'h')
         .replace(' hour', 'h')
         .replace(' days', 'd')
-        .replace(' day', 'd');
-  } catch (e) {
+  } catch (_) {
       return '';
   }
 }

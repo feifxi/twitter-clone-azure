@@ -37,6 +37,7 @@ export function useNotificationSSE() {
             // Connected
         };
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handleMessage = (event: any) => {
             if (event.data === 'ping') return;
 
@@ -58,7 +59,7 @@ export function useNotificationSSE() {
         es.onmessage = handleMessage;
         es.addEventListener('notification', handleMessage);
 
-        es.onerror = (error: any) => {
+        es.onerror = () => {
             // Handle error silently
         };
 

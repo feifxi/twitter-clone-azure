@@ -6,12 +6,13 @@ import { useCreateTweet } from '@/hooks/useTweet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Image, X } from 'lucide-react';
+import type { TweetResponse } from '@/types';
 
 interface CreateTweetProps {
   placeholder?: string;
   isReply?: boolean;
   replyToId?: number;
-  onSuccess?: (newTweet?: any) => void;
+  onSuccess?: (newTweet?: TweetResponse) => void;
   className?: string; // Allow custom styling wrapper
 }
 

@@ -17,7 +17,11 @@ export function AuthInitializer({ children }: { children: React.ReactNode }) {
   const isInitialized = useAuthStore((s) => s.isInitialized);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
 
     const init = async () => {
         // Prevent re-running if already initialized

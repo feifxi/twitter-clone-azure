@@ -47,14 +47,14 @@ export default function GoogleLoginBtn() {
   };
 
   return (
-    <div className="w-full relative [&_iframe]:min-h-[44px]! [&_iframe]:w-full!">
+    <div className="w-full flex justify-center relative rounded-full overflow-hidden">
       <GoogleLogin
         onSuccess={handleSuccess}
         onError={() => console.log('Google Login Failed')}
         theme="filled_black"
         shape="pill"
         size="large"
-        width={'100% !important'}
+        width="364"
         text="signup_with"
       />
       {isLoading && (

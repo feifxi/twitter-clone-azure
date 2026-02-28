@@ -6,12 +6,11 @@ import { useState, useRef, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { useTrendingHashtags, useSuggestedUsers, useSearchUsers, useSearchHashtags } from '@/hooks/useDiscovery';
 import { useAuth } from '@/hooks/useAuth';
-import { useFollowUser, useUnfollowUser } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useDebounce } from '@/hooks/useDebounce';
 import { FollowButton } from '@/components/FollowButton';
-import type { TrendingHashtagDTO } from '@/types';
+import type { TrendingHashtagDTO, UserResponse, PageResponse } from '@/types';
 
 export function Sidebar() {
   const router = useRouter();
@@ -53,120 +52,15 @@ export function Sidebar() {
     router.push('/premium');
   };
 
-  // Helper component for suggested users list
-  const SuggestedUsersList = () => (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden pt-3 mb-20">
-      <h2 className="px-4 pb-2 font-extrabold text-[20px]">
-        Who to follow
-      </h2>
-      {suggestedLoading ? (
-        <div className="px-4 pb-3 space-y-4 pt-2">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-12 rounded-lg bg-secondary/50 animate-pulse"
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="px-0">
-          {suggested?.content
-            ?.filter((u) => u.id !== currentUser?.id)
-            .slice(0, 3)
-            .map((u) => (
-              <div
-                key={u.id}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors cursor-pointer"
-              >
-                <Link href={`/${u.username}`} className="shrink-0">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={u.avatarUrl ?? undefined} />
-                    <AvatarFallback>{u.displayName[0]}</AvatarFallback>
-                  </Avatar>
-                </Link>
-                <div className="flex-1 min-w-0">
-                  <Link
-                    href={`/${u.username}`}
-                    className="font-bold text-foreground hover:underline block truncate text-[15px] leading-5"
-                  >
-                    {u.displayName}
-                  </Link>
-                  <p className="text-muted-foreground text-[15px] truncate leading-5">
-                    @{u.username}
-                  </p>
-                </div>
-                <FollowButton userId={u.id} isFollowing={u.followedByMe} />
-              </div>
-            ))}
-          <Link href="/connect_people" className="block px-4 py-3 text-primary text-[15px] hover:bg-secondary/30 transition-colors rounded-b-2xl">
-            Show more
-          </Link>
-        </div>
-      )}
-    </div>
-  );
 
-  // Helper component for Premium subscription
-  const PremiumCard = () => (
-    <div className="rounded-2xl border border-border bg-card mb-4 p-4 mt-2">
-      <h2 className="font-bold text-xl mb-2">Subscribe to Premium</h2>
-      <p className="text-[15px] text-muted-foreground mb-3 leading-5">Subscribe to unlock new features and if eligible, receive a share of ads revenue.</p>
-      <Button className="rounded-full font-bold px-4 cursor-pointer" size="sm" onClick={subscribeToPremium}>Subscribe</Button>
-    </div>
-  );
-
-  // Helper component for Trending
-  const TrendingList = () => (
-    <div className="rounded-2xl border border-border bg-card mb-4 overflow-hidden pt-3">
-      <h2 className="px-4 pb-2 font-extrabold text-[20px]">
-        What&apos;s happening
-      </h2>
-      {trendingLoading ? (
-        <div className="px-4 pb-3 space-y-4 pt-2">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-10 rounded-lg bg-secondary/50 animate-pulse"
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="px-0">
-          {trending?.slice(0, 5).map((item) => (
-            <Link
-              key={item.hashtag}
-              href={`/search?q=${encodeURIComponent('#' + item.hashtag)}`}
-              className="block px-4 py-3 hover:bg-secondary/30 transition-colors"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-muted-foreground text-[13px] leading-4">Trending in generic</p>
-                  <p className="text-foreground font-bold text-[15px] pt-0.5">
-                    #{item.hashtag}
-                  </p>
-                  <p className="text-muted-foreground text-[13px] leading-4 pt-0.5">
-                    {item.recentCount} posts
-                  </p>
-                </div>
-                <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-              </div>
-            </Link>
-          ))}
-          <Link href="/explore" className="block px-4 py-3 text-primary text-[15px] hover:bg-secondary/30 transition-colors rounded-b-2xl">
-            Show more
-          </Link>
-        </div>
-      )}
-    </div>
-  );
 
   // If on search page, hide search bar but show other widgets
   if (pathname === '/search' || pathname?.startsWith('/search')) {
     return (
       <div className="sticky top-0 p-4 h-screen overflow-y-auto no-scrollbar pb-10">
-        <PremiumCard />
-        <TrendingList />
-        <SuggestedUsersList />
+        <PremiumCard subscribeToPremium={subscribeToPremium} />
+        <TrendingList trending={trending} trendingLoading={trendingLoading} />
+        <SuggestedUsersList suggested={suggested} suggestedLoading={suggestedLoading} currentUser={currentUser} />
         <Footer />
       </div>
     );
@@ -253,7 +147,7 @@ export function Sidebar() {
                       className="block px-4 py-3 text-primary hover:bg-card transition-colors"
                       onClick={() => setIsFocused(false)}
                     >
-                      Search for "{query}"
+                      Search for &quot;{query}&quot;
                     </Link>
                   </li>
                 </ul>
@@ -263,9 +157,9 @@ export function Sidebar() {
         </form>
       </div>
 
-      <PremiumCard />
-      <TrendingList />
-      <SuggestedUsersList />
+      <PremiumCard subscribeToPremium={subscribeToPremium} />
+      <TrendingList trending={trending} trendingLoading={trendingLoading} />
+      <SuggestedUsersList suggested={suggested} suggestedLoading={suggestedLoading} currentUser={currentUser} />
       <Footer />
     </div>
   );
@@ -286,6 +180,127 @@ function Footer() {
   );
 }
 
-function MoreHorizontal(props: any) {
+function MoreHorizontal(props: React.SVGProps<SVGSVGElement>) {
   return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+}
+
+interface SuggestedUsersListProps {
+  suggested: PageResponse<UserResponse> | undefined;
+  suggestedLoading: boolean;
+  currentUser: UserResponse | null;
+}
+
+function SuggestedUsersList({ suggested, suggestedLoading, currentUser }: SuggestedUsersListProps) {
+  return (
+    <div className="rounded-2xl border border-border bg-card overflow-hidden pt-3 mb-20">
+      <h2 className="px-4 pb-2 font-extrabold text-[20px]">
+        Who to follow
+      </h2>
+      {suggestedLoading ? (
+        <div className="px-4 pb-3 space-y-4 pt-2">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-12 rounded-lg bg-secondary/50 animate-pulse"
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="px-0">
+          {suggested?.content
+            ?.filter((u: UserResponse) => u.id !== currentUser?.id)
+            .slice(0, 3)
+            .map((u: UserResponse) => (
+              <div
+                key={u.id}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors cursor-pointer"
+              >
+                <Link href={`/${u.username}`} className="shrink-0">
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage src={u.avatarUrl ?? undefined} />
+                    <AvatarFallback>{u.displayName[0]}</AvatarFallback>
+                  </Avatar>
+                </Link>
+                <div className="flex-1 min-w-0">
+                  <Link
+                    href={`/${u.username}`}
+                    className="font-bold text-foreground hover:underline block truncate text-[15px] leading-5"
+                  >
+                    {u.displayName}
+                  </Link>
+                  <p className="text-muted-foreground text-[15px] truncate leading-5">
+                    @{u.username}
+                  </p>
+                </div>
+                <FollowButton userId={u.id} isFollowing={u.followedByMe} />
+              </div>
+            ))}
+          <Link href="/connect_people" className="block px-4 py-3 text-primary text-[15px] hover:bg-secondary/30 transition-colors rounded-b-2xl">
+            Show more
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PremiumCard({ subscribeToPremium }: { subscribeToPremium: () => void }) {
+  return (
+    <div className="rounded-2xl border border-border bg-card mb-4 p-4 mt-2">
+      <h2 className="font-bold text-xl mb-2">Subscribe to Premium</h2>
+      <p className="text-[15px] text-muted-foreground mb-3 leading-5">Subscribe to unlock new features and if eligible, receive a share of ads revenue.</p>
+      <Button className="rounded-full font-bold px-4 cursor-pointer" size="sm" onClick={subscribeToPremium}>Subscribe</Button>
+    </div>
+  );
+}
+
+interface TrendingListProps {
+  trending: TrendingHashtagDTO[] | undefined;
+  trendingLoading: boolean;
+}
+
+function TrendingList({ trending, trendingLoading }: TrendingListProps) {
+  return (
+    <div className="rounded-2xl border border-border bg-card mb-4 overflow-hidden pt-3">
+      <h2 className="px-4 pb-2 font-extrabold text-[20px]">
+        What&apos;s happening
+      </h2>
+      {trendingLoading ? (
+        <div className="px-4 pb-3 space-y-4 pt-2">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-10 rounded-lg bg-secondary/50 animate-pulse"
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="px-0">
+          {trending?.slice(0, 5).map((item: TrendingHashtagDTO) => (
+            <Link
+              key={item.hashtag}
+              href={`/search?q=${encodeURIComponent('#' + item.hashtag)}`}
+              className="block px-4 py-3 hover:bg-secondary/30 transition-colors"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-muted-foreground text-[13px] leading-4">Trending in generic</p>
+                  <p className="text-foreground font-bold text-[15px] pt-0.5">
+                    #{item.hashtag}
+                  </p>
+                  <p className="text-muted-foreground text-[13px] leading-4 pt-0.5">
+                    {item.recentCount} posts
+                  </p>
+                </div>
+                <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+              </div>
+            </Link>
+          ))}
+          <Link href="/explore" className="block px-4 py-3 text-primary text-[15px] hover:bg-secondary/30 transition-colors rounded-b-2xl">
+            Show more
+          </Link>
+        </div>
+      )}
+    </div>
+  );
 }

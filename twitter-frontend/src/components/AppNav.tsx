@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import Link from 'next/link';
-import { Home, User, MoreHorizontal, Bell, Mail, Search, Bookmark, List, Users, BotMessageSquare, TvMinimalPlay } from 'lucide-react';
+import { Home, User, MoreHorizontal, Bell, Mail, Search, Bookmark, List, Users, BotMessageSquare, TvMinimalPlay, LogIn } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -223,12 +223,20 @@ export function AppNav() {
           </DropdownMenuContent>
         </DropdownMenu>
       ) : (
-          <div className="w-full xl:w-[240px] mb-4">
+          <div className="w-full xl:w-[240px] mb-4 flex justify-end xl:justify-start">
+              {/* Desktop Sign In Button */}
               <Button 
-                  className="w-full rounded-full font-bold h-[48px] text-[15px] cursor-pointer" 
+                  className="hidden xl:block w-full rounded-full font-bold h-[48px] text-[15px] cursor-pointer" 
                   onClick={openSignInModal}
               >
                   Sign in
+              </Button>
+              {/* Mobile Sign In Button (Circle) */}
+               <Button
+                  className="xl:hidden w-[50px] h-[50px] rounded-full flex items-center justify-center shadow-lg p-0 cursor-pointer"
+                  onClick={openSignInModal}
+              >
+                  <LogIn className="w-6 h-6" />
               </Button>
           </div>
         )}
