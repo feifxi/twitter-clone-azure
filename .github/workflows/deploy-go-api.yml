@@ -24,6 +24,15 @@ jobs:
       - name: Checkout to the branch
         uses: actions/checkout@v2
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: twitter-go-api/go.mod
+
+      - name: Run Go tests
+        working-directory: twitter-go-api
+        run: go test ./...
+
       - name: Azure Login
         uses: azure/login@v2
         with:

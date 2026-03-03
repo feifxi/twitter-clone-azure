@@ -1,6 +1,9 @@
 package config
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/spf13/viper"
 )
 
@@ -83,4 +86,38 @@ func LoadConfig(path string) (config Config, err error) {
 
 	err = viper.Unmarshal(&config)
 	return
+}
+
+func (c Config) ValidateForRuntime() error {
+	if strings.EqualFold(strings.TrimSpace(c.CookieSameSite), "none") && !c.CookieSecure {
+		return fmt.Errorf("COOKIE_SECURE must be true when COOKIE_SAME_SITE=None")
+	}
+
+	if !strings.EqualFold(strings.TrimSpace(c.Environment), "production") {
+		return nil
+	}
+
+	if strings.TrimSpace(c.FrontendURL) == "" {
+		return fmt.Errorf("FRONTEND_URL is required in production")
+	}
+	if !c.CookieSecure {
+		return fmt.Errorf("COOKIE_SECURE must be true in production")
+	}
+	if strings.TrimSpace(c.TrustedProxies) == "" {
+		return fmt.Errorf("TRUSTED_PROXIES is required in production")
+	}
+	if strings.Contains(strings.ToLower(c.DBSource), "sslmode=disable") {
+		return fmt.Errorf("DATABASE_URL must use sslmode in production")
+	}
+	if strings.TrimSpace(c.AzureStorageConnString) == "" {
+		return fmt.Errorf("AZURE_STORAGE_CONNECTION_STRING is required in production")
+	}
+	if strings.TrimSpace(c.AzureStorageContainer) == "" {
+		return fmt.Errorf("AZURE_STORAGE_CONTAINER_NAME is required in production")
+	}
+	if strings.TrimSpace(c.GoogleClientID) == "" {
+		return fmt.Errorf("GOOGLE_CLIENT_ID is required in production")
+	}
+
+	return nil
 }

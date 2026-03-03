@@ -26,6 +26,9 @@ func main() {
 	if err != nil {
 		log.Fatal("cannot load config:", err)
 	}
+	if err := config.ValidateForRuntime(); err != nil {
+		log.Fatal("invalid runtime config:", err)
+	}
 
 	logger.InitLogger(config.Environment)
 

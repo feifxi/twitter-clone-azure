@@ -12,6 +12,7 @@ type Store interface {
 	Querier
 	ExecTx(ctx context.Context, fn func(*Queries) error) error
 	ExecTxAfterCommit(ctx context.Context, fn func(*Queries) error, afterCommit func()) error
+	Ping(ctx context.Context) error
 }
 
 // SQLStore provides all functions to execute db queries and transactions
@@ -66,4 +67,8 @@ func (s *SQLStore) ExecTxAfterCommit(ctx context.Context, fn func(*Queries) erro
 		afterCommit()
 	}
 	return nil
+}
+
+func (s *SQLStore) Ping(ctx context.Context) error {
+	return s.conn.Ping(ctx)
 }
