@@ -165,3 +165,35 @@ func successResponse() gin.H {
 func tokenResponse(token string) gin.H {
 	return gin.H{"accessToken": token}
 }
+
+func newUserResponseList(users []usecase.UserItem) []userResponse {
+	response := make([]userResponse, 0, len(users))
+	for _, user := range users {
+		response = append(response, newUserResponse(user))
+	}
+	return response
+}
+
+func newTweetResponseList(tweets []usecase.TweetItem) []tweetResponse {
+	response := make([]tweetResponse, 0, len(tweets))
+	for _, t := range tweets {
+		response = append(response, newTweetResponse(t))
+	}
+	return response
+}
+
+func newHashtagResponseList(hashtags []db.Hashtag) []hashtagResponse {
+	response := make([]hashtagResponse, 0, len(hashtags))
+	for _, h := range hashtags {
+		response = append(response, newHashtagResponse(h))
+	}
+	return response
+}
+
+func newNotificationResponseList(items []usecase.NotificationItem) []notificationResponse {
+	response := make([]notificationResponse, 0, len(items))
+	for _, item := range items {
+		response = append(response, newNotificationResponse(item))
+	}
+	return response
+}

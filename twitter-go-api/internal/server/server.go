@@ -23,7 +23,7 @@ import (
 
 type Server struct {
 	config     config.Config
-	store      *db.Store
+	store      db.Store
 	tokenMaker token.Maker
 	storage    service.StorageService
 	usecase    *usecase.Usecase
@@ -35,7 +35,7 @@ type idURIRequest struct {
 	ID int64 `uri:"id" binding:"required,min=1"`
 }
 
-func NewServer(config config.Config, store *db.Store, redisClient *redis.Client) (*Server, error) {
+func NewServer(config config.Config, store db.Store, redisClient *redis.Client) (*Server, error) {
 	tokenMaker, err := token.NewJWTMaker(config.TokenSymmetricKey)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create token maker: %w", err)

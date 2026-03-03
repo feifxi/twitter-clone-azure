@@ -23,10 +23,7 @@ func (server *Server) getTrendingHashtags(ctx *gin.Context) {
 		writeError(ctx, err)
 		return
 	}
-	response := make([]hashtagResponse, 0, len(hashtags))
-	for _, h := range hashtags {
-		response = append(response, newHashtagResponse(h))
-	}
+	response := newHashtagResponseList(hashtags)
 	ctx.JSON(http.StatusOK, response)
 }
 
@@ -49,9 +46,6 @@ func (server *Server) getSuggestedUsers(ctx *gin.Context) {
 		writeError(ctx, err)
 		return
 	}
-	response := make([]userResponse, 0, len(users))
-	for _, user := range users {
-		response = append(response, newUserResponse(user))
-	}
+	response := newUserResponseList(users)
 	ctx.JSON(http.StatusOK, buildPageResponse(response, page, size, total))
 }

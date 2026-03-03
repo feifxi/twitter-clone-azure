@@ -122,10 +122,7 @@ func (server *Server) getReplies(ctx *gin.Context) {
 		writeError(ctx, err)
 		return
 	}
-	response := make([]tweetResponse, 0, len(tweets))
-	for _, t := range tweets {
-		response = append(response, newTweetResponse(t))
-	}
+	response := newTweetResponseList(tweets)
 	ctx.JSON(http.StatusOK, buildPageResponse(response, page, size, total))
 }
 

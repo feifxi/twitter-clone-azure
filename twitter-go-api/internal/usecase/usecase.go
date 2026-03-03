@@ -52,14 +52,14 @@ type UserItem struct {
 
 type Usecase struct {
 	config              config.Config
-	store               *db.Store
+	store               db.Store
 	tokenMaker          token.Maker
 	storage             service.StorageService
 	redis               *redis.Client
 	publishNotification func(db.Notification)
 }
 
-func New(cfg config.Config, store *db.Store, tokenMaker token.Maker, storage service.StorageService, redisClient *redis.Client, publishNotification func(db.Notification)) *Usecase {
+func New(cfg config.Config, store db.Store, tokenMaker token.Maker, storage service.StorageService, redisClient *redis.Client, publishNotification func(db.Notification)) *Usecase {
 	return &Usecase{
 		config:              cfg,
 		store:               store,
@@ -70,6 +70,6 @@ func New(cfg config.Config, store *db.Store, tokenMaker token.Maker, storage ser
 	}
 }
 
-func (u *Usecase) Store() *db.Store {
+func (u *Usecase) Store() db.Store {
 	return u.store
 }

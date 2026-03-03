@@ -6,16 +6,21 @@ import (
 	"fmt"
 )
 
-// Store wraps the auto-generated Queries with a real database connection,
-// enabling transactional operations via ExecTx.
-type Store struct {
+type Store interface {
+	Querier
+	ExecTx(ctx context.Context, fn func(*Queries) error) error
+	ExecTxAfterCommit(ctx context.Context, fn func(*Queries) error, afterCommit func()) error
+}
+
+// SQLStore provides all functions to execute db queries and transactions
+type SQLStore struct {
 	*Queries
 	conn *sql.DB
 }
 
 // NewStore creates a new Store.
-func NewStore(conn *sql.DB) *Store {
-	return &Store{
+func NewStore(conn *sql.DB) Store {
+	return &SQLStore{
 		Queries: New(conn),
 		conn:    conn,
 	}
@@ -24,7 +29,7 @@ func NewStore(conn *sql.DB) *Store {
 // ExecTx executes a function within a database transaction.
 // If the function returns an error, the transaction is rolled back.
 // Otherwise, the transaction is committed.
-func (s *Store) ExecTx(ctx context.Context, fn func(*Queries) error) error {
+func (s *SQLStore) ExecTx(ctx context.Context, fn func(*Queries) error) error {
 	tx, err := s.conn.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
@@ -40,7 +45,7 @@ func (s *Store) ExecTx(ctx context.Context, fn func(*Queries) error) error {
 
 // ExecTxAfterCommit executes fn inside a transaction and only runs afterCommit
 // if the transaction has successfully committed.
-func (s *Store) ExecTxAfterCommit(ctx context.Context, fn func(*Queries) error, afterCommit func()) error {
+func (s *SQLStore) ExecTxAfterCommit(ctx context.Context, fn func(*Queries) error, afterCommit func()) error {
 	tx, err := s.conn.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)

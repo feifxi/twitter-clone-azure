@@ -150,10 +150,7 @@ func (server *Server) listFollowers(ctx *gin.Context) {
 		return
 	}
 
-	response := make([]userResponse, 0, len(users))
-	for _, user := range users {
-		response = append(response, newUserResponse(user))
-	}
+	response := newUserResponseList(users)
 	ctx.JSON(http.StatusOK, buildPageResponse(response, page, size, total))
 }
 
@@ -184,9 +181,6 @@ func (server *Server) listFollowing(ctx *gin.Context) {
 		return
 	}
 
-	response := make([]userResponse, 0, len(users))
-	for _, user := range users {
-		response = append(response, newUserResponse(user))
-	}
+	response := newUserResponseList(users)
 	ctx.JSON(http.StatusOK, buildPageResponse(response, page, size, total))
 }

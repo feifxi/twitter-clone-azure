@@ -149,11 +149,8 @@ func (server *Server) listNotifications(ctx *gin.Context) {
 		return
 	}
 
-	content := make([]notificationResponse, 0, len(notifications))
-	for _, n := range notifications {
-		content = append(content, newNotificationResponse(n))
-	}
-	ctx.JSON(http.StatusOK, buildPageResponse(content, page, size, total))
+	response := newNotificationResponseList(notifications)
+	ctx.JSON(http.StatusOK, buildPageResponse(response, page, size, total))
 }
 
 func (server *Server) getUnreadNotificationCount(ctx *gin.Context) {
