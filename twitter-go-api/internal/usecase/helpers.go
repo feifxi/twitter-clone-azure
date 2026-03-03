@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"database/sql"
 	"regexp"
 	"strings"
 
@@ -16,17 +15,6 @@ func nullViewerID(viewerID *int64) *int64 {
 	}
 	v := *viewerID
 	return &v
-}
-
-func nullStringFromPtr(v *string) sql.NullString {
-	if v == nil {
-		return sql.NullString{Valid: false}
-	}
-	trimmed := strings.TrimSpace(*v)
-	if trimmed == "" {
-		return sql.NullString{Valid: false}
-	}
-	return sql.NullString{String: trimmed, Valid: true}
 }
 
 var hashtagRegex = regexp.MustCompile(`(?i)(?:^|\s)#([a-z0-9_]+)`)

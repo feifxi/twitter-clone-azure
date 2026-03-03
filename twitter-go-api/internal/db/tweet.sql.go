@@ -7,8 +7,7 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 const countFollowingFeed = `-- name: CountFollowingFeed :one
@@ -115,19 +114,19 @@ type CreateRetweetParams struct {
 }
 
 type CreateRetweetRow struct {
-	ID           int64              `json:"id"`
-	UserID       int64              `json:"user_id"`
-	Content      *string            `json:"content"`
-	MediaType    *string            `json:"media_type"`
-	MediaUrl     *string            `json:"media_url"`
-	ParentID     *int64             `json:"parent_id"`
-	RetweetID    *int64             `json:"retweet_id"`
-	ReplyCount   int32              `json:"reply_count"`
-	RetweetCount int32              `json:"retweet_count"`
-	LikeCount    int32              `json:"like_count"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	SearchVector interface{}        `json:"search_vector"`
+	ID           int64       `json:"id"`
+	UserID       int64       `json:"user_id"`
+	Content      *string     `json:"content"`
+	MediaType    *string     `json:"media_type"`
+	MediaUrl     *string     `json:"media_url"`
+	ParentID     *int64      `json:"parent_id"`
+	RetweetID    *int64      `json:"retweet_id"`
+	ReplyCount   int32       `json:"reply_count"`
+	RetweetCount int32       `json:"retweet_count"`
+	LikeCount    int32       `json:"like_count"`
+	CreatedAt    time.Time   `json:"created_at"`
+	UpdatedAt    time.Time   `json:"updated_at"`
+	SearchVector interface{} `json:"search_vector"`
 }
 
 func (q *Queries) CreateRetweet(ctx context.Context, arg CreateRetweetParams) (CreateRetweetRow, error) {
@@ -228,19 +227,19 @@ type DeleteRetweetByUserParams struct {
 }
 
 type DeleteRetweetByUserRow struct {
-	ID           int64              `json:"id"`
-	UserID       int64              `json:"user_id"`
-	Content      *string            `json:"content"`
-	MediaType    *string            `json:"media_type"`
-	MediaUrl     *string            `json:"media_url"`
-	ParentID     *int64             `json:"parent_id"`
-	RetweetID    *int64             `json:"retweet_id"`
-	ReplyCount   int32              `json:"reply_count"`
-	RetweetCount int32              `json:"retweet_count"`
-	LikeCount    int32              `json:"like_count"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	SearchVector interface{}        `json:"search_vector"`
+	ID           int64       `json:"id"`
+	UserID       int64       `json:"user_id"`
+	Content      *string     `json:"content"`
+	MediaType    *string     `json:"media_type"`
+	MediaUrl     *string     `json:"media_url"`
+	ParentID     *int64      `json:"parent_id"`
+	RetweetID    *int64      `json:"retweet_id"`
+	ReplyCount   int32       `json:"reply_count"`
+	RetweetCount int32       `json:"retweet_count"`
+	LikeCount    int32       `json:"like_count"`
+	CreatedAt    time.Time   `json:"created_at"`
+	UpdatedAt    time.Time   `json:"updated_at"`
+	SearchVector interface{} `json:"search_vector"`
 }
 
 func (q *Queries) DeleteRetweetByUser(ctx context.Context, arg DeleteRetweetByUserParams) (DeleteRetweetByUserRow, error) {

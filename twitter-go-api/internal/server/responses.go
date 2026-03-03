@@ -104,7 +104,7 @@ func newTweetResponse(tweet usecase.TweetItem) tweetResponse {
 		RetweetedTweet:  original,
 		ReplyToTweetID:  parentID,
 		ReplyToUsername: tweet.ParentUsername,
-		CreatedAt:       tweet.CreatedAt.Time,
+		CreatedAt:       tweet.CreatedAt,
 	}
 }
 
@@ -121,8 +121,8 @@ func newHashtagResponse(tag db.Hashtag) hashtagResponse {
 		ID:         tag.ID,
 		Text:       tag.Text,
 		UsageCount: tag.UsageCount,
-		LastUsedAt: tag.LastUsedAt.Time,
-		CreatedAt:  tag.CreatedAt.Time,
+		LastUsedAt: tag.LastUsedAt,
+		CreatedAt:  tag.CreatedAt,
 	}
 }
 
@@ -157,7 +157,7 @@ func newNotificationResponse(item usecase.NotificationItem) notificationResponse
 		OriginalTweetMediaUrl: item.OriginalTweetMediaUrl,
 		Type:                  item.Type,
 		IsRead:                item.IsRead,
-		CreatedAt:             item.CreatedAt.Time,
+		CreatedAt:             item.CreatedAt,
 	}
 }
 

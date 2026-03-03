@@ -7,8 +7,7 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 const createRefreshToken = `-- name: CreateRefreshToken :one
@@ -21,9 +20,9 @@ RETURNING id, user_id, token, expiry_date, created_at
 `
 
 type CreateRefreshTokenParams struct {
-	UserID     int64              `json:"user_id"`
-	Token      string             `json:"token"`
-	ExpiryDate pgtype.Timestamptz `json:"expiry_date"`
+	UserID     int64     `json:"user_id"`
+	Token      string    `json:"token"`
+	ExpiryDate time.Time `json:"expiry_date"`
 }
 
 func (q *Queries) CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error) {

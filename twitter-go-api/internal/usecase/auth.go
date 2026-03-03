@@ -11,7 +11,6 @@ import (
 	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/chanombude/twitter-go-api/internal/db"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 	"google.golang.org/api/idtoken"
 )
 
@@ -69,7 +68,7 @@ func (u *Usecase) RefreshSession(ctx context.Context, refreshToken string) (Auth
 		return AuthResult{}, apperr.Unauthorized("refresh token not found or revoked")
 	}
 
-	if time.Now().After(session.ExpiryDate.Time) {
+	if time.Now().After(session.ExpiryDate) {
 		_ = u.store.DeleteRefreshToken(ctx, refreshToken)
 		return AuthResult{}, apperr.Unauthorized("refresh token expired")
 	}
@@ -131,7 +130,7 @@ func (u *Usecase) issueSession(ctx context.Context, userID int64) (accessToken s
 	_, err = u.store.CreateRefreshToken(ctx, db.CreateRefreshTokenParams{
 		UserID:     userID,
 		Token:      refreshToken,
-		ExpiryDate: pgtype.Timestamptz{Time: expiresAt, Valid: true},
+		ExpiryDate: expiresAt,
 	})
 	if err != nil {
 		return "", "", err
