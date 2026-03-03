@@ -9,6 +9,9 @@ export interface NotificationResponse {
     tweetId: number | null;
     tweetContent: string | null;
     tweetMediaUrl: string | null;
+    originalTweetId?: number | null;
+    originalTweetContent?: string | null;
+    originalTweetMediaUrl?: string | null;
     isRead: boolean;
     createdAt: string;
 }

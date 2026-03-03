@@ -14,10 +14,10 @@ export interface TweetResponse {
     replyCount: number;
     likeCount: number;
     retweetCount: number;
-    likedByMe: boolean;
-    retweetedByMe: boolean;
-    originalTweet: TweetResponse | null;
+    isLiked: boolean;
+    isRetweeted: boolean;
+    retweetedTweet?: TweetResponse | null;
     replyToTweetId?: number | null;
-    replyToUserHandle?: string | null;
+    replyToUsername?: string | null;
     createdAt: string;
 }

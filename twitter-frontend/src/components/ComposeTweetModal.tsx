@@ -1,6 +1,6 @@
 'use client';
 
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { CreateTweet } from './CreateTweet';
 import { X } from 'lucide-react';
 
@@ -14,6 +14,7 @@ export function ComposeTweetModal({ isOpen, onClose }: ComposeTweetModalProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent showCloseButton={false} className="sm:max-w-[600px] bg-background border-border p-0 gap-0 top-[5%] translate-y-0 sm:top-[10%] min-h-[300px] flex flex-col">
         <DialogTitle className="sr-only">Compose new tweet</DialogTitle>
+        <DialogDescription className="sr-only">Write and post a new tweet</DialogDescription>
         <div className="flex items-center h-[53px] px-4 shrink-0">
           <button
              onClick={onClose}

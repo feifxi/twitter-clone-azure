@@ -8,11 +8,11 @@ function toggleLikeInTweet(t: TweetResponse, tweetId: number, liked: boolean): T
   const delta = liked ? 1 : -1;
   const update = (x: TweetResponse) =>
     x.id === tweetId
-      ? { ...x, likedByMe: liked, likeCount: Math.max(0, x.likeCount + delta) }
+      ? { ...x, isLiked: liked, likeCount: Math.max(0, x.likeCount + delta) }
       : x;
   if (t.id === tweetId) return update(t) as TweetResponse;
-  if (t.originalTweet?.id === tweetId)
-    return { ...t, originalTweet: update(t.originalTweet) as TweetResponse };
+  if (t.retweetedTweet?.id === tweetId)
+    return { ...t, retweetedTweet: update(t.retweetedTweet) as TweetResponse };
   return t;
 }
 

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useDebounce } from '@/hooks/useDebounce';
 import { FollowButton } from '@/components/FollowButton';
-import type { TrendingHashtagDTO, UserResponse, PageResponse } from '@/types';
+import type { HashtagResponse, UserResponse, PageResponse } from '@/types';
 
 export function Sidebar() {
   const router = useRouter();
@@ -109,7 +109,7 @@ export function Sidebar() {
                       >
                         <Avatar className="w-10 h-10">
                           <AvatarImage src={u.avatarUrl ?? undefined} />
-                          <AvatarFallback>{u.displayName[0]}</AvatarFallback>
+                          <AvatarFallback>{(u.displayName || u.username)[0]}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="font-bold text-foreground truncate">{u.displayName}</div>
@@ -123,10 +123,10 @@ export function Sidebar() {
                   {hashtagResults && hashtagResults.length > 0 && (
                     <li className="px-4 py-2 text-sm text-muted-foreground font-bold bg-secondary/30 border-t border-border">Hashtags</li>
                   )}
-                  {hashtagResults?.map((h: TrendingHashtagDTO) => (
-                    <li key={h.hashtag}>
+                  {hashtagResults?.map((h: HashtagResponse) => (
+                    <li key={h.text}>
                       <Link
-                        href={`/search?q=${encodeURIComponent('#' + h.hashtag)}`}
+                        href={`/search?q=${encodeURIComponent('#' + h.text)}`}
                         className="flex items-center gap-3 px-4 py-3 hover:bg-card transition-colors"
                         onClick={() => setIsFocused(false)}
                       >
@@ -134,8 +134,8 @@ export function Sidebar() {
                           <Search className="w-5 h-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-bold text-foreground truncate">#{h.hashtag}</div>
-                          <div className="text-muted-foreground truncate">{h.recentCount} posts</div>
+                          <div className="font-bold text-foreground truncate">#{h.text}</div>
+                          <div className="text-muted-foreground truncate">{h.usageCount} posts</div>
                         </div>
                       </Link>
                     </li>
@@ -218,7 +218,7 @@ function SuggestedUsersList({ suggested, suggestedLoading, currentUser }: Sugges
                 <Link href={`/${u.username}`} className="shrink-0">
                   <Avatar className="w-10 h-10">
                     <AvatarImage src={u.avatarUrl ?? undefined} />
-                    <AvatarFallback>{u.displayName[0]}</AvatarFallback>
+                    <AvatarFallback>{(u.displayName || u.username)[0]}</AvatarFallback>
                   </Avatar>
                 </Link>
                 <div className="flex-1 min-w-0">
@@ -232,7 +232,7 @@ function SuggestedUsersList({ suggested, suggestedLoading, currentUser }: Sugges
                     @{u.username}
                   </p>
                 </div>
-                <FollowButton userId={u.id} isFollowing={u.followedByMe} />
+                <FollowButton userId={u.id} isFollowing={u.isFollowing} />
               </div>
             ))}
           <Link href="/connect_people" className="block px-4 py-3 text-primary text-[15px] hover:bg-secondary/30 transition-colors rounded-b-2xl">
@@ -255,7 +255,7 @@ function PremiumCard({ subscribeToPremium }: { subscribeToPremium: () => void })
 }
 
 interface TrendingListProps {
-  trending: TrendingHashtagDTO[] | undefined;
+  trending: HashtagResponse[] | undefined;
   trendingLoading: boolean;
 }
 
@@ -276,20 +276,20 @@ function TrendingList({ trending, trendingLoading }: TrendingListProps) {
         </div>
       ) : (
         <div className="px-0">
-          {trending?.slice(0, 5).map((item: TrendingHashtagDTO) => (
+          {trending?.slice(0, 5).map((item: HashtagResponse) => (
             <Link
-              key={item.hashtag}
-              href={`/search?q=${encodeURIComponent('#' + item.hashtag)}`}
+              key={item.text}
+              href={`/search?q=${encodeURIComponent('#' + item.text)}`}
               className="block px-4 py-3 hover:bg-secondary/30 transition-colors"
             >
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-muted-foreground text-[13px] leading-4">Trending in generic</p>
                   <p className="text-foreground font-bold text-[15px] pt-0.5">
-                    #{item.hashtag}
+                    #{item.text}
                   </p>
                   <p className="text-muted-foreground text-[13px] leading-4 pt-0.5">
-                    {item.recentCount} posts
+                    {item.usageCount} posts
                   </p>
                 </div>
                 <MoreHorizontal className="w-4 h-4 text-muted-foreground" />

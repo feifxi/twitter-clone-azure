@@ -43,11 +43,16 @@ func (u *Usecase) CountFollowingFeed(ctx context.Context, userID int64) (int64, 
 }
 
 func (u *Usecase) GetUserFeed(ctx context.Context, userID int64, page, size int32, viewerID *int64) ([]TweetItem, error) {
+	vID := nullViewerID(viewerID)
+	if _, err := u.store.GetUser(ctx, db.GetUserParams{ID: userID, ViewerID: vID}); err != nil {
+		return nil, err
+	}
+
 	rows, err := u.store.ListUserTweets(ctx, db.ListUserTweetsParams{
 		UserID:   userID,
 		Limit:    size,
 		Offset:   page * size,
-		ViewerID: nullViewerID(viewerID),
+		ViewerID: vID,
 	})
 	if err != nil {
 		return nil, err

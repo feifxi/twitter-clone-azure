@@ -55,9 +55,10 @@ export function TweetSkeleton() {
 
 interface TweetProps {
   tweet: TweetResponse;
+  disableClick?: boolean;
 }
 
-export function Tweet({ tweet }: TweetProps) {
+export function Tweet({ tweet, disableClick }: TweetProps) {
   const router = useRouter();
   const likeMutation = useLikeTweet();
   const unlikeMutation = useUnlikeTweet();
@@ -68,9 +69,9 @@ export function Tweet({ tweet }: TweetProps) {
   const { user: currentUser, isLoggedIn } = useAuth();
   const openSignInModal = useUIStore((s) => s.openSignInModal);
 
-  const displayTweet = tweet.originalTweet ?? tweet;
+  const displayTweet = tweet.retweetedTweet ?? tweet;
   const user = displayTweet.user;
-  const isRetweet = !!tweet.originalTweet;
+  const isRetweet = !!tweet.retweetedTweet;
 
   // Prevent bubbling for interactive elements
   const stopProp = (e: React.MouseEvent) => {
@@ -85,7 +86,7 @@ export function Tweet({ tweet }: TweetProps) {
       optimisticState: isLiked,
       toggle: toggleLike,
   } = useDebouncedToggle({
-      initialState: displayTweet.likedByMe,
+      initialState: displayTweet.isLiked,
       onMutate: (newState) => {
           if (newState) likeMutation.mutate(displayTweet.id);
           else unlikeMutation.mutate(displayTweet.id);
@@ -96,7 +97,7 @@ export function Tweet({ tweet }: TweetProps) {
       optimisticState: isRetweeted,
       toggle: toggleRetweet,
   } = useDebouncedToggle({
-      initialState: displayTweet.retweetedByMe,
+      initialState: displayTweet.isRetweeted,
       onMutate: (newState) => {
           if (newState) retweetMutation.mutate(displayTweet.id);
           else unretweetMutation.mutate(displayTweet.id);
@@ -104,8 +105,8 @@ export function Tweet({ tweet }: TweetProps) {
   });
 
   // Calculate optimistic counts
-  const likeCount = displayTweet.likeCount + (isLiked ? 1 : 0) - (displayTweet.likedByMe ? 1 : 0);
-  const retweetCount = displayTweet.retweetCount + (isRetweeted ? 1 : 0) - (displayTweet.retweetedByMe ? 1 : 0);
+  const likeCount = displayTweet.likeCount + (isLiked ? 1 : 0) - (displayTweet.isLiked ? 1 : 0);
+  const retweetCount = displayTweet.retweetCount + (isRetweeted ? 1 : 0) - (displayTweet.isRetweeted ? 1 : 0);
 
   const handleLike = (e: React.MouseEvent) => {
     stopProp(e);
@@ -143,8 +144,11 @@ export function Tweet({ tweet }: TweetProps) {
 
   return (
     <article
-        className="px-4 py-3 border-b border-border hover:bg-card/50 transition-colors cursor-pointer flex gap-3 relative"
-        onClick={handleCardClick}
+        className={cn(
+          "px-4 py-3 border-b border-border flex gap-3 relative",
+          !disableClick && "hover:bg-card/50 transition-colors cursor-pointer"
+        )}
+        onClick={!disableClick ? handleCardClick : undefined}
     >
         {/* Main Link Wrapper (absolute to cover everything except buttons) */}
         {/* <Link href={`/tweet/${displayTweet.id}`} className="absolute inset-0 z-0" aria-hidden="true" /> */}
@@ -153,8 +157,8 @@ export function Tweet({ tweet }: TweetProps) {
       <div className="shrink-0 z-10">
         <Link href={`/${user.username}`} onClick={stopProp}>
             <Avatar className="w-10 h-10 border border-border/50 hover:opacity-90 transition-opacity">
-                <AvatarImage src={user.avatarUrl ?? undefined} alt={user.displayName} />
-                <AvatarFallback>{user.displayName[0]}</AvatarFallback>
+                <AvatarImage src={user.avatarUrl ?? undefined} alt={user.displayName || user.username} />
+                <AvatarFallback>{(user.displayName || user.username)[0]}</AvatarFallback>
             </Avatar>
         </Link>
       </div>
@@ -216,9 +220,9 @@ export function Tweet({ tweet }: TweetProps) {
         </div>
 
         {/* Reply Context */}
-        {displayTweet.replyToUserHandle && (
+        {displayTweet.replyToUsername && (
              <div className="text-muted-foreground text-[15px] mb-1">
-                Replying to <Link href={`/${displayTweet.replyToUserHandle}`} className="text-primary hover:underline" onClick={stopProp}>@{displayTweet.replyToUserHandle}</Link>
+                Replying to <Link href={`/${displayTweet.replyToUsername}`} className="text-primary hover:underline" onClick={stopProp}>@{displayTweet.replyToUsername}</Link>
              </div>
         )}
 

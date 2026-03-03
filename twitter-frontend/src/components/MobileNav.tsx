@@ -89,8 +89,8 @@ export function MobileNav() {
             <DropdownMenuTrigger asChild>
               <button className="p-2 relative flex items-center justify-center cursor-pointer outline-none">
                 <Avatar className="w-6 h-6 border border-border/50">
-                  <AvatarImage src={user.avatarUrl ?? undefined} alt={user.displayName} />
-                  <AvatarFallback className="text-[10px]">{user.displayName[0]}</AvatarFallback>
+                  <AvatarImage src={user.avatarUrl ?? undefined} alt={user.displayName || user.username} />
+                  <AvatarFallback className="text-[10px]">{(user.displayName || user.username)[0]}</AvatarFallback>
                 </Avatar>
               </button>
             </DropdownMenuTrigger>

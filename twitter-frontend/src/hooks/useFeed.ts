@@ -67,10 +67,10 @@ export function useUpdateFeedTweet() {
           pages: old.pages.map((page) => ({
             ...page,
             content: page.content.map((t) => {
-              const target = t.originalTweet?.id === tweetId ? t.originalTweet : t;
+              const target = t.retweetedTweet?.id === tweetId ? t.retweetedTweet : t;
               if (target.id === tweetId) return updater(t);
-              if (t.originalTweet?.id === tweetId)
-                return { ...t, originalTweet: updater(t.originalTweet!) };
+              if (t.retweetedTweet?.id === tweetId)
+                return { ...t, retweetedTweet: updater(t.retweetedTweet!) };
               return t;
             }),
           })),

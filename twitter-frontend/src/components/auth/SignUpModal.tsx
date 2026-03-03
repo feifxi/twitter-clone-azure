@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { X } from 'lucide-react';
 import { useState } from 'react';
@@ -62,6 +62,9 @@ export function SignUpModal() {
               <DialogTitle className="text-3xl font-bold text-left">
                 Create your account
               </DialogTitle>
+              <DialogDescription className="sr-only">
+                Fill out this form to create a new account.
+              </DialogDescription>
             </DialogHeader>
 
             <div className="flex flex-col gap-6 flex-1">

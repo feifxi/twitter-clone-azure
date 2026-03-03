@@ -9,7 +9,7 @@ import (
 )
 
 type googleLoginRequest struct {
-	IDToken string `json:"idToken" binding:"required"`
+	IdToken string `json:"idToken" binding:"required"`
 }
 
 func (server *Server) loginGoogle(ctx *gin.Context) {
@@ -19,7 +19,7 @@ func (server *Server) loginGoogle(ctx *gin.Context) {
 		return
 	}
 
-	authData, err := server.usecase.LoginWithGoogle(ctx, req.IDToken)
+	authData, err := server.usecase.LoginWithGoogle(ctx, req.IdToken)
 	if err != nil {
 		writeError(ctx, err)
 		return

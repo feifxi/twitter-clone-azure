@@ -2,13 +2,13 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { axiosInstance } from '@/api/axiosInstance';
-import type { PageResponse, TrendingHashtagDTO, UserResponse } from '@/types';
+import type { PageResponse, HashtagResponse, UserResponse } from '@/types';
 
 export function useTrendingHashtags(limit = 10) {
   return useQuery({
     queryKey: ['discovery', 'trending', limit],
-    queryFn: async (): Promise<TrendingHashtagDTO[]> => {
-      const { data } = await axiosInstance.get<TrendingHashtagDTO[]>(
+    queryFn: async (): Promise<HashtagResponse[]> => {
+      const { data } = await axiosInstance.get<HashtagResponse[]>(
         '/discovery/trending',
         { params: { limit } }
       );
@@ -50,8 +50,8 @@ export function useSearchUsers(query: string, enabled = true) {
 export function useSearchHashtags(query: string) {
   return useQuery({
     queryKey: ['search', 'hashtags', query],
-    queryFn: async (): Promise<TrendingHashtagDTO[]> => {
-      const { data } = await axiosInstance.get<TrendingHashtagDTO[]>(
+    queryFn: async (): Promise<HashtagResponse[]> => {
+      const { data } = await axiosInstance.get<HashtagResponse[]>(
         '/search/hashtags',
         { params: { q: query, limit: 10 } }
       );

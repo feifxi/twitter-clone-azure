@@ -1,7 +1,7 @@
 import type { UserResponse } from './user';
 
 export interface GoogleAuthRequest {
-    token: string;
+    idToken: string;
 }
 
 export interface AuthResponse {

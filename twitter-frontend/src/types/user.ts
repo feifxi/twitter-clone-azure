@@ -4,13 +4,12 @@ export interface UserResponse {
     id: number;
     username: string;
     email: string;
-    displayName: string;
+    displayName: string | null;
     avatarUrl: string | null;
     bio: string | null;
-    role: Role;
     followersCount: number;
     followingCount: number;
-    followedByMe: boolean;
+    isFollowing: boolean;
 }
 
 export interface UpdateProfileRequest {

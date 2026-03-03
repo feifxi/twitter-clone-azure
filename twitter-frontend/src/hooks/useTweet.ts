@@ -62,10 +62,12 @@ export function useCreateTweet() {
   return useMutation({
     mutationFn: async ({ content, media, parentId }: { content: string; media?: File; parentId?: number }) => {
       const formData = new FormData();
-      formData.append(
-        'data',
-        new Blob([JSON.stringify({ content, parentId })], { type: 'application/json' })
-      );
+      if (content) {
+        formData.append('content', content);
+      }
+      if (parentId) {
+        formData.append('parentId', parentId.toString());
+      }
       if (media) {
         formData.append('media', media);
       }
@@ -74,113 +76,49 @@ export function useCreateTweet() {
       });
       return data;
     },
-    onMutate: async (newTweet) => {
-      // Stop outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['feeds'] });
-
-      // Snapshot previous value
-      const previousGlobal = queryClient.getQueryData<InfiniteData<PageResponse<TweetResponse>>>(feedQueryKey('global'));
-
-      // Optimistic update
-      if (user) {
-        const tempId = Date.now();
-        const optimisticTweet: TweetResponse = {
-          id: tempId,
-          content: newTweet.content,
-          createdAt: new Date().toISOString(),
-          user: user,
-          likeCount: 0,
-          retweetCount: 0,
-          replyCount: 0,
-          likedByMe: false,
-          retweetedByMe: false,
-          mediaUrl: newTweet.media ? URL.createObjectURL(newTweet.media) : null,
-          mediaType: newTweet.media ? 'IMAGE' : null,
-          replyToTweetId: newTweet.parentId ?? null,
-          originalTweet: null, // Not a retweet
-        };
-
-        // Helper to prepend tweet to feed
-
-        const updateFeed = (key: QueryKey) => {
-          queryClient.setQueryData<InfiniteData<PageResponse<TweetResponse>>>(key, (old) => {
-            if (!old) return old;
-            const newPages = [...old.pages];
-            if (newPages.length > 0) {
-              newPages[0] = {
-                ...newPages[0],
-                content: [optimisticTweet, ...newPages[0].content],
-              };
-            }
-            return { ...old, pages: newPages };
-          });
-        }
-
-        updateFeed(feedQueryKey('global'));
-        updateFeed(feedQueryKey('following'));
-
-        // Optimistic update for replies if on tweet detail page
-        if (newTweet.parentId) {
-          queryClient.setQueryData<InfiniteData<PageResponse<TweetResponse>>>(
-            ['tweets', newTweet.parentId, 'replies'],
-            (old) => {
-              if (!old) return old;
-              const newPages = [...old.pages];
-              // Add to first page or create a new page if empty
-              if (newPages.length > 0) {
-                newPages[0] = {
-                  ...newPages[0],
-                  content: [optimisticTweet, ...newPages[0].content],
-                };
-              }
-              return { ...old, pages: newPages };
-            }
-          );
-        }
-      }
-
-      return { previousGlobal };
+    onMutate: async () => {
+      // Don't cancel queries, we're not doing optimistic updates anymore
     },
-    onError: (_err, _newTweet, context) => {
-      if (context?.previousGlobal) {
-        queryClient.setQueryData(feedQueryKey('global'), context.previousGlobal);
-        // We could also rollback following feed but simplistic approach is enough, usually just invalidate on error
-        queryClient.invalidateQueries({ queryKey: ['feeds'] });
-      }
-      // Invalidate replies query too
+    onError: (_err, _newTweet) => {
+      // Invalidate replies query
       if (_newTweet.parentId) {
         queryClient.invalidateQueries({ queryKey: ['tweets', _newTweet.parentId, 'replies'] });
       }
     },
-    onSettled: () => {
-
-    },
     onSuccess: (realTweet, variables) => {
-      // Helper to swap optimistic tweet with real tweet in a feed
-      const swapOptimisticTweet = (key: QueryKey) => {
+      // Helper to instantly inject the real tweet at the top of a feed
+      const prependToFeed = (key: QueryKey) => {
         queryClient.setQueryData<InfiniteData<PageResponse<TweetResponse>>>(key, (old) => {
           if (!old) return old;
-          return {
-            ...old,
-            pages: old.pages.map(page => ({
-              ...page,
-              content: page.content.map(t => {
-                if (t.content === variables.content && t.user.id === user?.id && t.id > 1700000000000) {
-                  return realTweet;
-                }
-                return t;
-              })
-            }))
-          };
+
+          const newPages = old.pages.map(page => ({ ...page }));
+
+          if (newPages.length > 0) {
+            newPages[0] = {
+              ...newPages[0],
+              content: [realTweet, ...newPages[0].content]
+            };
+          }
+
+          return { ...old, pages: newPages };
         });
       };
 
-      swapOptimisticTweet(feedQueryKey('global'));
-      swapOptimisticTweet(feedQueryKey('following'));
-
-      // Also update replies if it was a reply
-      if (variables.parentId) {
-        swapOptimisticTweet(['tweets', variables.parentId, 'replies']);
+      if (!variables.parentId) {
+        prependToFeed(feedQueryKey('global'));
+        prependToFeed(feedQueryKey('following'));
+        // Update user's profile feed if viewing their own profile
+        if (user) {
+          prependToFeed(['user-feed', user.id]);
+        }
+      } else {
+        // Also update replies if it was a reply
+        prependToFeed(['tweets', variables.parentId, 'replies']);
+        // Ensure parent tweet reply count is visually incremented
+        queryClient.setQueryData<TweetResponse>(tweetQueryKey(variables.parentId), (old) => {
+          if (!old) return old;
+          return { ...old, replyCount: old.replyCount + 1 };
+        });
       }
     }
   });

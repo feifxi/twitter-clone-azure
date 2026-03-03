@@ -42,7 +42,7 @@ export default function GoogleLoginBtn() {
     setIsLoading(true);
     try {
       const { data } = await axiosInstance.post<AuthResponse>('/auth/google', {
-        token: googleToken,
+        idToken: googleToken,
       });
       setAuth(data.accessToken, data.user);
       

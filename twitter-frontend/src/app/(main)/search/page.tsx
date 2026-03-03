@@ -134,7 +134,7 @@ import type { PageResponse, TweetResponse } from '@/types';
                                  <Link href={`/${u.username}`} className="shrink-0">
                                     <Avatar className="w-10 h-10">
                                         <AvatarImage src={u.avatarUrl ?? undefined} />
-                                        <AvatarFallback>{u.displayName[0]}</AvatarFallback>
+                                        <AvatarFallback>{(u.displayName || u.username)[0]}</AvatarFallback>
                                     </Avatar>
                                 </Link>
                                 <div className="flex-1 min-w-0">
@@ -145,7 +145,7 @@ import type { PageResponse, TweetResponse } from '@/types';
                                     {u.bio && <p className="text-foreground text-[14px] mt-1">{u.bio}</p>}
                                 </div>
                                 {currentUser?.id !== u.id && (
-                                    <FollowButton userId={u.id} isFollowing={u.followedByMe} />
+                                    <FollowButton userId={u.id} isFollowing={u.isFollowing} />
                                 )}
                             </div>
                         ))

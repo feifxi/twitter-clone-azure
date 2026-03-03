@@ -185,8 +185,8 @@ export function AppNav() {
             >
               <div className="flex items-center gap-3 truncate">
                 <Avatar className="w-10 h-10 border border-border/50">
-                  <AvatarImage src={user.avatarUrl ?? undefined} alt={user.displayName} />
-                  <AvatarFallback>{user.displayName[0]}</AvatarFallback>
+                  <AvatarImage src={user.avatarUrl ?? undefined} alt={user.displayName || user.username} />
+                  <AvatarFallback>{(user.displayName || user.username)[0]}</AvatarFallback>
                 </Avatar>
                 <div className="hidden xl:flex flex-col items-start min-w-0">
                   <span className="font-bold text-[15px] truncate max-w-[140px] leading-5">

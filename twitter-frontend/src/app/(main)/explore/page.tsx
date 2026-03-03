@@ -56,13 +56,13 @@ export default function ExplorePage() {
           <div>
               {trending?.map((item) => (
                 <Link
-                    key={item.hashtag}
-                    href={`/search?q=${encodeURIComponent('#' + item.hashtag)}`}
+                    key={item.text}
+                    href={`/search?q=${encodeURIComponent('#' + item.text)}`}
                     className="block px-4 py-3 hover:bg-card transition-colors border-b border-border"
                 >
                     <div className="text-[13px] text-muted-foreground">Trending</div>
-                    <div className="font-bold text-foreground text-[16px]">#{item.hashtag}</div>
-                    <div className="text-[13px] text-muted-foreground">{item.recentCount} posts</div>
+                    <div className="font-bold text-foreground text-[16px]">#{item.text}</div>
+                    <div className="text-[13px] text-muted-foreground">{item.usageCount} posts</div>
                 </Link>
               ))}
           </div>

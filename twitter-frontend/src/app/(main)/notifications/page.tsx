@@ -50,7 +50,7 @@ function NotificationItem({ notification }: { notification: NotificationResponse
                 <Link href={`/${actor.username}`}>
                     <Avatar className="w-8 h-8">
                         <AvatarImage src={actor.avatarUrl ?? undefined} />
-                        <AvatarFallback>{actor.displayName[0]}</AvatarFallback>
+                        <AvatarFallback>{(actor.displayName || actor.username)[0]}</AvatarFallback>
                     </Avatar>
                 </Link>
              </div>

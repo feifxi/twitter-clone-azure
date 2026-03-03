@@ -30,7 +30,7 @@ function ProfileContent({ params }: { params: Promise<{ username: string }> }) {
   const tweets = feed.data?.pages.flatMap((p) => p.content) ?? [];
   const tweetsFiltered =
     currentTab === 'media'
-      ? tweets.filter((t) => (t.originalTweet ?? t).mediaUrl)
+      ? tweets.filter((t) => (t.retweetedTweet ?? t).mediaUrl)
       : tweets;
 
   const handleTabChange = (newTab: 'tweets' | 'media') => {
@@ -76,13 +76,13 @@ function ProfileContent({ params }: { params: Promise<{ username: string }> }) {
       <div className="px-4 pb-4">
         <div className="flex justify-between items-start -mt-18 mb-4 relative z-10">
           <Avatar className="w-[133px] h-[133px] border-4 border-background bg-card shrink-0">
-            <AvatarImage src={user.avatarUrl ?? undefined} alt={user.displayName} className="object-cover" />
-            <AvatarFallback className="text-[40px] font-bold">{user.displayName[0]}</AvatarFallback>
+            <AvatarImage src={user.avatarUrl ?? undefined} alt={user.displayName || user.username} className="object-cover" />
+            <AvatarFallback className="text-[40px] font-bold">{(user.displayName || user.username)[0]}</AvatarFallback>
           </Avatar>
           
           <div className="mt-20">
             {isLoggedIn && !isOwnProfile && (
-                <FollowButton userId={user.id} isFollowing={user.followedByMe} />
+                <FollowButton userId={user.id} isFollowing={user.isFollowing} />
             )}
             {isLoggedIn && isOwnProfile && (
                 <button

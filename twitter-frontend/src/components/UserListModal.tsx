@@ -66,7 +66,7 @@ export function UserListModal({ userId, type, isOpen, onClose }: UserListModalPr
                   <Link href={`/${user.username}`} onClick={onClose} className="shrink-0">
                     <Avatar className="w-10 h-10">
                       <AvatarImage src={user.avatarUrl ?? undefined} />
-                      <AvatarFallback>{user.displayName[0]}</AvatarFallback>
+                      <AvatarFallback>{(user.displayName || user.username)[0]}</AvatarFallback>
                     </Avatar>
                   </Link>
                   
@@ -81,7 +81,7 @@ export function UserListModal({ userId, type, isOpen, onClose }: UserListModalPr
                   </div>
 
                   {currentUser?.id !== user.id && (
-                    <FollowButton userId={user.id} isFollowing={user.followedByMe} />
+                    <FollowButton userId={user.id} isFollowing={user.isFollowing} />
                   )}
                 </div>
               ))}

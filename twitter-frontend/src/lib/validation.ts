@@ -20,7 +20,7 @@ export const updateProfileSchema = z.object({
 
 /** Google auth: token required */
 export const googleAuthRequestSchema = z.object({
-  token: z.string().min(1, 'Token is required'),
+  idToken: z.string().min(1, 'Token is required'),
 });
 
 export type TweetRequestInput = z.infer<typeof tweetRequestSchema>;

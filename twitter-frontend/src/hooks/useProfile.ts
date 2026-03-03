@@ -167,10 +167,12 @@ export function useUpdateProfile() {
   return useMutation({
     mutationFn: async ({ displayName, bio, avatar }: { displayName: string; bio?: string; avatar?: File }) => {
       const formData = new FormData();
-      formData.append(
-        'data',
-        new Blob([JSON.stringify({ displayName, bio })], { type: 'application/json' })
-      );
+      if (displayName) {
+        formData.append('displayName', displayName);
+      }
+      if (bio !== undefined && bio !== null) {
+        formData.append('bio', bio);
+      }
       if (avatar) {
         formData.append('avatar', avatar);
       }

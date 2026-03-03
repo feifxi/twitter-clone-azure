@@ -14,11 +14,11 @@ function toggleRetweetInTweet(
 ): TweetResponse | null {
   // If un-retweeting (retweeted === false)
   if (!retweeted && currentUserId) {
-    // Logic: If this tweet is a Retweet Wrapper (t.originalTweet exists) AND
+    // Logic: If this tweet is a Retweet Wrapper (t.retweetedTweet exists) AND
     // the wrapper's author is ME (t.user.id === currentUserId) AND
-    // the original tweet ID matches the target tweetId (t.originalTweet.id === tweetId)
+    // the original tweet ID matches the target tweetId (t.retweetedTweet.id === tweetId)
     // THEN: Delete this wrapper from my feed view.
-    if (t.originalTweet?.id === tweetId && t.user.id === currentUserId) {
+    if (t.retweetedTweet?.id === tweetId && t.user.id === currentUserId) {
       return null; // Delete!
     }
   }
@@ -26,14 +26,14 @@ function toggleRetweetInTweet(
   const delta = retweeted ? 1 : -1;
   const update = (x: TweetResponse) =>
     x.id === tweetId
-      ? { ...x, retweetedByMe: retweeted, retweetCount: Math.max(0, x.retweetCount + delta) }
+      ? { ...x, isRetweeted: retweeted, retweetCount: Math.max(0, x.retweetCount + delta) }
       : x;
 
   if (t.id === tweetId) return update(t) as TweetResponse;
 
   // If it's a wrapper but NOT my wrapper (or I'm not unretweeting), just update the inner content
-  if (t.originalTweet?.id === tweetId)
-    return { ...t, originalTweet: update(t.originalTweet) as TweetResponse };
+  if (t.retweetedTweet?.id === tweetId)
+    return { ...t, retweetedTweet: update(t.retweetedTweet) as TweetResponse };
 
   return t;
 }

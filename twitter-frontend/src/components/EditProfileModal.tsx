@@ -17,7 +17,7 @@ interface EditProfileModalProps {
 }
 
 export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProps) {
-  const [displayName, setDisplayName] = useState(user.displayName);
+  const [displayName, setDisplayName] = useState(user.displayName || '');
   const [bio, setBio] = useState(user.bio || '');
   const [avatar, setAvatar] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(user.avatarUrl ?? null);
@@ -31,7 +31,7 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
   useEffect(() => {
     if (isOpen) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setDisplayName(user.displayName);
+        setDisplayName(user.displayName || '');
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setBio(user.bio || '');
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -105,7 +105,7 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
                      <div className="w-[112px] h-[112px] rounded-full border-4 border-background bg-card relative overflow-hidden group">
                         <Avatar className="w-full h-full rounded-none">
                             <AvatarImage src={previewUrl ?? undefined} alt="" className="object-cover" />
-                            <AvatarFallback className="text-[32px] font-bold">{user.displayName[0]}</AvatarFallback>
+                            <AvatarFallback className="text-[32px] font-bold">{(user.displayName || user.username)[0]}</AvatarFallback>
                         </Avatar>
                         <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                             <Camera className="w-6 h-6 text-white" />

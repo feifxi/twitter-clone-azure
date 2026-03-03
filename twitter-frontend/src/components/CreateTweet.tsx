@@ -87,8 +87,8 @@ export function CreateTweet({
     <div className={`flex gap-3 px-4 py-3 border-b border-border ${className || ''}`}>
       <div className="shrink-0">
         <Avatar className="w-10 h-10">
-          <AvatarImage src={user.avatarUrl ?? undefined} alt={user.displayName} />
-          <AvatarFallback>{user.displayName[0]}</AvatarFallback>
+          <AvatarImage src={user.avatarUrl ?? undefined} alt={user.displayName || user.username} />
+          <AvatarFallback>{(user.displayName || user.username)[0]}</AvatarFallback>
         </Avatar>
       </div>
       <div className="flex-1 min-w-0">
@@ -123,6 +123,7 @@ export function CreateTweet({
                 target.style.height = 'auto'; 
                 target.style.height = `${target.scrollHeight}px`;
             }}
+            maxLength={280}
           />
         </div>
 
@@ -159,10 +160,15 @@ export function CreateTweet({
               onChange={handleFileChange}
             />
           </div>
-          <div>
+          <div className="flex items-center gap-4">
+            {content.length > 0 && (
+              <span className={`text-[13px] ${content.length >= 280 ? 'text-red-500' : 'text-muted-foreground'}`}>
+                {content.length} / 280
+              </span>
+            )}
             <Button
               onClick={handleSubmit}
-              disabled={(!content.trim() && !media) || createMutation.isPending}
+              disabled={(!content.trim() && !media) || createMutation.isPending || content.length > 280}
               className="rounded-full bg-primary hover:bg-primary/90 font-bold text-foreground px-4 py-1.5 h-auto text-[15px] cursor-pointer"
             >
               {createMutation.isPending ? 'Posting...' : isReply ? 'Reply' : 'Post'}

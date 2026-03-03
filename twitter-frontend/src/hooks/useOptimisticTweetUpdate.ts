@@ -24,7 +24,7 @@ export function useUpdateTweetCache() {
                 // If I interact with a Retweet Wrapper (ID 100) of Original (ID 50).
                 // I usually pass 50 to the mutation.
 
-                if (t.originalTweet?.id === tweetId) {
+                if (t.retweetedTweet?.id === tweetId) {
                     // Try updating the wrapper itself first. 
                     // This allows logic like "delete this wrapper if it's my own retweet" to work.
                     const wrapperUpdate = updater(t);
@@ -40,12 +40,12 @@ export function useUpdateTweetCache() {
 
                     // Fallback: The updater didn't change the wrapper (returned 't'), 
                     // so we assume it only knows how to update the inner tweet.
-                    const updatedOriginal = updater(t.originalTweet);
+                    const updatedOriginal = updater(t.retweetedTweet!);
                     if (updatedOriginal === null) {
                         // If the inner tweet is explicitly deleted, the wrapper is invalid.
                         return null;
                     }
-                    return { ...t, originalTweet: updatedOriginal };
+                    return { ...t, retweetedTweet: updatedOriginal };
                 }
                 return t;
             }).filter((t): t is TweetResponse => t !== null); // Filter out nulls
@@ -108,10 +108,10 @@ export function useUpdateTweetCache() {
                     if (res === null) return undefined; // Remove from cache (makes it undefined/null)
                     return res;
                 }
-                if (t.originalTweet?.id === tweetId) {
-                    const updatedOriginal = updater(t.originalTweet);
+                if (t.retweetedTweet?.id === tweetId) {
+                    const updatedOriginal = updater(t.retweetedTweet!);
                     if (updatedOriginal === null) return undefined; // Cascading delete
-                    return { ...t, originalTweet: updatedOriginal };
+                    return { ...t, retweetedTweet: updatedOriginal };
                 }
 
                 return old;

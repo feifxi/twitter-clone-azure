@@ -1,4 +1,7 @@
-export interface TrendingHashtagDTO {
-    hashtag: string;
-    recentCount: number;
+export interface HashtagResponse {
+    id: number;
+    text: string;
+    usageCount: number;
+    lastUsedAt: string;
+    createdAt: string;
 }

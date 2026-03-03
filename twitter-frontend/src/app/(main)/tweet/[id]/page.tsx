@@ -50,7 +50,7 @@ export default function TweetDetailPage({
         </div>
       ) : (
         <>
-          <TweetCard tweet={tweet} />
+          <TweetCard tweet={tweet} disableClick />
           <div className="border-b border-border">
             <CreateTweet
               isReply

@@ -39,7 +39,7 @@ export function ReplyModal({ tweet, isOpen, onClose }: ReplyModalProps) {
                   <div className="flex flex-col items-center">
                       <Avatar className="w-10 h-10 shrink-0">
                           <AvatarImage src={tweet.user.avatarUrl ?? undefined} className="object-cover" />
-                          <AvatarFallback className="font-bold">{tweet.user.displayName[0]}</AvatarFallback>
+                          <AvatarFallback className="font-bold">{(tweet.user.displayName || tweet.user.username)[0]}</AvatarFallback>
                       </Avatar>
                       <div className="w-0.5 grow bg-card my-2" />
                   </div>
