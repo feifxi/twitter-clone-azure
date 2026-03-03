@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { axiosInstance } from '@/api/axiosInstance';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { AuthResponse } from '@/types';
+import type { GoogleAuthRequestInput } from '@/lib/validation';
 
 import { useUIStore } from '@/store/useUIStore';
 
@@ -41,9 +42,8 @@ export default function GoogleLoginBtn() {
     
     setIsLoading(true);
     try {
-      const { data } = await axiosInstance.post<AuthResponse>('/auth/google', {
-        idToken: googleToken,
-      });
+      const payload: GoogleAuthRequestInput = { idToken: googleToken };
+      const { data } = await axiosInstance.post<AuthResponse>('/auth/google', payload);
       setAuth(data.accessToken, data.user);
       
       await queryClient.invalidateQueries({ queryKey: ['feeds'] });

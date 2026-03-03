@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-query';
 import { axiosInstance } from '@/api/axiosInstance';
 import type { PageResponse, TweetResponse } from '@/types';
+import type { TweetRequestInput } from '@/lib/validation';
 import { toast } from 'sonner';
 
 export const tweetQueryKey = (id: number) => ['tweets', id] as const;
@@ -60,7 +61,7 @@ export function useCreateTweet() {
   const { user } = useAuthStore();
 
   return useMutation({
-    mutationFn: async ({ content, media, parentId }: { content: string; media?: File; parentId?: number }) => {
+    mutationFn: async ({ content, media, parentId }: TweetRequestInput & { media?: File }) => {
       const formData = new FormData();
       if (content) {
         formData.append('content', content);

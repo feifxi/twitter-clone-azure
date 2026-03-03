@@ -3,12 +3,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUpdateProfile } from '@/hooks/useProfile';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { X, Camera } from 'lucide-react';
 import type { UserResponse } from '@/types';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { updateProfileSchema, type UpdateProfileInput } from '@/lib/validation';
 
 interface EditProfileModalProps {
   user: UserResponse;
@@ -17,29 +19,44 @@ interface EditProfileModalProps {
 }
 
 export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProps) {
-  const [displayName, setDisplayName] = useState(user.displayName || '');
-  const [bio, setBio] = useState(user.bio || '');
+  const { user: currentUser } = useAuth(); // Need to update global auth store if current user changes
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { errors, isDirty, isValid }
+  } = useForm<UpdateProfileInput>({
+    resolver: zodResolver(updateProfileSchema),
+    defaultValues: {
+      displayName: user.displayName || '',
+      bio: user.bio || '',
+    },
+    mode: 'onChange',
+  });
+
+  const displayName = watch('displayName') || '';
+  const bio = watch('bio') || '';
+
   const [avatar, setAvatar] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(user.avatarUrl ?? null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const updateMutation = useUpdateProfile();
-  const { user: currentUser, setAuth } = useAuth(); // Need to update global auth store if current user changes
 
-  const hasChanges = displayName !== user.displayName || bio !== (user.bio || '') || avatar !== null;
+  const hasChanges = isDirty || avatar !== null;
 
   useEffect(() => {
     if (isOpen) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setDisplayName(user.displayName || '');
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setBio(user.bio || '');
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        reset({
+            displayName: user.displayName || '',
+            bio: user.bio || '',
+        });
         setPreviewUrl(user.avatarUrl ?? null);
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setAvatar(null);
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, reset]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -50,11 +67,11 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
     }
   };
 
-  const handleSubmit = async () => {
+  const onSubmit = async (data: UpdateProfileInput) => {
     try {
       const updatedUser = await updateMutation.mutateAsync({
-        displayName,
-        bio,
+        displayName: data.displayName || '',
+        bio: data.bio || '',
         avatar: avatar ?? undefined,
       });
       
@@ -88,8 +105,8 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
                 <DialogDescription className="sr-only">Make changes to your profile here. Click save when you&apos;re done.</DialogDescription>
             </div>
             <Button
-                onClick={handleSubmit}
-                disabled={!displayName.trim() || updateMutation.isPending || !hasChanges}
+                onClick={handleSubmit(onSubmit)}
+                disabled={!displayName.trim() || updateMutation.isPending || !hasChanges || !isValid}
                 className="rounded-full bg-foreground text-background hover:bg-foreground/90 h-[32px] font-bold text-[14px] px-4"
             >
                 {updateMutation.isPending ? 'Saving...' : 'Save'}
@@ -128,12 +145,11 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
                         <span className="text-muted-foreground text-[13px]">{displayName.length} / 30</span>
                     </div>
                     <input 
+                        {...register('displayName')}
                         className="w-full bg-transparent text-foreground text-[17px] outline-none"
-                        value={displayName}
-                        maxLength={30}
-                        onChange={(e) => setDisplayName(e.target.value)}
                     />
                 </div>
+                {errors.displayName && <span className="text-red-500 text-sm">{errors.displayName.message}</span>}
 
                 <div className="border border-border rounded-md px-3 py-1.5 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-colors relative">
                     <div className="flex justify-between items-center mb-0.5">
@@ -141,12 +157,11 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
                         <span className="text-muted-foreground text-[13px]">{bio.length} / 160</span>
                     </div>
                     <textarea 
+                        {...register('bio')}
                         className="w-full bg-transparent text-foreground text-[17px] outline-none resize-none h-[80px]"
-                        value={bio}
-                        maxLength={160}
-                        onChange={(e) => setBio(e.target.value)}
                     />
                 </div>
+                {errors.bio && <span className="text-red-500 text-sm">{errors.bio.message}</span>}
             </div>
         </div>
       </DialogContent>

@@ -3,6 +3,7 @@
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { axiosInstance } from '@/api/axiosInstance';
 import type { PageResponse, UserResponse, TweetResponse } from '@/types';
+import type { UpdateProfileInput } from '@/lib/validation';
 
 const userQueryKey = (id: number) => ['users', id] as const;
 export const userFeedQueryKey = (userId: number) => ['feeds', 'user', userId] as const;
@@ -165,7 +166,7 @@ export function useUnfollowUser() {
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ displayName, bio, avatar }: { displayName: string; bio?: string; avatar?: File }) => {
+    mutationFn: async ({ displayName, bio, avatar }: UpdateProfileInput & { avatar?: File }) => {
       const formData = new FormData();
       if (displayName) {
         formData.append('displayName', displayName);

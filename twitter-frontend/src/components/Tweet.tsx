@@ -227,7 +227,7 @@ export function Tweet({ tweet, disableClick }: TweetProps) {
         )}
 
         {/* Tweet Content */}
-        <div className="text-foreground text-[15px] whitespace-pre-wrap leading-6 wrap-break-word mb-2">
+        <div className="text-foreground text-[15px] whitespace-pre-wrap leading-6 break-all mb-2">
             {(displayTweet.content || '').split(/(\s+)/).map((part, index) => {
               if (part.startsWith('#') && part.length > 1) {
                 return (

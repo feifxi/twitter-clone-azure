@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateTweet } from '@/hooks/useTweet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Image, X } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { tweetRequestSchema, type TweetRequestInput } from '@/lib/validation';
 import type { TweetResponse } from '@/types';
 
 interface CreateTweetProps {
@@ -24,7 +27,24 @@ export function CreateTweet({
   className,
 }: CreateTweetProps) {
   const { user } = useAuth();
-  const [content, setContent] = useState('');
+  
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { isValid }
+  } = useForm<TweetRequestInput>({
+    resolver: zodResolver(tweetRequestSchema),
+    defaultValues: {
+      content: '',
+      parentId: replyToId,
+    },
+    mode: 'onChange',
+  });
+
+  const content = watch('content') || '';
+  
   const [media, setMedia] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -47,16 +67,16 @@ export function CreateTweet({
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleSubmit = async () => {
-    if (!content.trim() && !media) return;
+  const onSubmit = async (data: TweetRequestInput) => {
+    if (!data.content?.trim() && !media) return;
 
     try {
       const newTweet = await createMutation.mutateAsync({
-        content,
+        content: data.content || '',
         media: media ?? undefined,
         parentId: replyToId,
       });
-      setContent('');
+      reset();
       clearMedia();
       onSuccess?.(newTweet);
     } catch (error) {
@@ -95,7 +115,7 @@ export function CreateTweet({
         <div className="relative min-h-[52px]">
           {/* Highlighter Layer */}
           <div 
-            className="absolute inset-0 whitespace-pre-wrap wrap-break-word text-[20px] font-normal text-foreground pointer-events-none"
+            className="absolute inset-0 whitespace-pre-wrap break-all text-[20px] font-normal text-foreground pointer-events-none"
             aria-hidden="true"
           >
             {renderHighlightedText(content)}
@@ -105,15 +125,13 @@ export function CreateTweet({
           
           {/* Input Layer */}
           <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
+            {...register('content')}
             placeholder={placeholder}
-            className="w-full bg-transparent text-[20px] font-normal text-foreground placeholder-muted-foreground border-none outline-none resize-none overflow-hidden min-h-[52px]"
+            className="w-full bg-transparent text-[20px] font-normal text-foreground placeholder-muted-foreground border-none outline-none resize-none overflow-hidden min-h-[52px] break-all"
             style={{ 
                 // Color must be transparent so the highlighter shows through, 
                 // BUT the caret color needs to be visible.
                 // Standard approach: make text transparent but caret visible.
-                 // color must be transparent so the highlighter shows through
                  color: 'transparent', 
                  caretColor: 'var(--color-foreground)',
             }}
@@ -167,8 +185,8 @@ export function CreateTweet({
               </span>
             )}
             <Button
-              onClick={handleSubmit}
-              disabled={(!content.trim() && !media) || createMutation.isPending || content.length > 280}
+              onClick={handleSubmit(onSubmit)}
+              disabled={(!content.trim() && !media) || createMutation.isPending || !isValid}
               className="rounded-full bg-primary hover:bg-primary/90 font-bold text-foreground px-4 py-1.5 h-auto text-[15px] cursor-pointer"
             >
               {createMutation.isPending ? 'Posting...' : isReply ? 'Reply' : 'Post'}

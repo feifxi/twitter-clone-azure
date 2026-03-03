@@ -11,7 +11,8 @@ import { useInView } from 'react-intersection-observer';
 import type { NotificationResponse } from '@/types';
 
 function NotificationItem({ notification }: { notification: NotificationResponse }) {
-  const { actor, type, tweetId, tweetContent, createdAt } = notification;
+  const router = useRouter();
+  const { actor, type, tweetId, tweetContent, tweetMediaUrl, originalTweetContent, originalTweetMediaUrl } = notification;
 
   let Icon = User;
   let iconColor = 'text-primary';
@@ -20,13 +21,13 @@ function NotificationItem({ notification }: { notification: NotificationResponse
   switch (type) {
     case 'LIKE':
         Icon = Heart;
-        iconColor = 'text-red-500'; // Or a custom 'danger' token if we had one, but sticking to standard for now or primary
-        message = 'liked your tweet';
+        iconColor = 'text-red-500';
+        message = 'liked your post';
         break;
     case 'RETWEET':
         Icon = Repeat2;
-        iconColor = 'text-green-500'; // Same here
-        message = 'reposted your tweet';
+        iconColor = 'text-green-500';
+        message = 'reposted your post';
         break;
     case 'FOLLOW':
         Icon = User;
@@ -36,38 +37,110 @@ function NotificationItem({ notification }: { notification: NotificationResponse
     case 'REPLY':
         Icon = MessageCircle;
         iconColor = 'text-primary';
-        message = 'replied to your tweet';
+        message = 'replied to your post';
         break;
   }
 
+  const handleClick = (e: React.MouseEvent) => {
+    // If they clicked the actor link, don't double navigate
+    if ((e.target as HTMLElement).closest('a')) return;
+    
+    if (type === 'FOLLOW') {
+        router.push(`/${actor.username}`);
+    } else if (tweetId) {
+        router.push(`/tweet/${tweetId}`);
+    }
+  };
+
   return (
-    <div className={`flex gap-3 px-4 py-3 border-b border-border hover:bg-card transition-colors ${!notification.isRead ? 'bg-card/50' : ''}`}>
-        <div className="w-10 shrink-0 flex justify-end">
+    <article 
+        onClick={handleClick}
+        className={`flex px-4 py-3 border-b border-border hover:bg-card/50 transition-colors cursor-pointer ${!notification.isRead ? 'bg-card/30' : ''}`}
+    >
+        {/* Left Column: Icon */}
+        <div className="w-12 shrink-0 flex justify-end pr-3 pt-1">
             <Icon className={`w-7 h-7 ${iconColor} fill-current`} />
         </div>
-        <div className="flex-1 flex flex-col gap-2">
-             <div className="flex items-center gap-2">
-                <Link href={`/${actor.username}`}>
-                    <Avatar className="w-8 h-8">
+        
+        {/* Right Column: Content */}
+        <div className="flex-1 min-w-0 flex flex-col gap-2 relative">
+             
+             {/* Avatar Row */}
+             <div className="flex items-center">
+                <Link href={`/${actor.username}`} onClick={(e) => e.stopPropagation()}>
+                    <Avatar className="w-8 h-8 hover:opacity-90 transition-opacity">
                         <AvatarImage src={actor.avatarUrl ?? undefined} />
                         <AvatarFallback>{(actor.displayName || actor.username)[0]}</AvatarFallback>
                     </Avatar>
                 </Link>
              </div>
-             <div className="text-[15px] text-foreground">
-                <Link href={`/${actor.username}`} className="font-bold hover:underline">
-                    {actor.displayName}
-                </Link>
-                {' '}
-                <span className="text-foreground">{message}</span>
+             
+             {/* Text Block */}
+             <div className="text-[15px] text-foreground mt-0.5 leading-snug">
+                {type === 'REPLY' ? (
+                     <div className="flex justify-between items-start">
+                         <div className="flex items-center gap-1 flex-wrap mb-0.5">
+                            <Link href={`/${actor.username}`} className="font-bold hover:underline truncate max-w-[150px]" onClick={(e) => e.stopPropagation()}>
+                                {actor.displayName}
+                            </Link>
+                            <span className="text-muted-foreground truncate max-w-[100px]">@{actor.username}</span>
+                            <span className="text-muted-foreground">·</span>
+                            <span className="text-muted-foreground hover:underline cursor-pointer">{formatDistanceToNowStrict(new Date(notification.createdAt))}</span>
+                         </div>
+                     </div>
+                ) : (
+                    <div className="flex items-center flex-wrap gap-x-1">
+                        <Link href={`/${actor.username}`} className="font-bold hover:underline" onClick={(e) => e.stopPropagation()}>
+                            {actor.displayName}
+                        </Link>
+                        <span>{message}</span>
+                    </div>
+                )}
              </div>
-             {(tweetId || tweetContent) && (
-                <Link href={`/tweet/${tweetId}`} className="text-muted-foreground text-[15px] whitespace-pre-wrap line-clamp-3 hover:text-foreground transition-colors">
-                    {tweetContent}
-                </Link>
+             
+             {/* Snippet Context (The actual reply or the liked/retweeted post) */}
+             {(tweetContent || tweetMediaUrl) && (
+                <div className="text-foreground text-[15px] space-y-2 mt-0.5">
+                    {type === 'REPLY' && <div className="text-muted-foreground text-[15px] mb-1">Replying to <span className="text-primary truncate min-w-0 inline-block align-bottom max-w-full hover:underline">@You</span></div>}
+                    {tweetContent && (
+                        <div className="whitespace-pre-wrap break-all leading-normal opacity-90">
+                            {tweetContent}
+                        </div>
+                    )}
+                    {tweetMediaUrl && (
+                        <div className="relative w-[300px] h-[300px] rounded-2xl overflow-hidden border border-border mt-2">
+                            <img src={tweetMediaUrl} alt="Media preview" className="object-cover w-full h-full" />
+                        </div>
+                    )}
+                </div>
+             )}
+
+             {/* Original Tweet Context for Replies (Appears Below) */}
+             {type === 'REPLY' && (originalTweetContent || originalTweetMediaUrl) && (
+                 <div 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (notification.originalTweetId) {
+                            router.push(`/tweet/${notification.originalTweetId}`);
+                        }
+                    }}
+                    className="mt-3 border border-border rounded-2xl p-3 flex flex-col gap-2 relative hover:bg-card/80 transition-colors cursor-pointer"
+                 >
+                    {originalTweetContent && (
+                        <div className="text-[15px] text-muted-foreground whitespace-pre-wrap break-all line-clamp-3">
+                            {originalTweetContent}
+                        </div>
+                    )}
+                    
+                    {originalTweetMediaUrl && (
+                         <div className="relative w-full aspect-video max-h-[150px] rounded-xl overflow-hidden border border-border mt-1">
+                             <img src={originalTweetMediaUrl} alt="Original media" className="object-cover w-full h-full" />
+                         </div>
+                    )}
+                 </div>
              )}
         </div>
-    </div>
+    </article>
   );
 }
 

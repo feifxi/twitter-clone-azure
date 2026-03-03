@@ -43,15 +43,15 @@ export function ReplyModal({ tweet, isOpen, onClose }: ReplyModalProps) {
                       </Avatar>
                       <div className="w-0.5 grow bg-card my-2" />
                   </div>
-                  <div className="flex-1 pb-4">
+                  <div className="flex-1 min-w-0 pb-4">
                        <div className="flex items-center gap-1 text-[15px]">
-                          <span className="font-bold text-foreground">{tweet.user.displayName}</span>
-                          <span className="text-muted-foreground">@{tweet.user.username}</span>
-                          <span className="text-muted-foreground">· 1h</span>
+                          <span className="font-bold text-foreground truncate">{tweet.user.displayName}</span>
+                          <span className="text-muted-foreground truncate">@{tweet.user.username}</span>
+                          <span className="text-muted-foreground shrink-0">· 1h</span>
                       </div>
-                      <div className="text-foreground text-[15px] mt-1 whitespace-pre-wrap">{tweet.content}</div>
+                      <div className="text-foreground text-[15px] mt-1 whitespace-pre-wrap break-all">{tweet.content}</div>
                        <div className="text-muted-foreground text-[15px] mt-2">
-                          Replying to <span className="text-primary">@{tweet.user.username}</span>
+                          Replying to <span className="text-primary truncate min-w-0 inline-block align-bottom max-w-full">@{tweet.user.username}</span>
                       </div>
                   </div>
               </div>
