@@ -23,8 +23,6 @@ type UserService interface {
 	UnfollowUser(ctx context.Context, followerID, targetUserID int64) error
 	ListFollowers(ctx context.Context, targetUserID int64, page, size int32, viewerID *int64) ([]UserItem, error)
 	ListFollowing(ctx context.Context, targetUserID int64, page, size int32, viewerID *int64) ([]UserItem, error)
-	CountFollowers(ctx context.Context, targetUserID int64) (int64, error)
-	CountFollowing(ctx context.Context, targetUserID int64) (int64, error)
 }
 
 type TweetService interface {
@@ -32,7 +30,6 @@ type TweetService interface {
 	DeleteTweet(ctx context.Context, userID, tweetID int64) error
 	GetTweet(ctx context.Context, tweetID int64, viewerID *int64) (TweetItem, error)
 	ListReplies(ctx context.Context, tweetID int64, page, size int32, viewerID *int64) ([]TweetItem, error)
-	CountReplies(ctx context.Context, tweetID int64) (int64, error)
 	LikeTweet(ctx context.Context, userID, tweetID int64) error
 	UnlikeTweet(ctx context.Context, userID, tweetID int64) error
 	Retweet(ctx context.Context, userID, tweetID int64) (TweetItem, error)
@@ -41,30 +38,23 @@ type TweetService interface {
 
 type FeedService interface {
 	GetGlobalFeed(ctx context.Context, page, size int32, viewerID *int64) ([]TweetItem, error)
-	CountGlobalFeed(ctx context.Context) (int64, error)
 	GetFollowingFeed(ctx context.Context, userID int64, page, size int32) ([]TweetItem, error)
-	CountFollowingFeed(ctx context.Context, userID int64) (int64, error)
 	GetUserFeed(ctx context.Context, userID int64, page, size int32, viewerID *int64) ([]TweetItem, error)
-	CountUserFeed(ctx context.Context, userID int64) (int64, error)
 }
 
 type SearchService interface {
 	SearchUsers(ctx context.Context, query string, page, size int32, viewerID *int64) ([]UserItem, error)
-	CountSearchUsers(ctx context.Context, query string) (int64, error)
 	SearchTweets(ctx context.Context, query string, page, size int32, viewerID *int64) ([]TweetItem, error)
-	CountSearchTweets(ctx context.Context, query string) (int64, error)
 	SearchHashtags(ctx context.Context, query string, limit int32) ([]db.Hashtag, error)
 }
 
 type DiscoveryService interface {
 	GetTrendingHashtags(ctx context.Context, limit int32) ([]db.Hashtag, error)
 	GetSuggestedUsers(ctx context.Context, page, size int32, viewerID *int64) ([]UserItem, error)
-	CountSuggestedUsers(ctx context.Context, viewerID *int64) (int64, error)
 }
 
 type NotificationService interface {
 	ListNotifications(ctx context.Context, userID int64, page, size int32) ([]NotificationItem, error)
-	CountNotifications(ctx context.Context, userID int64) (int64, error)
 	CountUnreadNotifications(ctx context.Context, userID int64) (int64, error)
 	MarkAllNotificationsRead(ctx context.Context, userID int64) error
 	HydrateNotification(ctx context.Context, notification db.Notification) (NotificationItem, error)

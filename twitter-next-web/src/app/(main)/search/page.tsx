@@ -42,7 +42,7 @@ import type { PageResponse, TweetResponse } from '@/types';
     queryFn: async (): Promise<PageResponse<TweetResponse>> => {
       const { data: res } = await axiosInstance.get<PageResponse<TweetResponse>>(
         '/search/tweets',
-        { params: { q, page: 0, size: 20 } }
+        { params: { q, size: 20 } }
       );
       return res;
     },
@@ -52,8 +52,8 @@ import type { PageResponse, TweetResponse } from '@/types';
   // People Query - uses 'q' from URL
   const { data: userData, isLoading: isUserLoading } = useSearchUsers(q, activeTab === 'people');
   
-  const tweets = tweetData?.content ?? [];
-  const users = userData?.content ?? [];
+  const tweets = tweetData?.items ?? [];
+  const users = userData?.items ?? [];
 
   const { user: currentUser } = useAuth();
 

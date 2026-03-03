@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { FeedList } from '@/components/FeedList';
 import { CreateTweet } from '@/components/CreateTweet';
@@ -19,7 +19,7 @@ function HomeContent() {
   const followingFeed = useFollowingFeed(isLoggedIn && currentTab === 'following');
 
   const feed = currentTab === 'for-you' ? globalFeed : followingFeed;
-  const tweets = feed.data?.pages.flatMap((p) => p.content) ?? [];
+  const tweets = feed.data?.pages.flatMap((p) => p.items) ?? [];
 
   const handleTabChange = (newTab: 'for-you' | 'following') => {
     // Only update if changed

@@ -92,15 +92,15 @@ export function Sidebar() {
                 <div className="p-4 text-center text-muted-foreground">Loading...</div>
               ) : (
                 <ul>
-                  {searchResults?.content.length === 0 && hashtagResults?.length === 0 && (
+                  {searchResults?.items.length === 0 && hashtagResults?.length === 0 && (
                     <li className="p-4 text-muted-foreground text-center">No results found</li>
                   )}
 
                   {/* People Results */}
-                  {searchResults && searchResults.content.length > 0 && (
+                  {searchResults && searchResults.items.length > 0 && (
                     <li className="px-4 py-2 text-sm text-muted-foreground font-bold bg-secondary/30">People</li>
                   )}
-                  {searchResults?.content.map(u => (
+                  {searchResults?.items.map(u => (
                     <li key={u.id}>
                       <Link
                         href={`/${u.username}`}
@@ -207,7 +207,7 @@ function SuggestedUsersList({ suggested, suggestedLoading, currentUser }: Sugges
         </div>
       ) : (
         <div className="px-0">
-          {suggested?.content
+          {suggested?.items
             ?.filter((u: UserResponse) => u.id !== currentUser?.id)
             .slice(0, 3)
             .map((u: UserResponse) => (

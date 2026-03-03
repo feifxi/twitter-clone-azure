@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/chanombude/twitter-go-api/internal/config"
 	"github.com/chanombude/twitter-go-api/internal/usecase"
+	"github.com/gin-gonic/gin"
 )
 
 type mockTweetUC struct {
@@ -28,9 +30,8 @@ func (m *mockTweetUC) GetTweet(context.Context, int64, *int64) (usecase.TweetIte
 func (m *mockTweetUC) ListReplies(context.Context, int64, int32, int32, *int64) ([]usecase.TweetItem, error) {
 	return nil, nil
 }
-func (m *mockTweetUC) CountReplies(context.Context, int64) (int64, error) { return 0, nil }
-func (m *mockTweetUC) LikeTweet(context.Context, int64, int64) error      { return nil }
-func (m *mockTweetUC) UnlikeTweet(context.Context, int64, int64) error    { return nil }
+func (m *mockTweetUC) LikeTweet(context.Context, int64, int64) error   { return nil }
+func (m *mockTweetUC) UnlikeTweet(context.Context, int64, int64) error { return nil }
 func (m *mockTweetUC) Retweet(context.Context, int64, int64) (usecase.TweetItem, error) {
 	return usecase.TweetItem{}, nil
 }
@@ -38,6 +39,7 @@ func (m *mockTweetUC) UndoRetweet(context.Context, int64, int64) error { return 
 
 type mockUserUC struct {
 	updateProfileFn func(ctx context.Context, userID int64, input usecase.UpdateProfileInput) (usecase.UserItem, error)
+	listFollowersFn func(ctx context.Context, targetUserID int64, page, size int32, viewerID *int64) ([]usecase.UserItem, error)
 }
 
 func (m *mockUserUC) GetUser(context.Context, int64, *int64) (usecase.UserItem, error) {
@@ -48,14 +50,29 @@ func (m *mockUserUC) UpdateProfile(ctx context.Context, userID int64, input usec
 }
 func (m *mockUserUC) FollowUser(context.Context, int64, int64) (bool, error) { return true, nil }
 func (m *mockUserUC) UnfollowUser(context.Context, int64, int64) error       { return nil }
-func (m *mockUserUC) ListFollowers(context.Context, int64, int32, int32, *int64) ([]usecase.UserItem, error) {
+func (m *mockUserUC) ListFollowers(ctx context.Context, targetUserID int64, page, size int32, viewerID *int64) ([]usecase.UserItem, error) {
+	if m.listFollowersFn != nil {
+		return m.listFollowersFn(ctx, targetUserID, page, size, viewerID)
+	}
 	return nil, nil
 }
 func (m *mockUserUC) ListFollowing(context.Context, int64, int32, int32, *int64) ([]usecase.UserItem, error) {
 	return nil, nil
 }
-func (m *mockUserUC) CountFollowers(context.Context, int64) (int64, error) { return 0, nil }
-func (m *mockUserUC) CountFollowing(context.Context, int64) (int64, error) { return 0, nil }
+
+type mockFeedUC struct {
+	getGlobalFeedFn func(ctx context.Context, page, size int32, viewerID *int64) ([]usecase.TweetItem, error)
+}
+
+func (m *mockFeedUC) GetGlobalFeed(ctx context.Context, page, size int32, viewerID *int64) ([]usecase.TweetItem, error) {
+	return m.getGlobalFeedFn(ctx, page, size, viewerID)
+}
+func (m *mockFeedUC) GetFollowingFeed(context.Context, int64, int32, int32) ([]usecase.TweetItem, error) {
+	return nil, nil
+}
+func (m *mockFeedUC) GetUserFeed(context.Context, int64, int32, int32, *int64) ([]usecase.TweetItem, error) {
+	return nil, nil
+}
 
 type mockAuthUC struct {
 	refreshSessionFn func(ctx context.Context, refreshToken string) (usecase.AuthResult, error)
@@ -275,5 +292,107 @@ func TestLogoutWithAuthPayloadCallsUsecaseWithUserID(t *testing.T) {
 	}
 	if !called {
 		t.Fatal("expected logout usecase to be called")
+	}
+}
+
+func TestGetGlobalFeedReturnsItemsAndHasNext(t *testing.T) {
+	t.Parallel()
+
+	var gotSize int32
+	mock := &mockFeedUC{
+		getGlobalFeedFn: func(_ context.Context, _ int32, size int32, _ *int64) ([]usecase.TweetItem, error) {
+			gotSize = size
+			now := time.Now()
+			return []usecase.TweetItem{
+				{ID: 1, CreatedAt: now, Author: usecase.UserItem{ID: 11, Username: "u1", Email: "u1@example.com"}},
+				{ID: 2, CreatedAt: now, Author: usecase.UserItem{ID: 12, Username: "u2", Email: "u2@example.com"}},
+				{ID: 3, CreatedAt: now, Author: usecase.UserItem{ID: 13, Username: "u3", Email: "u3@example.com"}},
+			}, nil
+		},
+	}
+
+	ctx, rec := newHandlerTestContext(http.MethodGet, "/api/v1/feeds/global?size=2", nil, "")
+	s := &Server{feedUC: mock}
+	s.getGlobalFeed(ctx)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body=%s", rec.Code, rec.Body.String())
+	}
+	if gotSize != 3 {
+		t.Fatalf("expected usecase size=3 (size+1), got %d", gotSize)
+	}
+
+	var got struct {
+		Items []struct {
+			ID int64 `json:"id"`
+		} `json:"items"`
+		HasNext    bool    `json:"hasNext"`
+		NextCursor *string `json:"nextCursor"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("invalid json response: %v", err)
+	}
+	if len(got.Items) != 2 {
+		t.Fatalf("expected 2 items after trim, got %d", len(got.Items))
+	}
+	if !got.HasNext {
+		t.Fatal("expected hasNext=true")
+	}
+	if got.NextCursor == nil || *got.NextCursor == "" {
+		t.Fatal("expected nextCursor to be set")
+	}
+	if got.Items[0].ID != 1 || got.Items[1].ID != 2 {
+		t.Fatalf("unexpected trimmed items: %+v", got.Items)
+	}
+}
+
+func TestListFollowersReturnsItemsAndHasNext(t *testing.T) {
+	t.Parallel()
+
+	var gotSize int32
+	mock := &mockUserUC{
+		listFollowersFn: func(_ context.Context, targetUserID int64, _ int32, size int32, _ *int64) ([]usecase.UserItem, error) {
+			gotSize = size
+			if targetUserID != 99 {
+				t.Fatalf("expected targetUserID=99, got %d", targetUserID)
+			}
+			return []usecase.UserItem{
+				{ID: 1, Username: "a", Email: "a@example.com"},
+				{ID: 2, Username: "b", Email: "b@example.com"},
+				{ID: 3, Username: "c", Email: "c@example.com"},
+			}, nil
+		},
+	}
+
+	ctx, rec := newHandlerTestContext(http.MethodGet, "/api/v1/users/99/followers?size=2", nil, "")
+	ctx.Params = gin.Params{{Key: "id", Value: "99"}}
+	s := &Server{userUC: mock}
+	s.listFollowers(ctx)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body=%s", rec.Code, rec.Body.String())
+	}
+	if gotSize != 3 {
+		t.Fatalf("expected usecase size=3 (size+1), got %d", gotSize)
+	}
+
+	var got struct {
+		Items []struct {
+			ID int64 `json:"id"`
+		} `json:"items"`
+		HasNext    bool    `json:"hasNext"`
+		NextCursor *string `json:"nextCursor"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("invalid json response: %v", err)
+	}
+	if len(got.Items) != 2 {
+		t.Fatalf("expected 2 items after trim, got %d", len(got.Items))
+	}
+	if !got.HasNext {
+		t.Fatal("expected hasNext=true")
+	}
+	if got.NextCursor == nil || *got.NextCursor == "" {
+		t.Fatal("expected nextCursor to be set")
 	}
 }

@@ -3,7 +3,6 @@
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useRouter } from 'next/navigation';
 import { CreateTweet } from './CreateTweet';
-import { Tweet } from './Tweet';
 import type { TweetResponse } from '@/types';
 import { X } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';

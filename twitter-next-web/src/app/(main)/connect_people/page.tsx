@@ -1,11 +1,8 @@
 'use client';
 
 import { useSuggestedUsers } from '@/hooks/useDiscovery';
-import { FeedList } from '@/components/FeedList'; // We might need a UserList component, but for now we'll map manually or use a new component.
-// Reusing logic from search/page.tsx for user list is better.
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { FollowButton } from '@/components/FollowButton';
 
@@ -15,7 +12,7 @@ import { ArrowLeft } from 'lucide-react';
 export default function ConnectPeoplePage() {
   const router = useRouter();
   const { data, isLoading } = useSuggestedUsers(20); // Fetch more users
-  const users = data?.content ?? [];
+  const users = data?.items ?? [];
   const { user: currentUser } = useAuth();
 
   return (

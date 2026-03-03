@@ -5,8 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCreateTweet } from '@/hooks/useTweet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Image, X } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { Image as ImageIcon, X } from 'lucide-react';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { tweetRequestSchema, type TweetRequestInput } from '@/lib/validation';
 import type { TweetResponse } from '@/types';
@@ -31,7 +31,7 @@ export function CreateTweet({
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     reset,
     formState: { isValid }
   } = useForm<TweetRequestInput>({
@@ -43,7 +43,7 @@ export function CreateTweet({
     mode: 'onChange',
   });
 
-  const content = watch('content') || '';
+  const content = useWatch({ control, name: 'content' }) || '';
   
   const [media, setMedia] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -85,6 +85,11 @@ export function CreateTweet({
     }
   };
 
+  const onFormSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
+    e.preventDefault();
+    void handleSubmit(onSubmit)(e);
+  };
+
   // Helper to render text with highlighted hashtags
   const renderHighlightedText = (text: string) => {
     // Split by spaces but preserve them to maintain layout
@@ -111,7 +116,7 @@ export function CreateTweet({
           <AvatarFallback>{(user.displayName || user.username)[0]}</AvatarFallback>
         </Avatar>
       </div>
-      <div className="flex-1 min-w-0">
+      <form className="flex-1 min-w-0" onSubmit={onFormSubmit}>
         <div className="relative min-h-[52px]">
           {/* Highlighter Layer */}
           <div 
@@ -147,6 +152,7 @@ export function CreateTweet({
 
         {previewUrl && (
           <div className="relative mt-2 mb-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={previewUrl}
               alt="Media preview"
@@ -168,7 +174,7 @@ export function CreateTweet({
               className="p-2 hover:bg-primary/10 rounded-full transition-colors"
               title="Media"
             >
-              <Image className="w-5 h-5 cursor-pointer" />
+              <ImageIcon className="w-5 h-5 cursor-pointer" />
             </button>
             <input
               type="file"
@@ -185,7 +191,7 @@ export function CreateTweet({
               </span>
             )}
             <Button
-              onClick={handleSubmit(onSubmit)}
+              type="submit"
               disabled={(!content.trim() && !media) || createMutation.isPending || !isValid}
               className="rounded-full bg-primary hover:bg-primary/90 font-bold text-foreground px-4 py-1.5 h-auto text-[15px] cursor-pointer"
             >
@@ -193,7 +199,7 @@ export function CreateTweet({
             </Button>
           </div>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

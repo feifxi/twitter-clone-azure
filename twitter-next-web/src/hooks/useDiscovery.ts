@@ -24,7 +24,7 @@ export function useSuggestedUsers(pageSize = 5) {
     queryFn: async (): Promise<PageResponse<UserResponse>> => {
       const { data } = await axiosInstance.get<PageResponse<UserResponse>>(
         '/discovery/users',
-        { params: { page: 0, size: pageSize } }
+        { params: { size: pageSize } }
       );
       return data;
     },
@@ -61,4 +61,3 @@ export function useSearchHashtags(query: string) {
     staleTime: 60 * 1000,
   });
 }
-

@@ -51,7 +51,7 @@ export function useNotificationSSE() {
                     // Invalidate notification list to show new item
                     queryClient.invalidateQueries({ queryKey: notificationQueryKey });
                 }
-            } catch (e) {
+            } catch {
                 // Ignore parse errors
             }
         };

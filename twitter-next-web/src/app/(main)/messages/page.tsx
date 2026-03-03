@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Settings, MailPlus, MoreHorizontal, Image, Smile, Send } from 'lucide-react';
+import { Search, Settings, MailPlus, MoreHorizontal, Image as ImageIcon, Smile, Send } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -169,7 +169,7 @@ export default function MessagesPage() {
             <div className="p-3 border-t border-border">
               <div className="bg-card rounded-2xl flex items-center px-2 py-1">
                  <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/10 rounded-full w-9 h-9">
-                    <Image className="w-5 h-5" />
+                    <ImageIcon className="w-5 h-5" />
                  </Button>
                  <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/10 rounded-full w-9 h-9">
                     <Smile className="w-5 h-5" />

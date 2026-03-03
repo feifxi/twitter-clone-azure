@@ -13,19 +13,15 @@ Base URL: `/api/v1`
 
 ## Common Query Params
 - Pagination (where supported):
-1. `page` (default `0`, min `0`)
+1. `cursor` (opaque token from previous response `nextCursor`)
 2. `size` (default `20`, max `50`)
 
 ## PageResponse<T>
 ```json
 {
-  "content": [],
-  "page": 0,
-  "size": 20,
-  "totalElements": 100,
-  "totalPages": 5,
-  "first": true,
-  "last": false
+  "items": [],
+  "hasNext": true,
+  "nextCursor": "MTAw"
 }
 ```
 
@@ -169,11 +165,11 @@ Response 200:
 ```
 
 ### GET `/users/:id/followers` (optional auth)
-Query: `page`, `size`
+Query: `cursor`, `size`
 Response 200: `PageResponse<UserResponse>`
 
 ### GET `/users/:id/following` (optional auth)
-Query: `page`, `size`
+Query: `cursor`, `size`
 Response 200: `PageResponse<UserResponse>`
 
 ## Tweets
@@ -196,7 +192,7 @@ Response 200:
 Response 200: `TweetResponse`
 
 ### GET `/tweets/:id/replies` (optional auth)
-Query: `page`, `size`
+Query: `cursor`, `size`
 Response 200: `PageResponse<TweetResponse>`
 
 ### POST `/tweets/:id/like` (private)
@@ -223,15 +219,15 @@ Response 200:
 ## Feeds
 
 ### GET `/feeds/global` (optional auth)
-Query: `page`, `size`
+Query: `cursor`, `size`
 Response 200: `PageResponse<TweetResponse>`
 
 ### GET `/feeds/user/:id` (optional auth)
-Query: `page`, `size`
+Query: `cursor`, `size`
 Response 200: `PageResponse<TweetResponse>`
 
 ### GET `/feeds/following` (private)
-Query: `page`, `size`
+Query: `cursor`, `size`
 Response 200: `PageResponse<TweetResponse>`
 
 ## Search
@@ -239,13 +235,13 @@ Response 200: `PageResponse<TweetResponse>`
 ### GET `/search/users` (optional auth)
 Query:
 1. `q` (required)
-2. `page`, `size`
+2. `cursor`, `size`
 Response 200: `PageResponse<UserResponse>`
 
 ### GET `/search/tweets` (optional auth)
 Query:
 1. `q` (required)
-2. `page`, `size`
+2. `cursor`, `size`
 Response 200: `PageResponse<TweetResponse>`
 
 ### GET `/search/hashtags` (optional auth)
@@ -262,13 +258,13 @@ Query:
 Response 200: `HashtagResponse[]`
 
 ### GET `/discovery/users` (optional auth)
-Query: `page`, `size`
+Query: `cursor`, `size`
 Response 200: `PageResponse<UserResponse>`
 
 ## Notifications
 
 ### GET `/notifications` (private)
-Query: `page`, `size`
+Query: `cursor`, `size`
 Response 200: `PageResponse<NotificationResponse>`
 
 ### GET `/notifications/unread-count` (private)

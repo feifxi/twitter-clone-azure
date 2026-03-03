@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Heart, MessageCircle, Repeat2, Share, BarChart2, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal } from 'lucide-react';
 import type { TweetResponse } from '@/types';
 import { useLikeTweet, useUnlikeTweet } from '@/hooks/useLike';
 import { useRetweet, useUnretweet } from '@/hooks/useRetweet';
@@ -36,7 +36,7 @@ function formatDate(iso: string) {
         .replace(' hours', 'h')
         .replace(' hour', 'h')
         .replace(' days', 'd')
-  } catch (_) {
+  } catch {
       return '';
   }
 }
@@ -248,6 +248,7 @@ export function Tweet({ tweet, disableClick }: TweetProps) {
         {/* Media */}
         {displayTweet.mediaUrl && (
             <div className="rounded-2xl border border-border overflow-hidden mt-2 mb-2 max-h-[500px]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={displayTweet.mediaUrl} alt="Tweet media" className="w-full h-full object-cover text-transparent" />
             </div>
         )}

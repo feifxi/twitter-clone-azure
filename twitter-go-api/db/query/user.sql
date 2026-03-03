@@ -39,12 +39,6 @@ WHERE u.username ILIKE '%' || $1 || '%'
 ORDER BY u.followers_count DESC
 LIMIT $2 OFFSET $3;
 
--- name: CountSearchUsers :one
-SELECT COUNT(*)
-FROM users u
-WHERE u.username ILIKE '%' || $1 || '%'
-   OR u.display_name ILIKE '%' || $1 || '%';
-
 -- name: ListFollowersUsers :many
 SELECT sqlc.embed(u),
   EXISTS(SELECT 1 FROM follows f2 WHERE f2.following_id = u.id AND f2.follower_id = sqlc.narg('viewer_id')) AS is_following
@@ -53,11 +47,6 @@ JOIN follows f ON u.id = f.follower_id
 WHERE f.following_id = $1
 ORDER BY f.created_at DESC
 LIMIT $2 OFFSET $3;
-
--- name: CountFollowersUsers :one
-SELECT COUNT(*)
-FROM follows f
-WHERE f.following_id = $1;
 
 -- name: ListFollowingUsers :many
 SELECT sqlc.embed(u),
@@ -68,11 +57,6 @@ WHERE f.follower_id = $1
 ORDER BY f.created_at DESC
 LIMIT $2 OFFSET $3;
 
--- name: CountFollowingUsers :one
-SELECT COUNT(*)
-FROM follows f
-WHERE f.follower_id = $1;
-
 -- name: ListSuggestedUsers :many
 SELECT sqlc.embed(u),
   EXISTS(SELECT 1 FROM follows f2 WHERE f2.following_id = u.id AND f2.follower_id = sqlc.narg('viewer_id')) AS is_following
@@ -82,18 +66,10 @@ WHERE u.id != $1
 ORDER BY (CASE WHEN f.follower_id IS NULL THEN 0 ELSE 1 END) ASC, u.followers_count DESC
 LIMIT $2 OFFSET $3;
 
--- name: CountSuggestedUsers :one
-SELECT COUNT(*)
-FROM users u
-WHERE u.id != $1;
-
 -- name: ListTopUsers :many
 SELECT * FROM users
 ORDER BY followers_count DESC
 LIMIT $1 OFFSET $2;
-
--- name: CountTopUsers :one
-SELECT COUNT(*) FROM users;
 
 -- name: IsFollowing :one
 SELECT EXISTS(

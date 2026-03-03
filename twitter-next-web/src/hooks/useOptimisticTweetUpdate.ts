@@ -51,14 +51,14 @@ export function useUpdateTweetCache() {
             }).filter((t): t is TweetResponse => t !== null); // Filter out nulls
         };
 
-        // Helper for InfiniteQuery data (pages of content)
+        // Helper for InfiniteQuery data (pages of items)
         const updateInfiniteData = (old: InfiniteData<PageResponse<TweetResponse>> | undefined) => {
             if (!old) return old;
             return {
                 ...old,
                 pages: old.pages.map((page) => ({
                     ...page,
-                    content: updateTweetList(page.content),
+                    items: updateTweetList(page.items),
                 })),
             };
         };
@@ -68,7 +68,7 @@ export function useUpdateTweetCache() {
             if (!old) return old;
             return {
                 ...old,
-                content: updateTweetList(old.content),
+                items: updateTweetList(old.items),
             };
         };
 

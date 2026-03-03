@@ -109,6 +109,7 @@ function NotificationItem({ notification }: { notification: NotificationResponse
                     )}
                     {tweetMediaUrl && (
                         <div className="relative w-[300px] h-[300px] rounded-2xl overflow-hidden border border-border mt-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={tweetMediaUrl} alt="Media preview" className="object-cover w-full h-full" />
                         </div>
                     )}
@@ -134,6 +135,7 @@ function NotificationItem({ notification }: { notification: NotificationResponse
                     
                     {originalTweetMediaUrl && (
                          <div className="relative w-full aspect-video max-h-[150px] rounded-xl overflow-hidden border border-border mt-1">
+                             {/* eslint-disable-next-line @next/next/no-img-element */}
                              <img src={originalTweetMediaUrl} alt="Original media" className="object-cover w-full h-full" />
                          </div>
                     )}
@@ -147,7 +149,7 @@ function NotificationItem({ notification }: { notification: NotificationResponse
 export default function NotificationsPage() {
   const router = useRouter();
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useNotifications();
-  const markReadMutation = useMarkAllRead();
+  const { mutate: markAllRead } = useMarkAllRead();
   const { ref, inView } = useInView();
 
   useEffect(() => {
@@ -158,10 +160,10 @@ export default function NotificationsPage() {
 
   // Mark all as read on mount
   useEffect(() => {
-      markReadMutation.mutate();
-  }, []);
+      markAllRead();
+  }, [markAllRead]);
 
-  const notifications = data?.pages.flatMap((p) => p.content) ?? [];
+  const notifications = data?.pages.flatMap((p) => p.items) ?? [];
 
   return (
     <div className="min-h-screen">

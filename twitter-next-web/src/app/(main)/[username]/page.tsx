@@ -27,7 +27,7 @@ function ProfileContent({ params }: { params: Promise<{ username: string }> }) {
 
   const currentTab = searchParams.get('tab') === 'media' ? 'media' : 'tweets';
 
-  const tweets = feed.data?.pages.flatMap((p) => p.content) ?? [];
+  const tweets = feed.data?.pages.flatMap((p) => p.items) ?? [];
   const tweetsFiltered =
     currentTab === 'media'
       ? tweets.filter((t) => (t.retweetedTweet ?? t).mediaUrl)

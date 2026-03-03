@@ -29,7 +29,7 @@ export function UserListModal({ userId, type, isOpen, onClose }: UserListModalPr
     }
   }, [inView, hasNextPage, fetchNextPage]);
 
-  const users = data?.pages.flatMap((page) => page.content) ?? [];
+  const users = data?.pages.flatMap((page) => page.items) ?? [];
 
   if (!type) return null;
 

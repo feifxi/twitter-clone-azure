@@ -56,7 +56,7 @@ export function useRetweet() {
 
       updateTweetCache(tweetId, (t) => toggleRetweetInTweet(t, tweetId, true, currentUserId));
     },
-    onError: (_err, tweetId) => {
+    onError: () => {
       queryClient.invalidateQueries({ queryKey: ['feeds'] });
       queryClient.invalidateQueries({ queryKey: ['tweets'] });
       queryClient.invalidateQueries({ queryKey: ['search'] });
@@ -85,7 +85,7 @@ export function useUnretweet() {
 
       updateTweetCache(tweetId, (t) => toggleRetweetInTweet(t, tweetId, false, currentUserId));
     },
-    onError: (_err, tweetId) => {
+    onError: () => {
       queryClient.invalidateQueries({ queryKey: ['feeds'] });
       queryClient.invalidateQueries({ queryKey: ['tweets'] });
       queryClient.invalidateQueries({ queryKey: ['search'] });

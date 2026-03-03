@@ -167,11 +167,3 @@ func (u *UserUsecase) ListFollowing(ctx context.Context, targetUserID int64, pag
 	}
 	return items, nil
 }
-
-func (u *UserUsecase) CountFollowers(ctx context.Context, targetUserID int64) (int64, error) {
-	return u.store.CountFollowersUsers(ctx, targetUserID)
-}
-
-func (u *UserUsecase) CountFollowing(ctx context.Context, targetUserID int64) (int64, error) {
-	return u.store.CountFollowingUsers(ctx, targetUserID)
-}

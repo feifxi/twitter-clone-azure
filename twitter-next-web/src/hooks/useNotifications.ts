@@ -11,16 +11,16 @@ export const unreadCountQueryKey = ['notifications', 'unread'] as const;
 export function useNotifications(pageSize = 20) {
     return useInfiniteQuery({
         queryKey: notificationQueryKey,
-        queryFn: async ({ pageParam }: { pageParam: number }): Promise<PageResponse<NotificationResponse>> => {
+        queryFn: async ({ pageParam }: { pageParam: string | null }): Promise<PageResponse<NotificationResponse>> => {
             const { data } = await axiosInstance.get<PageResponse<NotificationResponse>>(
                 '/notifications',
-                { params: { page: pageParam, size: pageSize } }
+                { params: { cursor: pageParam ?? undefined, size: pageSize } }
             );
             return data;
         },
-        initialPageParam: 0,
+        initialPageParam: null as string | null,
         getNextPageParam: (lastPage) =>
-            lastPage.last ? undefined : lastPage.page + 1,
+            lastPage.hasNext ? lastPage.nextCursor : undefined,
         staleTime: 300000, // 5 minutes
     });
 }
@@ -53,7 +53,7 @@ export function useMarkAllRead() {
                     if (!old) return old;
                     return {
                         ...old,
-                        content: old.content.map((n) => ({ ...n, isRead: true })),
+                        items: old.items.map((n) => ({ ...n, isRead: true })),
                     };
                 }
             );
@@ -66,7 +66,7 @@ export function useMarkAllRead() {
                         ...old,
                         pages: old.pages.map(page => ({
                             ...page,
-                            content: page.content.map(n => ({ ...n, isRead: true }))
+                            items: page.items.map(n => ({ ...n, isRead: true }))
                         }))
                     };
                 }

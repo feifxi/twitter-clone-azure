@@ -31,17 +31,17 @@ export function useRepliesInfinite(tweetId: number | null, pageSize = 20) {
     queryFn: async ({
       pageParam,
     }: {
-      pageParam: number;
+      pageParam: string | null;
     }): Promise<PageResponse<TweetResponse>> => {
       const { data } = await axiosInstance.get<PageResponse<TweetResponse>>(
         `/tweets/${tweetId}/replies`,
-        { params: { page: pageParam, size: pageSize } }
+        { params: { cursor: pageParam ?? undefined, size: pageSize } }
       );
       return data;
     },
-    initialPageParam: 0,
+    initialPageParam: null as string | null,
     getNextPageParam: (lastPage) =>
-      lastPage.last ? undefined : lastPage.page + 1,
+      lastPage.hasNext ? lastPage.nextCursor : undefined,
     enabled: tweetId != null && tweetId > 0,
   });
 }
@@ -97,7 +97,7 @@ export function useCreateTweet() {
           if (newPages.length > 0) {
             newPages[0] = {
               ...newPages[0],
-              content: [realTweet, ...newPages[0].content]
+              items: [realTweet, ...newPages[0].items]
             };
           }
 
@@ -148,7 +148,7 @@ export function useDeleteTweet() {
               ...old,
               pages: old.pages.map((page) => ({
                 ...page,
-                content: page.content.filter((t) => t.id !== tweetId),
+                items: page.items.filter((t) => t.id !== tweetId),
               })),
             };
           });

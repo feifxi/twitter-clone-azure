@@ -26,10 +26,6 @@ func (u *FeedUsecase) GetGlobalFeed(ctx context.Context, page, size int32, viewe
 	return populateTweetItems(ctx, u.store, inputs, viewerID)
 }
 
-func (u *FeedUsecase) CountGlobalFeed(ctx context.Context) (int64, error) {
-	return u.store.CountForYouFeed(ctx)
-}
-
 func (u *FeedUsecase) GetFollowingFeed(ctx context.Context, userID int64, page, size int32) ([]TweetItem, error) {
 	rows, err := u.store.ListFollowingFeed(ctx, db.ListFollowingFeedParams{
 		FollowerID: userID,
@@ -49,10 +45,6 @@ func (u *FeedUsecase) GetFollowingFeed(ctx context.Context, userID int64, page, 
 		func(r db.ListFollowingFeedRow) bool { return r.IsFollowing },
 	)
 	return populateTweetItems(ctx, u.store, inputs, &userID)
-}
-
-func (u *FeedUsecase) CountFollowingFeed(ctx context.Context, userID int64) (int64, error) {
-	return u.store.CountFollowingFeed(ctx, userID)
 }
 
 func (u *FeedUsecase) GetUserFeed(ctx context.Context, userID int64, page, size int32, viewerID *int64) ([]TweetItem, error) {
@@ -79,8 +71,4 @@ func (u *FeedUsecase) GetUserFeed(ctx context.Context, userID int64, page, size 
 		func(r db.ListUserTweetsRow) bool { return r.IsFollowing },
 	)
 	return populateTweetItems(ctx, u.store, inputs, viewerID)
-}
-
-func (u *FeedUsecase) CountUserFeed(ctx context.Context, userID int64) (int64, error) {
-	return u.store.CountUserTweets(ctx, userID)
 }

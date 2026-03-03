@@ -155,7 +155,7 @@ func inferNumericFieldError(ctx *gin.Context) (string, string) {
 		return "", ""
 	}
 
-	candidates := []string{"parentId", "id", "page", "size", "limit"}
+	candidates := []string{"parentId", "id", "cursor", "size", "limit"}
 	for _, field := range candidates {
 		value := strings.TrimSpace(numericFieldRawValue(ctx, field))
 		if value == "" {

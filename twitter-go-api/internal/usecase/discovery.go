@@ -48,10 +48,3 @@ func (u *DiscoveryUsecase) GetSuggestedUsers(ctx context.Context, page, size int
 	}
 	return items, nil
 }
-
-func (u *DiscoveryUsecase) CountSuggestedUsers(ctx context.Context, viewerID *int64) (int64, error) {
-	if viewerID != nil {
-		return u.store.CountSuggestedUsers(ctx, *viewerID)
-	}
-	return u.store.CountTopUsers(ctx)
-}

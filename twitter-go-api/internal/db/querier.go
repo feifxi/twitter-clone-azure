@@ -9,18 +9,6 @@ import (
 )
 
 type Querier interface {
-	CountFollowersUsers(ctx context.Context, followingID int64) (int64, error)
-	CountFollowingFeed(ctx context.Context, followerID int64) (int64, error)
-	CountFollowingUsers(ctx context.Context, followerID int64) (int64, error)
-	CountForYouFeed(ctx context.Context) (int64, error)
-	CountNotifications(ctx context.Context, recipientID int64) (int64, error)
-	CountSearchTweetsByHashtag(ctx context.Context, lower string) (int64, error)
-	CountSearchTweetsFullText(ctx context.Context, toTsquery string) (int64, error)
-	CountSearchUsers(ctx context.Context, dollar_1 *string) (int64, error)
-	CountSuggestedUsers(ctx context.Context, id int64) (int64, error)
-	CountTopUsers(ctx context.Context) (int64, error)
-	CountTweetReplies(ctx context.Context, parentID *int64) (int64, error)
-	CountUserTweets(ctx context.Context, userID int64) (int64, error)
 	CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error)
 	CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error)
 	CreateRetweet(ctx context.Context, arg CreateRetweetParams) (CreateRetweetRow, error)

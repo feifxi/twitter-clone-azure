@@ -1,7 +1,8 @@
 package server
 
 import (
-	"math"
+	"encoding/base64"
+	"strconv"
 
 	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/chanombude/twitter-go-api/internal/middleware"
@@ -10,40 +11,28 @@ import (
 )
 
 const (
-	defaultPage = int32(0)
 	defaultSize = int32(20)
 	maxSize     = int32(50)
 )
 
 type pageResponse[T any] struct {
-	Content       []T   `json:"content"`
-	Page          int32 `json:"page"`
-	Size          int32 `json:"size"`
-	TotalElements int64 `json:"totalElements"`
-	TotalPages    int32 `json:"totalPages"`
-	First         bool  `json:"first"`
-	Last          bool  `json:"last"`
+	Items      []T     `json:"items"`
+	HasNext    bool    `json:"hasNext"`
+	NextCursor *string `json:"nextCursor,omitempty"`
 }
 
-func buildPageResponse[T any](content []T, page, size int32, total int64) pageResponse[T] {
-	totalPages := int32(0)
-	if size > 0 && total > 0 {
-		totalPages = int32(math.Ceil(float64(total) / float64(size)))
+func buildPageResponse[T any](items []T, size, offset int32) pageResponse[T] {
+	if int32(len(items)) > size {
+		next := encodeCursor(offset + size)
+		return pageResponse[T]{
+			Items:      items[:size],
+			HasNext:    true,
+			NextCursor: &next,
+		}
 	}
-
-	last := true
-	if total > 0 {
-		last = int64((page+1)*size) >= total
-	}
-
 	return pageResponse[T]{
-		Content:       content,
-		Page:          page,
-		Size:          size,
-		TotalElements: total,
-		TotalPages:    totalPages,
-		First:         page == 0,
-		Last:          last,
+		Items:   items,
+		HasNext: false,
 	}
 }
 
@@ -68,10 +57,10 @@ func mustCurrentUserID(ctx *gin.Context) (int64, bool) {
 	return userID, true
 }
 
-func parsePageAndSize(ctx *gin.Context) (int32, int32, bool) {
+func parseOffsetAndSize(ctx *gin.Context) (int32, int32, bool) {
 	type paginationQuery struct {
-		Page *int32 `form:"page" binding:"omitempty,min=0"`
-		Size *int32 `form:"size" binding:"omitempty,min=1"`
+		Cursor *string `form:"cursor" binding:"omitempty"`
+		Size   *int32  `form:"size" binding:"omitempty,min=1"`
 	}
 
 	var req paginationQuery
@@ -80,15 +69,35 @@ func parsePageAndSize(ctx *gin.Context) (int32, int32, bool) {
 		return 0, 0, false
 	}
 
-	page := defaultPage
-	if req.Page != nil {
-		page = *req.Page
-	}
-
 	size := defaultSize
 	if req.Size != nil {
 		size = min(*req.Size, maxSize)
 	}
 
-	return page, size, true
+	if req.Cursor == nil || *req.Cursor == "" {
+		return 0, size, true
+	}
+
+	offset, err := decodeCursor(*req.Cursor)
+	if err != nil || offset < 0 {
+		writeValidationError(ctx, "cursor", "invalid cursor")
+		return 0, 0, false
+	}
+	return offset, size, true
+}
+
+func encodeCursor(offset int32) string {
+	return base64.RawURLEncoding.EncodeToString([]byte(strconv.FormatInt(int64(offset), 10)))
+}
+
+func decodeCursor(cursor string) (int32, error) {
+	decoded, err := base64.RawURLEncoding.DecodeString(cursor)
+	if err != nil {
+		return 0, err
+	}
+	n, err := strconv.ParseInt(string(decoded), 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return int32(n), nil
 }

@@ -7,26 +7,22 @@ import (
 )
 
 func (server *Server) getGlobalFeed(ctx *gin.Context) {
-	page, size, ok := parsePageAndSize(ctx)
+	offset, size, ok := parseOffsetAndSize(ctx)
 	if !ok {
 		return
 	}
+	page := offset / size
 	var viewerID *int64
 	if id, ok := getCurrentUserID(ctx); ok {
 		viewerID = &id
 	}
-	tweets, err := server.feedUC.GetGlobalFeed(ctx, page, size, viewerID)
-	if err != nil {
-		writeError(ctx, err)
-		return
-	}
-	total, err := server.feedUC.CountGlobalFeed(ctx)
+	tweets, err := server.feedUC.GetGlobalFeed(ctx, page, size+1, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 	response := newTweetResponseList(tweets)
-	ctx.JSON(http.StatusOK, buildPageResponse(response, page, size, total))
+	ctx.JSON(http.StatusOK, buildPageResponse(response, size, offset))
 }
 
 func (server *Server) getFollowingFeed(ctx *gin.Context) {
@@ -34,22 +30,18 @@ func (server *Server) getFollowingFeed(ctx *gin.Context) {
 	if !ok {
 		return
 	}
-	page, size, ok := parsePageAndSize(ctx)
+	offset, size, ok := parseOffsetAndSize(ctx)
 	if !ok {
 		return
 	}
-	tweets, err := server.feedUC.GetFollowingFeed(ctx, userID, page, size)
-	if err != nil {
-		writeError(ctx, err)
-		return
-	}
-	total, err := server.feedUC.CountFollowingFeed(ctx, userID)
+	page := offset / size
+	tweets, err := server.feedUC.GetFollowingFeed(ctx, userID, page, size+1)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 	response := newTweetResponseList(tweets)
-	ctx.JSON(http.StatusOK, buildPageResponse(response, page, size, total))
+	ctx.JSON(http.StatusOK, buildPageResponse(response, size, offset))
 }
 
 func (server *Server) getUserFeed(ctx *gin.Context) {
@@ -58,24 +50,20 @@ func (server *Server) getUserFeed(ctx *gin.Context) {
 		writeError(ctx, err)
 		return
 	}
-	page, size, ok := parsePageAndSize(ctx)
+	offset, size, ok := parseOffsetAndSize(ctx)
 	if !ok {
 		return
 	}
+	page := offset / size
 	var viewerID *int64
 	if id, ok := getCurrentUserID(ctx); ok {
 		viewerID = &id
 	}
-	tweets, err := server.feedUC.GetUserFeed(ctx, req.ID, page, size, viewerID)
-	if err != nil {
-		writeError(ctx, err)
-		return
-	}
-	total, err := server.feedUC.CountUserFeed(ctx, req.ID)
+	tweets, err := server.feedUC.GetUserFeed(ctx, req.ID, page, size+1, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 	response := newTweetResponseList(tweets)
-	ctx.JSON(http.StatusOK, buildPageResponse(response, page, size, total))
+	ctx.JSON(http.StatusOK, buildPageResponse(response, size, offset))
 }

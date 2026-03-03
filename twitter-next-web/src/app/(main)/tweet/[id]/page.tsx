@@ -22,7 +22,7 @@ export default function TweetDetailPage({
     Number.isNaN(tweetId) ? null : tweetId
   );
   const replyList =
-    repliesQuery.data?.pages.flatMap((p) => p.content) ?? [];
+    repliesQuery.data?.pages.flatMap((p) => p.items) ?? [];
 
   if (Number.isNaN(tweetId)) {
     return (

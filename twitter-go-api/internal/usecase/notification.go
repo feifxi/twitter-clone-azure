@@ -29,10 +29,6 @@ func (u *NotificationUsecase) ListNotifications(ctx context.Context, userID int6
 	return u.hydrateNotifications(ctx, rows)
 }
 
-func (u *NotificationUsecase) CountNotifications(ctx context.Context, userID int64) (int64, error) {
-	return u.store.CountNotifications(ctx, userID)
-}
-
 func (u *NotificationUsecase) CountUnreadNotifications(ctx context.Context, userID int64) (int64, error) {
 	return u.store.GetUnreadNotificationCount(ctx, userID)
 }

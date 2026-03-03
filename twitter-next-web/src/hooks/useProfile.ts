@@ -28,7 +28,7 @@ export function useUserProfileByUsername(username: string) {
         '/search/users',
         { params: { q: username, size: 10 } }
       );
-      const match = data.content.find(
+      const match = data.items.find(
         (u) => u.username.toLowerCase() === username.toLowerCase()
       );
       return match ?? null;
@@ -43,17 +43,17 @@ export function useUserFeed(userId: number | null, pageSize = 20) {
     queryFn: async ({
       pageParam,
     }: {
-      pageParam: number;
+      pageParam: string | null;
     }): Promise<PageResponse<TweetResponse>> => {
       const { data } = await axiosInstance.get<PageResponse<TweetResponse>>(
         `/feeds/user/${userId}`,
-        { params: { page: pageParam, size: pageSize } }
+        { params: { cursor: pageParam ?? undefined, size: pageSize } }
       );
       return data;
     },
-    initialPageParam: 0,
+    initialPageParam: null as string | null,
     getNextPageParam: (lastPage) =>
-      lastPage.last ? undefined : lastPage.page + 1,
+      lastPage.hasNext ? lastPage.nextCursor : undefined,
     enabled: userId != null && userId > 0,
   });
 }
@@ -78,7 +78,7 @@ function useUpdateUserCache() {
       if (!old) return old;
       return {
         ...old,
-        content: old.content.map(u => u.id === userId ? { ...u, followedByMe: isFollowing } : u)
+        items: old.items.map(u => u.id === userId ? { ...u, followedByMe: isFollowing } : u)
       };
     });
 
@@ -87,7 +87,7 @@ function useUpdateUserCache() {
       if (!old) return old;
       return {
         ...old,
-        content: old.content.map(u => u.id === userId ? { ...u, followedByMe: isFollowing } : u)
+        items: old.items.map(u => u.id === userId ? { ...u, followedByMe: isFollowing } : u)
       };
     });
 
@@ -112,12 +112,10 @@ export function useFollowUser() {
 
       updateUserCache(userId, true);
     },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    onError: (err, userId) => {
+    onError: (_err, userId) => {
       updateUserCache(userId, false); // Rollback
     },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    onSuccess: (_, userId) => {
+    onSuccess: () => {
       // Optimistic update handles UI. No need to refetch.
       // queryClient.invalidateQueries({ queryKey: userQueryKey(userId) });
       // queryClient.invalidateQueries({ queryKey: ['feeds'] }); 
@@ -152,12 +150,10 @@ export function useUnfollowUser() {
 
       updateUserCache(userId, false);
     },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    onError: (err, userId) => {
+    onError: (_err, userId) => {
       updateUserCache(userId, true); // Rollback
     },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    onSuccess: (_, userId) => {
+    onSuccess: () => {
       // No refetch
     },
   });
@@ -194,14 +190,14 @@ export function useUpdateProfile() {
 export function useUserFollowers(userId: number | null, pageSize = 20) {
   return useInfiniteQuery({
     queryKey: ['users', userId, 'followers'],
-    queryFn: async ({ pageParam = 0 }) => {
+    queryFn: async ({ pageParam = null as string | null }) => {
       const { data } = await axiosInstance.get<PageResponse<UserResponse>>(`/users/${userId}/followers`, {
-        params: { page: pageParam, size: pageSize },
+        params: { cursor: pageParam ?? undefined, size: pageSize },
       });
       return data;
     },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) => (lastPage.last ? undefined : lastPage.page + 1),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
     enabled: !!userId,
   });
 }
@@ -209,14 +205,14 @@ export function useUserFollowers(userId: number | null, pageSize = 20) {
 export function useUserFollowing(userId: number | null, pageSize = 20) {
   return useInfiniteQuery({
     queryKey: ['users', userId, 'following'],
-    queryFn: async ({ pageParam = 0 }) => {
+    queryFn: async ({ pageParam = null as string | null }) => {
       const { data } = await axiosInstance.get<PageResponse<UserResponse>>(`/users/${userId}/following`, {
-        params: { page: pageParam, size: pageSize },
+        params: { cursor: pageParam ?? undefined, size: pageSize },
       });
       return data;
     },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) => (lastPage.last ? undefined : lastPage.page + 1),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
     enabled: !!userId,
   });
 }

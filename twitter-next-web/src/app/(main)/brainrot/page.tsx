@@ -4,7 +4,6 @@ import { Suspense, useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useBrainrotFeed } from '@/hooks/useBrainrot';
 import { Loader2 } from 'lucide-react';
-import Image from 'next/image';
 
 import { TikTokEmbed } from '@/components/TikTokEmbed';
 
@@ -40,6 +39,7 @@ function BrainrotContent() {
             className="h-full w-full snap-start flex flex-col items-center justify-center relative bg-background border-b border-border/30"
         >
             <div className="relative w-full h-full flex items-center justify-center p-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={item.url}
                 alt={'Brainrot content'}

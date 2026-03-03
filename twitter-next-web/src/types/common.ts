@@ -14,12 +14,9 @@ export interface ErrorResponse {
 export type FieldErrors = Record<string, string>;
 
 export interface PageResponse<T> {
-    content: T[];
-    page: number;
-    size: number;
-    totalElements: number;
-    totalPages: number;
-    last: boolean;
+    items: T[];
+    hasNext: boolean;
+    nextCursor?: string;
 }
 
 export interface ApiResponse {

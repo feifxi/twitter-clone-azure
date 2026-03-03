@@ -18,11 +18,11 @@ export function feedQueryKey(kind: FeedKind) {
 
 async function fetchFeed(
   kind: FeedKind,
-  page: number
+  cursor: string | null
 ): Promise<PageResponse<TweetResponse>> {
   const path = kind === 'global' ? '/feeds/global' : '/feeds/following';
   const { data } = await axiosInstance.get<PageResponse<TweetResponse>>(path, {
-    params: { page, size: PAGE_SIZE },
+    params: { cursor: cursor ?? undefined, size: PAGE_SIZE },
   });
   return data;
 }
@@ -31,9 +31,9 @@ export function useGlobalFeed(enabled = true) {
   return useInfiniteQuery({
     queryKey: feedQueryKey('global'),
     queryFn: ({ pageParam }) => fetchFeed('global', pageParam),
-    initialPageParam: 0,
+    initialPageParam: null as string | null,
     getNextPageParam: (lastPage) =>
-      lastPage.last ? undefined : lastPage.page + 1,
+      lastPage.hasNext ? lastPage.nextCursor : undefined,
     enabled,
   });
 }
@@ -42,9 +42,9 @@ export function useFollowingFeed(enabled = true) {
   return useInfiniteQuery({
     queryKey: feedQueryKey('following'),
     queryFn: ({ pageParam }) => fetchFeed('following', pageParam),
-    initialPageParam: 0,
+    initialPageParam: null as string | null,
     getNextPageParam: (lastPage) =>
-      lastPage.last ? undefined : lastPage.page + 1,
+      lastPage.hasNext ? lastPage.nextCursor : undefined,
     enabled,
   });
 }
@@ -66,7 +66,7 @@ export function useUpdateFeedTweet() {
           ...old,
           pages: old.pages.map((page) => ({
             ...page,
-            content: page.content.map((t) => {
+            items: page.items.map((t) => {
               const target = t.retweetedTweet?.id === tweetId ? t.retweetedTweet : t;
               if (target.id === tweetId) return updater(t);
               if (t.retweetedTweet?.id === tweetId)

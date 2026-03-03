@@ -88,11 +88,6 @@ ORDER BY
   t.created_at DESC
 LIMIT $1 OFFSET $2;
 
--- name: CountForYouFeed :one
-SELECT COUNT(*)
-FROM tweets t
-WHERE t.parent_id IS NULL;
-
 -- name: ListFollowingFeed :many
 SELECT sqlc.embed(t),
   EXISTS(SELECT 1 FROM tweet_likes tl WHERE tl.tweet_id = t.id AND tl.user_id = sqlc.narg('viewer_id')) AS is_liked,
@@ -105,13 +100,6 @@ WHERE f.follower_id = $1
 ORDER BY t.created_at DESC
 LIMIT $2 OFFSET $3;
 
--- name: CountFollowingFeed :one
-SELECT COUNT(*)
-FROM tweets t
-JOIN follows f ON t.user_id = f.following_id
-WHERE f.follower_id = $1
-  AND t.parent_id IS NULL;
-
 -- name: ListUserTweets :many
 SELECT sqlc.embed(t),
   EXISTS(SELECT 1 FROM tweet_likes tl WHERE tl.tweet_id = t.id AND tl.user_id = sqlc.narg('viewer_id')) AS is_liked,
@@ -123,12 +111,6 @@ WHERE t.user_id = $1
 ORDER BY t.created_at DESC
 LIMIT $2 OFFSET $3;
 
--- name: CountUserTweets :one
-SELECT COUNT(*)
-FROM tweets t
-WHERE t.user_id = $1
-  AND t.parent_id IS NULL;
-
 -- name: ListTweetReplies :many
 SELECT sqlc.embed(t),
   EXISTS(SELECT 1 FROM tweet_likes tl WHERE tl.tweet_id = t.id AND tl.user_id = sqlc.narg('viewer_id')) AS is_liked,
@@ -139,11 +121,6 @@ WHERE t.parent_id = $1
 ORDER BY t.created_at ASC
 LIMIT $2 OFFSET $3;
 
--- name: CountTweetReplies :one
-SELECT COUNT(*)
-FROM tweets t
-WHERE t.parent_id = $1;
-
 -- name: SearchTweetsFullText :many
 SELECT sqlc.embed(t),
   EXISTS(SELECT 1 FROM tweet_likes tl WHERE tl.tweet_id = t.id AND tl.user_id = sqlc.narg('viewer_id')) AS is_liked,
@@ -153,11 +130,6 @@ FROM tweets t
 WHERE t.search_vector @@ to_tsquery('english', $1)
 ORDER BY ts_rank(t.search_vector, to_tsquery('english', $1)) DESC, t.created_at DESC
 LIMIT $2 OFFSET $3;
-
--- name: CountSearchTweetsFullText :one
-SELECT COUNT(*)
-FROM tweets t
-WHERE t.search_vector @@ to_tsquery('english', $1);
 
 -- name: SearchTweetsByHashtag :many
 SELECT sqlc.embed(t),
@@ -170,13 +142,6 @@ JOIN hashtags h ON h.id = th.hashtag_id
 WHERE LOWER(h.text) = LOWER($1)
 ORDER BY t.created_at DESC
 LIMIT $2 OFFSET $3;
-
--- name: CountSearchTweetsByHashtag :one
-SELECT COUNT(*)
-FROM tweets t
-JOIN tweet_hashtags th ON th.tweet_id = t.id
-JOIN hashtags h ON h.id = th.hashtag_id
-WHERE LOWER(h.text) = LOWER($1);
 
 -- name: GetTweetsByIDs :many
 SELECT sqlc.embed(t),

@@ -142,29 +142,25 @@ func (server *Server) listFollowers(ctx *gin.Context) {
 		writeError(ctx, err)
 		return
 	}
-	page, size, ok := parsePageAndSize(ctx)
+	offset, size, ok := parseOffsetAndSize(ctx)
 	if !ok {
 		return
 	}
+	page := offset / size
 
 	var viewerID *int64
 	if id, ok := getCurrentUserID(ctx); ok {
 		viewerID = &id
 	}
 
-	users, err := server.userUC.ListFollowers(ctx, req.ID, page, size, viewerID)
-	if err != nil {
-		writeError(ctx, err)
-		return
-	}
-	total, err := server.userUC.CountFollowers(ctx, req.ID)
+	users, err := server.userUC.ListFollowers(ctx, req.ID, page, size+1, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 
 	response := newUserResponseList(users)
-	ctx.JSON(http.StatusOK, buildPageResponse(response, page, size, total))
+	ctx.JSON(http.StatusOK, buildPageResponse(response, size, offset))
 }
 
 func (server *Server) listFollowing(ctx *gin.Context) {
@@ -173,27 +169,23 @@ func (server *Server) listFollowing(ctx *gin.Context) {
 		writeError(ctx, err)
 		return
 	}
-	page, size, ok := parsePageAndSize(ctx)
+	offset, size, ok := parseOffsetAndSize(ctx)
 	if !ok {
 		return
 	}
+	page := offset / size
 
 	var viewerID *int64
 	if id, ok := getCurrentUserID(ctx); ok {
 		viewerID = &id
 	}
 
-	users, err := server.userUC.ListFollowing(ctx, req.ID, page, size, viewerID)
-	if err != nil {
-		writeError(ctx, err)
-		return
-	}
-	total, err := server.userUC.CountFollowing(ctx, req.ID)
+	users, err := server.userUC.ListFollowing(ctx, req.ID, page, size+1, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 
 	response := newUserResponseList(users)
-	ctx.JSON(http.StatusOK, buildPageResponse(response, page, size, total))
+	ctx.JSON(http.StatusOK, buildPageResponse(response, size, offset))
 }

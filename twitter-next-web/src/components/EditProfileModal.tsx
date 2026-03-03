@@ -8,7 +8,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { X, Camera } from 'lucide-react';
 import type { UserResponse } from '@/types';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { updateProfileSchema, type UpdateProfileInput } from '@/lib/validation';
 
@@ -24,7 +24,7 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     reset,
     formState: { errors, isDirty, isValid }
   } = useForm<UpdateProfileInput>({
@@ -36,11 +36,12 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
     mode: 'onChange',
   });
 
-  const displayName = watch('displayName') || '';
-  const bio = watch('bio') || '';
+  const displayName = useWatch({ control, name: 'displayName' }) || '';
+  const bio = useWatch({ control, name: 'bio' }) || '';
 
   const [avatar, setAvatar] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(user.avatarUrl ?? null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const previewUrl = avatarPreviewUrl ?? user.avatarUrl ?? null;
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const updateMutation = useUpdateProfile();
@@ -49,12 +50,10 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
 
   useEffect(() => {
     if (isOpen) {
-        reset({
-            displayName: user.displayName || '',
-            bio: user.bio || '',
-        });
-        setPreviewUrl(user.avatarUrl ?? null);
-        setAvatar(null);
+      reset({
+        displayName: user.displayName || '',
+        bio: user.bio || '',
+      });
     }
   }, [isOpen, user, reset]);
 
@@ -63,8 +62,18 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
     if (file) {
       setAvatar(file);
       const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+      setAvatarPreviewUrl(url);
     }
+  };
+
+  const handleClose = () => {
+    reset({
+      displayName: user.displayName || '',
+      bio: user.bio || '',
+    });
+    setAvatar(null);
+    setAvatarPreviewUrl(null);
+    onClose();
   };
 
   const onSubmit = async (data: UpdateProfileInput) => {
@@ -83,20 +92,20 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
           // But for now, we rely on React Query invalidation in the hook.
       }
       
-      onClose();
+      handleClose();
     } catch (error) {
       console.error('Failed to update profile:', error);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
       <DialogContent showCloseButton={false} className="sm:max-w-[600px] bg-background border-border p-0 gap-0 top-[5%] translate-y-0 sm:top-[10%] min-h-[400px] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between h-[53px] px-4 shrink-0 border-b border-border">
             <div className="flex items-center gap-4">
                 <button
-                    onClick={onClose}
+                    onClick={handleClose}
                     className="p-2 rounded-full hover:bg-card transition-colors -ml-2"
                 >
                     <X size={20} className="text-foreground" />

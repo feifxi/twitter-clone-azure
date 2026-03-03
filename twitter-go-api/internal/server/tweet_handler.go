@@ -108,26 +108,22 @@ func (server *Server) getReplies(ctx *gin.Context) {
 		writeError(ctx, err)
 		return
 	}
-	page, size, ok := parsePageAndSize(ctx)
+	offset, size, ok := parseOffsetAndSize(ctx)
 	if !ok {
 		return
 	}
+	page := offset / size
 	var viewerID *int64
 	if id, ok := getCurrentUserID(ctx); ok {
 		viewerID = &id
 	}
-	tweets, err := server.tweetUC.ListReplies(ctx, req.ID, page, size, viewerID)
-	if err != nil {
-		writeError(ctx, err)
-		return
-	}
-	total, err := server.tweetUC.CountReplies(ctx, req.ID)
+	tweets, err := server.tweetUC.ListReplies(ctx, req.ID, page, size+1, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 	response := newTweetResponseList(tweets)
-	ctx.JSON(http.StatusOK, buildPageResponse(response, page, size, total))
+	ctx.JSON(http.StatusOK, buildPageResponse(response, size, offset))
 }
 
 func (server *Server) likeTweet(ctx *gin.Context) {

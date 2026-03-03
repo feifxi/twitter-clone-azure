@@ -32,15 +32,13 @@ export function useLikeTweet() {
 
       updateTweetCache(tweetId, (t) => toggleLikeInTweet(t, tweetId, true));
     },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    onError: (_err, tweetId) => {
+    onError: () => {
       // Rollback is complex with global helper. 
       // Simplest strategy: Invalidate everything on error to restore truth.
       queryClient.invalidateQueries({ queryKey: ['feeds'] });
       queryClient.invalidateQueries({ queryKey: ['tweets'] });
       queryClient.invalidateQueries({ queryKey: ['search'] });
     },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onSettled: (_data, _err, tweetId) => {
       // Only invalidate specific tweet to respect scroll position
       queryClient.invalidateQueries({ queryKey: tweetQueryKey(tweetId) });
@@ -65,13 +63,11 @@ export function useUnlikeTweet() {
 
       updateTweetCache(tweetId, (t) => toggleLikeInTweet(t, tweetId, false));
     },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    onError: (_err, tweetId) => {
+    onError: () => {
       queryClient.invalidateQueries({ queryKey: ['feeds'] });
       queryClient.invalidateQueries({ queryKey: ['tweets'] });
       queryClient.invalidateQueries({ queryKey: ['search'] });
     },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onSettled: (_data, _err, tweetId) => {
       queryClient.invalidateQueries({ queryKey: tweetQueryKey(tweetId) });
     },

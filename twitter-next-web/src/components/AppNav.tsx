@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import Link from 'next/link';
-import { Home, User, MoreHorizontal, Bell, Mail, Search, Bookmark, List, Users, BotMessageSquare, TvMinimalPlay, LogIn } from 'lucide-react';
+import { Home, User, MoreHorizontal, Bell, Mail, Search, Users, BotMessageSquare, TvMinimalPlay, LogIn } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';

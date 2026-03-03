@@ -96,7 +96,7 @@ func TestWriteErrorMapsCoreErrorTypes(t *testing.T) {
 		{
 			name:           "numeric parse error includes details",
 			err:            &strconv.NumError{Func: "ParseInt", Num: "abc", Err: strconv.ErrSyntax},
-			path:           "/api/v1/test?page=abc",
+			path:           "/api/v1/test?size=abc",
 			wantStatus:     http.StatusBadRequest,
 			wantCode:       "VALIDATION_ERROR",
 			wantMessage:    "invalid request payload",

@@ -18,26 +18,22 @@ func (server *Server) searchUsers(ctx *gin.Context) {
 		writeError(ctx, err)
 		return
 	}
-	page, size, ok := parsePageAndSize(ctx)
+	offset, size, ok := parseOffsetAndSize(ctx)
 	if !ok {
 		return
 	}
+	page := offset / size
 	var viewerID *int64
 	if id, ok := getCurrentUserID(ctx); ok {
 		viewerID = &id
 	}
-	users, err := server.searchUC.SearchUsers(ctx, req.Query, page, size, viewerID)
-	if err != nil {
-		writeError(ctx, err)
-		return
-	}
-	total, err := server.searchUC.CountSearchUsers(ctx, req.Query)
+	users, err := server.searchUC.SearchUsers(ctx, req.Query, page, size+1, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 	response := newUserResponseList(users)
-	ctx.JSON(http.StatusOK, buildPageResponse(response, page, size, total))
+	ctx.JSON(http.StatusOK, buildPageResponse(response, size, offset))
 }
 
 func (server *Server) searchTweets(ctx *gin.Context) {
@@ -46,26 +42,22 @@ func (server *Server) searchTweets(ctx *gin.Context) {
 		writeError(ctx, err)
 		return
 	}
-	page, size, ok := parsePageAndSize(ctx)
+	offset, size, ok := parseOffsetAndSize(ctx)
 	if !ok {
 		return
 	}
+	page := offset / size
 	var viewerID *int64
 	if id, ok := getCurrentUserID(ctx); ok {
 		viewerID = &id
 	}
-	tweets, err := server.searchUC.SearchTweets(ctx, req.Query, page, size, viewerID)
-	if err != nil {
-		writeError(ctx, err)
-		return
-	}
-	total, err := server.searchUC.CountSearchTweets(ctx, req.Query)
+	tweets, err := server.searchUC.SearchTweets(ctx, req.Query, page, size+1, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 	response := newTweetResponseList(tweets)
-	ctx.JSON(http.StatusOK, buildPageResponse(response, page, size, total))
+	ctx.JSON(http.StatusOK, buildPageResponse(response, size, offset))
 }
 
 func (server *Server) searchHashtags(ctx *gin.Context) {

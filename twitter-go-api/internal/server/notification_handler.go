@@ -126,23 +126,19 @@ func (server *Server) listNotifications(ctx *gin.Context) {
 	if !ok {
 		return
 	}
-	page, size, ok := parsePageAndSize(ctx)
+	offset, size, ok := parseOffsetAndSize(ctx)
 	if !ok {
 		return
 	}
-	notifications, err := server.notifyUC.ListNotifications(ctx, userID, page, size)
-	if err != nil {
-		writeError(ctx, err)
-		return
-	}
-	total, err := server.notifyUC.CountNotifications(ctx, userID)
+	page := offset / size
+	notifications, err := server.notifyUC.ListNotifications(ctx, userID, page, size+1)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 
 	response := newNotificationResponseList(notifications)
-	ctx.JSON(http.StatusOK, buildPageResponse(response, page, size, total))
+	ctx.JSON(http.StatusOK, buildPageResponse(response, size, offset))
 }
 
 func (server *Server) getUnreadNotificationCount(ctx *gin.Context) {

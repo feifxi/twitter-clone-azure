@@ -242,10 +242,6 @@ func (u *TweetUsecase) ListReplies(ctx context.Context, tweetID int64, page, siz
 	return populateTweetItems(ctx, u.store, inputs, viewerID)
 }
 
-func (u *TweetUsecase) CountReplies(ctx context.Context, tweetID int64) (int64, error) {
-	return u.store.CountTweetReplies(ctx, &tweetID)
-}
-
 func (u *TweetUsecase) LikeTweet(ctx context.Context, userID, tweetID int64) error {
 	tweet, err := u.store.GetTweet(ctx, db.GetTweetParams{ID: tweetID})
 	if err != nil {

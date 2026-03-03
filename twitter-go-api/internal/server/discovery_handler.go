@@ -28,24 +28,20 @@ func (server *Server) getTrendingHashtags(ctx *gin.Context) {
 }
 
 func (server *Server) getSuggestedUsers(ctx *gin.Context) {
-	page, size, ok := parsePageAndSize(ctx)
+	offset, size, ok := parseOffsetAndSize(ctx)
 	if !ok {
 		return
 	}
+	page := offset / size
 	var viewerID *int64
 	if id, ok := getCurrentUserID(ctx); ok {
 		viewerID = &id
 	}
-	users, err := server.discoveryUC.GetSuggestedUsers(ctx, page, size, viewerID)
-	if err != nil {
-		writeError(ctx, err)
-		return
-	}
-	total, err := server.discoveryUC.CountSuggestedUsers(ctx, viewerID)
+	users, err := server.discoveryUC.GetSuggestedUsers(ctx, page, size+1, viewerID)
 	if err != nil {
 		writeError(ctx, err)
 		return
 	}
 	response := newUserResponseList(users)
-	ctx.JSON(http.StatusOK, buildPageResponse(response, page, size, total))
+	ctx.JSON(http.StatusOK, buildPageResponse(response, size, offset))
 }
