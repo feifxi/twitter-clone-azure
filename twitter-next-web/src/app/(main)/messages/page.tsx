@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, MailPlus, Send, Globe } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -16,9 +16,8 @@ import {
 } from '@/hooks/useMessages';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { useAuth } from '@/hooks/useAuth';
-import type { ConversationResponse, MessageResponse, PublicRoomMessageResponse, UserResponse } from '@/types';
-import { useQueryClient, useQuery } from '@tanstack/react-query';
-import { publicRoomMessagesQueryKey } from '@/hooks/useMessages';
+import type { MessageResponse, PublicRoomMessageResponse, UserResponse } from '@/types';
+import { useQuery } from '@tanstack/react-query';
 import { useSuggestedUsers } from '@/hooks/useDiscovery';
 import { axiosInstance } from '@/api/axiosInstance';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -49,7 +48,6 @@ type ActiveChat =
 
 export default function MessagesPage() {
   const { user, isLoggedIn } = useAuth();
-  const queryClient = useQueryClient();
   
   const [activeChat, setActiveChat] = useState<ActiveChat>({ type: 'global', key: 'global' });
   const [messageInput, setMessageInput] = useState('');
@@ -60,12 +58,13 @@ export default function MessagesPage() {
     const savedChat = sessionStorage.getItem('twitter-clone-active-chat');
     if (savedChat) {
       try {
-        setActiveChat(JSON.parse(savedChat));
+        const parsed = JSON.parse(savedChat);
+        setTimeout(() => setActiveChat(parsed), 0);
       } catch (e) {
         console.error('Failed to parse activeChat from sessionStorage', e);
       }
     }
-    setHasHydrated(true);
+    setTimeout(() => setHasHydrated(true), 0);
   }, []);
 
   // Save activeChat to sessionStorage when it changes
@@ -128,10 +127,7 @@ export default function MessagesPage() {
 
   // 2. Private DMs Queries (Auth Only)
   const { data: conversationPages, isLoading: conversationsLoading } = useConversations();
-  const conversations = useMemo<ConversationResponse[]>(
-    () => conversationPages?.pages.flatMap((p) => p.items) ?? [],
-    [conversationPages],
-  );
+  const conversations = conversationPages?.pages.flatMap((p) => p.items) ?? [];
   
   const privateId = activeChat.type === 'private' ? activeChat.id : null;
   const { 
@@ -273,8 +269,9 @@ export default function MessagesPage() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         messageInputRef.current?.focus();
       }, 100);
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to send message');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      toast.error(error.response?.data?.error || 'Failed to send message');
     }
   };
 

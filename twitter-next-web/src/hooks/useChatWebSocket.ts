@@ -11,7 +11,7 @@ type WSEnvelope = {
     conversationId?: number;
     roomKey?: string;
     message?: MessageResponse | PublicRoomMessageResponse;
-    data?: any;
+    data?: unknown;
 };
 
 export function useChatWebSocket() {
@@ -36,7 +36,7 @@ export function useChatWebSocket() {
                 return;
             }
 
-            let url = `${baseURL}/messages/ws?access_token=${accessToken}`;
+            const url = `${baseURL}/messages/ws?access_token=${accessToken}`;
 
             const ws = new WebSocket(url);
             wsRef.current = ws;
