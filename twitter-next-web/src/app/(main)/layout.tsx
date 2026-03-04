@@ -13,6 +13,8 @@ export default function MainLayout({
 }) {
   const pathname = usePathname();
   const isMessagesPage = pathname?.startsWith('/messages');
+  const isChanombotPage = pathname?.startsWith('/chanombot');
+  const isWideLayout = isMessagesPage || isChanombotPage;
 
   return (
     <div
@@ -20,17 +22,17 @@ export default function MainLayout({
       style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif' }}
     >
       {/* Left gutter: flex grow so content is centered, then fixed columns */}
-      <div className={`flex justify-center flex-1 min-w-0 ${isMessagesPage ? 'max-w-[1500px]' : 'max-w-[1280px]'}`}>
+      <div className={`flex justify-center flex-1 min-w-0 ${isWideLayout ? 'max-w-[1500px]' : 'max-w-[1280px]'}`}>
         {/* Left Sidebar */}
         <aside className="hidden sm:flex w-[68px] xl:w-[275px] shrink-0 justify-end">
           <AppNav />
         </aside>
         {/* Main Feed */}
-        <main className={`w-full border-x border-border min-h-screen pb-[60px] sm:pb-0 ${isMessagesPage ? 'max-w-[1000px] flex-1' : 'max-w-[600px]'}`}>
+        <main className={`w-full border-x border-border min-h-screen pb-[60px] sm:pb-0 ${isWideLayout ? 'max-w-[1000px] flex-1' : 'max-w-[600px]'}`}>
           {children}
         </main>
         {/* Right Sidebar: hidden on smaller screens, and hidden on messages page */}
-        {!isMessagesPage && (
+        {!isWideLayout && (
           <aside className="w-[350px] shrink-0 hidden lg:block">
             <Sidebar />
           </aside>

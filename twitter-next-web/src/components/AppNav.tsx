@@ -36,7 +36,7 @@ export function AppNav() {
     { label: 'Explore', icon: Search, href: '/explore' },
     { label: 'Notifications', icon: Bell, href: user ? '/notifications' : '#', onClick: user ? undefined : openSignInModal },
     { label: 'Messages', icon: Mail, href: '/messages' },
-    { label: 'ChanomBot', icon: BotMessageSquare, href: 'https://chanom-gpt.vercel.app' }, // Placeholder
+    { label: 'ChanomBot', icon: BotMessageSquare, href: '/chanombot' },
     { label: 'Connect', icon: Users, href: '/connect_people' },
     { label: 'Profile', icon: User, href: user ? `/${user.username}` : '#', onClick: user ? undefined : openSignInModal },
     { label: 'More', icon: MoreHorizontal, href: '/brainrot' },
