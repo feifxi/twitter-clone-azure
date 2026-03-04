@@ -33,6 +33,7 @@ func (server *Server) setupRouter() {
 		c.Header("X-Frame-Options", "DENY")
 		c.Header("X-XSS-Protection", "1; mode=block")
 		c.Header("X-Content-Type-Options", "nosniff")
+		c.Header("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0")
 		c.Next()
 	})
 

@@ -52,6 +52,27 @@ export default function MessagesPage() {
   
   const [activeChat, setActiveChat] = useState<ActiveChat>({ type: 'global', key: 'global' });
   const [messageInput, setMessageInput] = useState('');
+  const [hasHydrated, setHasHydrated] = useState(false);
+
+  // Restore activeChat from sessionStorage on mount
+  useEffect(() => {
+    const savedChat = sessionStorage.getItem('twitter-clone-active-chat');
+    if (savedChat) {
+      try {
+        setActiveChat(JSON.parse(savedChat));
+      } catch (e) {
+        console.error('Failed to parse activeChat from sessionStorage', e);
+      }
+    }
+    setHasHydrated(true);
+  }, []);
+
+  // Save activeChat to sessionStorage when it changes
+  useEffect(() => {
+    if (hasHydrated) {
+      sessionStorage.setItem('twitter-clone-active-chat', JSON.stringify(activeChat));
+    }
+  }, [activeChat, hasHydrated]);
   
   // New Message Modal State
   const [isNewMessageOpen, setIsNewMessageOpen] = useState(false);
@@ -67,6 +88,8 @@ export default function MessagesPage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const prevActiveChatRef = useRef<string>('');
+  const initialLoadRef = useRef<Record<string, boolean>>({});
+  const preventScrollFetchRef = useRef<boolean>(true);
   
   const { data: searchResults, isLoading: isSearchLoading } = useQuery({
     queryKey: ['users', 'search', debouncedSearch],
@@ -129,16 +152,6 @@ export default function MessagesPage() {
   } = usePublicRoomMessages(globalKey);
   const sendGlobalMutation = useSendPublicRoomMessage();
 
-  // Poll Global Room if unauthenticated
-  useEffect(() => {
-    if (!isLoggedIn && activeChat.type === 'global') {
-      const interval = setInterval(() => {
-        queryClient.invalidateQueries({ queryKey: publicRoomMessagesQueryKey(activeChat.key) });
-      }, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [isLoggedIn, activeChat, queryClient]);
-
   // Derived State: sort oldest-first for natural top→bottom chat display
   const rawMessages: (MessageResponse | PublicRoomMessageResponse)[] = activeChat.type === 'global'
     ? (globalPages?.pages.flatMap((p) => p.items) ?? [])
@@ -168,8 +181,10 @@ export default function MessagesPage() {
     // Always scroll to bottom when switching chats
     if (prevActiveChatRef.current !== activeChatKey) {
       prevActiveChatRef.current = activeChatKey;
+      preventScrollFetchRef.current = true;
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+        setTimeout(() => { preventScrollFetchRef.current = false; }, 100);
       }, 50);
     }
   }, [activeChatKey]);
@@ -179,13 +194,27 @@ export default function MessagesPage() {
     if (!isLoadingMessages && messagesData.length > 0) {
       const container = messagesContainerRef.current;
       if (!container) return;
-      // Only auto-scroll if we're near the bottom (within 150px)
+      
+      const isFirstLoadForChat = !initialLoadRef.current[activeChatKey];
+      // Only auto-scroll if we're near the bottom (within 150px) or it is the first load
       const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
-      if (isNearBottom) {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      
+      if (isFirstLoadForChat || isNearBottom) {
+        if (isFirstLoadForChat) preventScrollFetchRef.current = true;
+        
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: isFirstLoadForChat ? 'instant' : 'smooth' });
+          if (isFirstLoadForChat) {
+            setTimeout(() => { preventScrollFetchRef.current = false; }, 100);
+          }
+        }, 50);
+        
+        if (isFirstLoadForChat) {
+          initialLoadRef.current[activeChatKey] = true;
+        }
       }
     }
-  }, [messagesData.length, isLoadingMessages]);
+  }, [messagesData.length, isLoadingMessages, activeChatKey]);
 
   // IntersectionObserver for loading older messages when scrolling to top
   useEffect(() => {
@@ -195,6 +224,7 @@ export default function MessagesPage() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          if (preventScrollFetchRef.current) return;
           const container = messagesContainerRef.current;
           const prevScrollHeight = container?.scrollHeight || 0;
           
