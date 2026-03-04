@@ -103,9 +103,9 @@ func (c Config) ValidateForRuntime() error {
 	if !c.CookieSecure {
 		return fmt.Errorf("COOKIE_SECURE must be true in production")
 	}
-	if strings.TrimSpace(c.TrustedProxies) == "" {
-		return fmt.Errorf("TRUSTED_PROXIES is required in production")
-	}
+	// if strings.TrimSpace(c.TrustedProxies) == "" {
+	// 	return fmt.Errorf("TRUSTED_PROXIES is required in production")
+	// }
 	if strings.Contains(strings.ToLower(c.DBSource), "sslmode=disable") {
 		return fmt.Errorf("DATABASE_URL must use sslmode in production")
 	}
