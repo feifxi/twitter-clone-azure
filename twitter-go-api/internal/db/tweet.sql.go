@@ -368,6 +368,7 @@ JOIN follows f ON t.user_id = f.following_id
 WHERE f.follower_id = $1
   AND t.parent_id IS NULL
 ORDER BY t.created_at DESC
+  , t.id DESC
 LIMIT $2 OFFSET $3
 `
 
@@ -437,7 +438,8 @@ WHERE t.parent_id IS NULL
 ORDER BY
   (t.like_count * 2 + t.retweet_count * 3 + t.reply_count + 1) /
   POWER((EXTRACT(EPOCH FROM NOW() - t.created_at) / 3600) + 2, 1.8) DESC,
-  t.created_at DESC
+  t.created_at DESC,
+  t.id DESC
 LIMIT $1 OFFSET $2
 `
 
@@ -534,6 +536,7 @@ SELECT t.id, t.user_id, t.content, t.media_type, t.media_url, t.parent_id, t.ret
 FROM tweets t
 WHERE t.parent_id = $1
 ORDER BY t.created_at ASC
+  , t.id ASC
 LIMIT $2 OFFSET $3
 `
 
@@ -602,6 +605,7 @@ FROM tweets t
 WHERE t.user_id = $1
   AND t.parent_id IS NULL
 ORDER BY t.created_at DESC
+  , t.id DESC
 LIMIT $2 OFFSET $3
 `
 
@@ -671,6 +675,7 @@ JOIN tweet_hashtags th ON th.tweet_id = t.id
 JOIN hashtags h ON h.id = th.hashtag_id
 WHERE LOWER(h.text) = LOWER($1)
 ORDER BY t.created_at DESC
+  , t.id DESC
 LIMIT $2 OFFSET $3
 `
 
@@ -737,7 +742,7 @@ SELECT t.id, t.user_id, t.content, t.media_type, t.media_url, t.parent_id, t.ret
   EXISTS(SELECT 1 FROM follows f WHERE f.following_id = t.user_id AND f.follower_id = $4) AS is_following
 FROM tweets t
 WHERE t.search_vector @@ to_tsquery('english', $1)
-ORDER BY ts_rank(t.search_vector, to_tsquery('english', $1)) DESC, t.created_at DESC
+ORDER BY ts_rank(t.search_vector, to_tsquery('english', $1)) DESC, t.created_at DESC, t.id DESC
 LIMIT $2 OFFSET $3
 `
 

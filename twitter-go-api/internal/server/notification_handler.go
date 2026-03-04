@@ -68,13 +68,14 @@ func (server *Server) streamNotifications(ctx *gin.Context) {
 	ctx.Writer.Header().Set("Content-Type", "text/event-stream")
 	ctx.Writer.Header().Set("Cache-Control", "no-cache")
 	ctx.Writer.Header().Set("Connection", "keep-alive")
+	ctx.Writer.Header().Set("X-Accel-Buffering", "no")
 
 	userID, ok := mustCurrentUserID(ctx)
 	if !ok {
 		return
 	}
 
-	client := &sseClient{channel: make(chan notificationResponse, 10)}
+	client := &sseClient{channel: make(chan notificationResponse, 32)}
 
 	server.sseMu.Lock()
 	server.sseClients[userID] = append(server.sseClients[userID], client)
@@ -82,6 +83,8 @@ func (server *Server) streamNotifications(ctx *gin.Context) {
 	server.sseMu.Unlock()
 	log.Info().Int64("user_id", userID).Int("connections", connectionCount).Msg("SSE client connected")
 
+	// Suggest reconnect delay to client.
+	fmt.Fprint(ctx.Writer, "retry: 3000\n\n")
 	fmt.Fprintf(ctx.Writer, "event: connected\ndata: {\"status\": \"ok\"}\n\n")
 	flusher.Flush()
 
@@ -111,10 +114,15 @@ func (server *Server) streamNotifications(ctx *gin.Context) {
 		case <-ctx.Request.Context().Done():
 			return
 		case <-ticker.C:
-			fmt.Fprintf(ctx.Writer, "event: ping\ndata: {}\n\n")
+			// Send comment line as heartbeat to keep intermediaries from timing out idle connection.
+			fmt.Fprint(ctx.Writer, ": ping\n\n")
 			flusher.Flush()
 		case notification := <-client.channel:
-			data, _ := json.Marshal(notification)
+			data, err := json.Marshal(notification)
+			if err != nil {
+				log.Error().Err(err).Int64("notification_id", notification.ID).Msg("Failed to marshal SSE notification payload")
+				continue
+			}
 			fmt.Fprintf(ctx.Writer, "event: notification\ndata: %s\n\n", data)
 			flusher.Flush()
 		}

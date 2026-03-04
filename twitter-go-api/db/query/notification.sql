@@ -9,7 +9,7 @@ RETURNING *;
 -- name: ListNotifications :many
 SELECT * FROM notifications
 WHERE recipient_id = $1
-ORDER BY created_at DESC
+ORDER BY created_at DESC, id DESC
 LIMIT $2 OFFSET $3;
 
 -- name: MarkAllNotificationsRead :exec

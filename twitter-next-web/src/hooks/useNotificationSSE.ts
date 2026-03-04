@@ -10,6 +10,7 @@ export function useNotificationSSE() {
     const queryClient = useQueryClient();
     const { accessToken } = useAuthStore();
     const eventSourceRef = useRef<EventSourcePolyfill | null>(null);
+    const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         if (!accessToken) {
@@ -18,10 +19,23 @@ export function useNotificationSSE() {
                 eventSourceRef.current.close();
                 eventSourceRef.current = null;
             }
+            if (refreshTimerRef.current) {
+                clearTimeout(refreshTimerRef.current);
+                refreshTimerRef.current = null;
+            }
             return;
         }
 
         const url = `${baseURL}/notifications/stream`;
+        const scheduleRefresh = () => {
+            // Coalesce burst events into a single refresh.
+            if (refreshTimerRef.current) return;
+            refreshTimerRef.current = setTimeout(() => {
+                refreshTimerRef.current = null;
+                queryClient.invalidateQueries({ queryKey: unreadCountQueryKey });
+                queryClient.invalidateQueries({ queryKey: notificationQueryKey });
+            }, 250);
+        };
 
         // Use EventSourcePolyfill to support headers
         const es = new EventSourcePolyfill(url, {
@@ -30,43 +44,43 @@ export function useNotificationSSE() {
             },
             heartbeatTimeout: 120000, // 2 minutes (default is 45s)
         });
+        const sse = es as unknown as {
+            addEventListener: (type: string, listener: (event: { data: string }) => void) => void;
+            removeEventListener: (type: string, listener: (event: { data: string }) => void) => void;
+        };
 
         eventSourceRef.current = es;
 
         es.onopen = () => {
-            // Connected
+            // Ensure state is re-synced on (re)connect.
+            scheduleRefresh();
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const handleMessage = (event: any) => {
-            if (event.data === 'ping') return;
-
+        const handleNotification = (event: { data: string }) => {
             try {
                 const data = JSON.parse(event.data);
-                // We're listening to 'notification' events, so any valid data is a notification
                 if (data && data.id) {
-                    // Optimistic update for unread count
-                    queryClient.setQueryData<number>(unreadCountQueryKey, (old) => (old ?? 0) + 1);
-
-                    // Invalidate notification list to show new item
-                    queryClient.invalidateQueries({ queryKey: notificationQueryKey });
+                    scheduleRefresh();
                 }
             } catch {
                 // Ignore parse errors
             }
         };
 
-        es.onmessage = handleMessage;
-        es.addEventListener('notification', handleMessage);
+        sse.addEventListener('notification', handleNotification);
 
         es.onerror = () => {
             // Handle error silently
         };
 
         return () => {
-            es.removeEventListener('notification', handleMessage);
+            sse.removeEventListener('notification', handleNotification);
             es.close();
             eventSourceRef.current = null;
+            if (refreshTimerRef.current) {
+                clearTimeout(refreshTimerRef.current);
+                refreshTimerRef.current = null;
+            }
         };
     }, [accessToken, queryClient]);
 }

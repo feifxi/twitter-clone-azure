@@ -60,7 +60,7 @@ func (q *Queries) GetUnreadNotificationCount(ctx context.Context, recipientID in
 const listNotifications = `-- name: ListNotifications :many
 SELECT id, recipient_id, actor_id, tweet_id, type, is_read, created_at FROM notifications
 WHERE recipient_id = $1
-ORDER BY created_at DESC
+ORDER BY created_at DESC, id DESC
 LIMIT $2 OFFSET $3
 `
 
