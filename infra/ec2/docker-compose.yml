@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   api:
-    image: ghcr.io/chanombude/twitter-aws-go-api:latest
+    image: ghcr.io/feifxi/twitter-aws-go-api:latest
     container_name: twitter-aws-go-api
     ports:
       - "80:8080"
