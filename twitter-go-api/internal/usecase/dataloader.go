@@ -6,14 +6,35 @@ import (
 	"github.com/chanombude/twitter-go-api/internal/db"
 )
 
-// populateTweetItems acts as a simple DataLoader to batch fetch authors and parent/original tweets,
+// hydrateTweets maps raw sqlc rows into fully-populated TweetItems in a single call.
+func hydrateTweets[T any](
+	ctx context.Context,
+	store db.Store,
+	rows []T,
+	viewerID *int64,
+	tweetFn func(T) db.Tweet,
+	likedFn func(T) bool,
+	retweetedFn func(T) bool,
+	followingFn func(T) bool,
+) ([]TweetItem, error) {
+	inputs := make([]TweetHydrationInput, len(rows))
+	for i, row := range rows {
+		inputs[i] = TweetHydrationInput{
+			Tweet:       tweetFn(row),
+			IsLiked:     likedFn(row),
+			IsRetweeted: retweetedFn(row),
+			IsFollowing: followingFn(row),
+		}
+	}
+	return populateTweetItems(ctx, store, inputs, viewerID)
+}
+
+// populateTweetItems batch-fetches authors and parent/original tweets,
 // resolving the N+1 query problem.
 func populateTweetItems(ctx context.Context, store db.Store, inputs []TweetHydrationInput, viewerID *int64) ([]TweetItem, error) {
 	if len(inputs) == 0 {
 		return []TweetItem{}, nil
 	}
-
-	vID := viewerID
 
 	// 1. Collect unique IDs
 	userIDsMap := make(map[int64]bool)
@@ -44,7 +65,7 @@ func populateTweetItems(ctx context.Context, store db.Store, inputs []TweetHydra
 	// 2. Fetch Authors
 	users, err := store.GetUsersByIDs(ctx, db.GetUsersByIDsParams{
 		UserIds:  userIDs,
-		ViewerID: vID,
+		ViewerID: viewerID,
 	})
 	if err != nil {
 		return nil, err
@@ -60,7 +81,7 @@ func populateTweetItems(ctx context.Context, store db.Store, inputs []TweetHydra
 	if len(tweetIDs) > 0 {
 		rawRefTweets, err := store.GetTweetsByIDs(ctx, db.GetTweetsByIDsParams{
 			TweetIds: tweetIDs,
-			ViewerID: vID,
+			ViewerID: viewerID,
 		})
 		if err != nil {
 			return nil, err
@@ -91,12 +112,13 @@ func populateTweetItems(ctx context.Context, store db.Store, inputs []TweetHydra
 			}
 			moreUsers, err := store.GetUsersByIDs(ctx, db.GetUsersByIDsParams{
 				UserIds:  missingAuthorIDs,
-				ViewerID: vID,
+				ViewerID: viewerID,
 			})
-			if err == nil {
-				for _, rawUser := range moreUsers {
-					usersMap[rawUser.User.ID] = newUserItemFromDB(rawUser.User, rawUser.IsFollowing)
-				}
+			if err != nil {
+				return nil, err
+			}
+			for _, rawUser := range moreUsers {
+				usersMap[rawUser.User.ID] = newUserItemFromDB(rawUser.User, rawUser.IsFollowing)
 			}
 		}
 

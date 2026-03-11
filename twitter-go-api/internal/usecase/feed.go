@@ -16,14 +16,12 @@ func (u *FeedUsecase) GetGlobalFeed(ctx context.Context, page, size int32, viewe
 		return nil, err
 	}
 
-	inputs := mapTweetHydrationRows(
-		rows,
+	return hydrateTweets(ctx, u.store, rows, viewerID,
 		func(r db.ListForYouFeedRow) db.Tweet { return r.Tweet },
 		func(r db.ListForYouFeedRow) bool { return r.IsLiked },
 		func(r db.ListForYouFeedRow) bool { return r.IsRetweeted },
 		func(r db.ListForYouFeedRow) bool { return r.IsFollowing },
 	)
-	return populateTweetItems(ctx, u.store, inputs, viewerID)
 }
 
 func (u *FeedUsecase) GetFollowingFeed(ctx context.Context, userID int64, page, size int32) ([]TweetItem, error) {
@@ -37,14 +35,12 @@ func (u *FeedUsecase) GetFollowingFeed(ctx context.Context, userID int64, page, 
 		return nil, err
 	}
 
-	inputs := mapTweetHydrationRows(
-		rows,
+	return hydrateTweets(ctx, u.store, rows, &userID,
 		func(r db.ListFollowingFeedRow) db.Tweet { return r.Tweet },
 		func(r db.ListFollowingFeedRow) bool { return r.IsLiked },
 		func(r db.ListFollowingFeedRow) bool { return r.IsRetweeted },
 		func(r db.ListFollowingFeedRow) bool { return r.IsFollowing },
 	)
-	return populateTweetItems(ctx, u.store, inputs, &userID)
 }
 
 func (u *FeedUsecase) GetUserFeed(ctx context.Context, userID int64, page, size int32, viewerID *int64) ([]TweetItem, error) {
@@ -62,12 +58,10 @@ func (u *FeedUsecase) GetUserFeed(ctx context.Context, userID int64, page, size 
 		return nil, err
 	}
 
-	inputs := mapTweetHydrationRows(
-		rows,
+	return hydrateTweets(ctx, u.store, rows, viewerID,
 		func(r db.ListUserTweetsRow) db.Tweet { return r.Tweet },
 		func(r db.ListUserTweetsRow) bool { return r.IsLiked },
 		func(r db.ListUserTweetsRow) bool { return r.IsRetweeted },
 		func(r db.ListUserTweetsRow) bool { return r.IsFollowing },
 	)
-	return populateTweetItems(ctx, u.store, inputs, viewerID)
 }

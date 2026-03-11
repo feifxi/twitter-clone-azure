@@ -195,14 +195,12 @@ func (u *TweetUsecase) GetTweet(ctx context.Context, tweetID int64, viewerID *in
 	if err != nil {
 		return TweetItem{}, err
 	}
-	inputs := mapTweetHydrationRows(
-		[]db.GetTweetRow{r},
+	items, err := hydrateTweets(ctx, u.store, []db.GetTweetRow{r}, viewerID,
 		func(row db.GetTweetRow) db.Tweet { return row.Tweet },
 		func(row db.GetTweetRow) bool { return row.IsLiked },
 		func(row db.GetTweetRow) bool { return row.IsRetweeted },
 		func(row db.GetTweetRow) bool { return row.IsFollowing },
 	)
-	items, err := populateTweetItems(ctx, u.store, inputs, viewerID)
 	if err != nil || len(items) == 0 {
 		return TweetItem{}, err
 	}
@@ -225,14 +223,12 @@ func (u *TweetUsecase) ListReplies(ctx context.Context, tweetID int64, page, siz
 		return nil, err
 	}
 
-	inputs := mapTweetHydrationRows(
-		rows,
+	return hydrateTweets(ctx, u.store, rows, viewerID,
 		func(row db.ListTweetRepliesRow) db.Tweet { return row.Tweet },
 		func(row db.ListTweetRepliesRow) bool { return row.IsLiked },
 		func(row db.ListTweetRepliesRow) bool { return row.IsRetweeted },
 		func(row db.ListTweetRepliesRow) bool { return row.IsFollowing },
 	)
-	return populateTweetItems(ctx, u.store, inputs, viewerID)
 }
 
 func (u *TweetUsecase) LikeTweet(ctx context.Context, userID, tweetID int64) error {

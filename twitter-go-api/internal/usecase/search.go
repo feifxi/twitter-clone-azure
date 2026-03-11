@@ -52,14 +52,12 @@ func (u *SearchUsecase) SearchTweets(ctx context.Context, query string, page, si
 			return nil, err
 		}
 
-		inputs := mapTweetHydrationRows(
-			rows,
+		return hydrateTweets(ctx, u.store, rows, viewerID,
 			func(r db.SearchTweetsByHashtagRow) db.Tweet { return r.Tweet },
 			func(r db.SearchTweetsByHashtagRow) bool { return r.IsLiked },
 			func(r db.SearchTweetsByHashtagRow) bool { return r.IsRetweeted },
 			func(r db.SearchTweetsByHashtagRow) bool { return r.IsFollowing },
 		)
-		return populateTweetItems(ctx, u.store, inputs, viewerID)
 	}
 
 	tsQuery := buildTSQuery(trimmed)
@@ -77,14 +75,12 @@ func (u *SearchUsecase) SearchTweets(ctx context.Context, query string, page, si
 		return nil, err
 	}
 
-	inputs := mapTweetHydrationRows(
-		rows,
+	return hydrateTweets(ctx, u.store, rows, viewerID,
 		func(r db.SearchTweetsFullTextRow) db.Tweet { return r.Tweet },
 		func(r db.SearchTweetsFullTextRow) bool { return r.IsLiked },
 		func(r db.SearchTweetsFullTextRow) bool { return r.IsRetweeted },
 		func(r db.SearchTweetsFullTextRow) bool { return r.IsFollowing },
 	)
-	return populateTweetItems(ctx, u.store, inputs, viewerID)
 }
 
 func (u *SearchUsecase) SearchHashtags(ctx context.Context, query string, limit int32) ([]db.Hashtag, error) {
