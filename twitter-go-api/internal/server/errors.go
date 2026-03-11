@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -71,6 +72,17 @@ func writeError(ctx *gin.Context, err error) {
 			response.Details = []apperr.FieldError{{Field: field, Message: msg}}
 		}
 		ctx.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	var syntaxErr *json.SyntaxError
+	var typeErr *json.UnmarshalTypeError
+	if errors.As(err, &syntaxErr) || errors.As(err, &typeErr) {
+		ctx.JSON(http.StatusBadRequest, apperr.ErrorResponse{
+			Code:      "BAD_REQUEST",
+			Message:   "malformed JSON request body",
+			RequestID: requestID,
+		})
 		return
 	}
 

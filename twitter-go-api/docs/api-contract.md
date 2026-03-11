@@ -4,19 +4,19 @@ Base URL: `/api/v1`
 
 ## Auth & Session
 - Access token is accepted from either:
-1. Cookie: `access_token`
-2. Header: `Authorization: Bearer <token>`
+  1. Cookie: `access_token`
+  2. Header: `Authorization: Bearer <token>`
 - Login/refresh set HttpOnly cookies:
-1. `access_token` (path `/`)
-2. `refresh_token` (path `/api/v1/auth/refresh`)
+  1. `access_token` (path `/`)
+  2. `refresh_token` (path `/api/v1/auth/refresh`)
 - Send requests with `credentials: include` from frontend.
 
 ## Common Query Params
 - Pagination (where supported):
-1. `cursor` (opaque token from previous response `nextCursor`)
-2. `size` (default `20`, max `50`)
+  1. `cursor` (opaque token from previous response `nextCursor`)
+  2. `size` (default `20`, max `50`)
 
-## PageResponse<T>
+## PageResponse\<T\>
 ```json
 {
   "items": [],
@@ -46,7 +46,7 @@ Base URL: `/api/v1`
   "email": "alice@example.com",
   "displayName": "Alice",
   "bio": "hello",
-  "avatarUrl": "https://...",
+  "avatarUrl": "https://d1234.cloudfront.net/avatars/uuid_photo.jpg",
   "isFollowing": false,
   "followersCount": 10,
   "followingCount": 20
@@ -58,8 +58,8 @@ Base URL: `/api/v1`
 {
   "id": 1,
   "content": "tweet text",
-  "mediaType": "IMAGE|VIDEO|NONE",
-  "mediaUrl": "https://...",
+  "mediaType": "IMAGE|VIDEO",
+  "mediaUrl": "https://d1234.cloudfront.net/tweets/uuid_photo.jpg",
   "user": { "...UserResponse" },
   "replyCount": 0,
   "likeCount": 0,
@@ -139,46 +139,63 @@ Response 200:
 ### GET `/auth/me` (private)
 Response 200: `UserResponse`
 
+## Uploads
+
+### POST `/uploads/presign` (private)
+Request a presigned S3 PUT URL. The client then PUTs the file directly to S3.
+
+Body:
+```json
+{
+  "filename": "photo.jpg",
+  "contentType": "image/jpeg",
+  "folder": "tweets|avatars"
+}
+```
+Response 200:
+```json
+{
+  "presignedUrl": "https://s3.amazonaws.com/...",
+  "objectKey": "tweets/uuid_photo.jpg"
+}
+```
+
+Allowed content types: `image/jpeg`, `image/png`, `image/gif`, `image/webp`, `video/mp4`, `video/webm`
+
 ## Users
 
 ### GET `/users/:id` (optional auth)
 Response 200: `UserResponse`
 
 ### PUT `/users/profile` (private)
-`multipart/form-data`
-- `displayName` (optional, max 30)
-- `bio` (optional, max 160)
-- `avatar` (optional, max size enforced by `MAX_AVATAR_BYTES`)
+Body:
+```json
+{
+  "displayName": "Alice",
+  "bio": "hello world",
+  "avatarKey": "avatars/uuid_photo.jpg"
+}
+```
+- `avatarKey`: S3 object key from the presign endpoint (optional)
 
 Response 200: `UserResponse`
-
-### POST `/users/:id/follow` (private)
-Response 200:
-```json
-{ "success": true }
-```
-
-### DELETE `/users/:id/follow` (private)
-Response 200:
-```json
-{ "success": true }
-```
-
-### GET `/users/:id/followers` (optional auth)
-Query: `cursor`, `size`
-Response 200: `PageResponse<UserResponse>`
-
-### GET `/users/:id/following` (optional auth)
-Query: `cursor`, `size`
-Response 200: `PageResponse<UserResponse>`
 
 ## Tweets
 
 ### POST `/tweets` (private)
-`multipart/form-data`:
-- `content` (optional, max 280, required when media is not provided)
-- `parentId` (optional, integer, min 1)
-- `media` (optional, image/video file, max size enforced by `MAX_MEDIA_BYTES`)
+Body:
+```json
+{
+  "content": "tweet text",
+  "parentId": 123,
+  "mediaKey": "tweets/uuid_photo.jpg",
+  "mediaType": "IMAGE"
+}
+```
+- `content`: optional (max 280), required when `mediaKey` is not provided
+- `parentId`: optional (reply to tweet)
+- `mediaKey`: S3 object key from the presign endpoint (optional)
+- `mediaType`: required when `mediaKey` is provided, one of `IMAGE` or `VIDEO`
 
 Response 201: `TweetResponse`
 
@@ -279,6 +296,6 @@ Response 200:
 ### GET `/notifications/stream` (private, SSE)
 - Content-Type: `text/event-stream`
 - Events:
-1. `connected`
-2. `ping`
-3. `notification` (payload `NotificationResponse`)
+  1. `connected`
+  2. `ping`
+  3. `notification` (payload `NotificationResponse`)

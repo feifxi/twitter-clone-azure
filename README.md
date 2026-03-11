@@ -6,12 +6,23 @@ The Go API is the primary backend in active development:
 - `twitter-go-api` (primary)
 - `twitter-next-web` (frontend)
 - `twitter-java-api` (legacy/alternative backend)
+- `infra` (Terraform IaC)
 
 ## Stack
 
 - Frontend: Next.js (App Router), TypeScript, Tailwind, TanStack Query, Zustand
-- Primary Backend: Go, Gin, PostgreSQL + sqlc, Redis, Azure Blob Storage
+- Primary Backend: Go, Gin, PostgreSQL + sqlc, Redis
 - Legacy Backend: Java (Spring Boot), PostgreSQL
+
+## AWS Infrastructure
+
+- Frontend: Amplify
+- Ingress: API Gateway (HTTP API)
+- Backend: EC2 (Go API + Docker)
+- Database: RDS (PostgreSQL)
+- Media: S3 (presigned URL uploads) + CloudFront (CDN)
+- IaC: Terraform
+- CI/CD: GitHub Actions
 
 ## Local Development
 
@@ -57,20 +68,10 @@ npm run lint
 
 ## Deployment
 
-Deployment is configured with GitHub Actions to Azure Container Apps.
+Deployment is configured with GitHub Actions to AWS:
 
 Workflows:
 - `.github/workflows/deploy-go-api.yml`
   - Trigger: push to `main` when `twitter-go-api/**` changes, or manual dispatch
-  - Deploy target: `ca-chntwt-go-api-dev`
-- `.github/workflows/deploy-next-web.yml`
-  - Trigger: push to `main` when `twitter-next-web/**` changes, or manual dispatch
-  - Deploy target: `ca-chntwt-web-dev`
-- `.github/workflows/deploy-java-api.yml`
-  - Trigger: manual dispatch only
-  - Deploy target: `ca-chntwt-api-dev`
-
-All pipelines use:
-- `azure/login@v2` (OIDC)
-- `azure/container-apps-deploy-action@v2`
-- Azure Container Registry: `crchntwtdevsea001.azurecr.io`
+  - Build: Docker image → GHCR
+  - Deploy: SSH to EC2, pull image, restart container
