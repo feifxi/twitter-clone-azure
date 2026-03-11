@@ -61,6 +61,23 @@ resource "aws_instance" "api" {
   }
 
   tags = { Name = "${var.project_name}-ec2" }
+
+  user_data = <<-EOF
+    #!/bin/bash
+    # Create app directory
+    mkdir -p /home/ec2-user/app
+    
+    # Write docker-compose.yml
+    cat << 'DOCKER_COMPOSE_EOF' > /home/ec2-user/app/docker-compose.yml
+    ${file("${path.module}/../ec2/docker-compose.yml")}
+    DOCKER_COMPOSE_EOF
+    
+    # Execute setup script
+    ${file("${path.module}/../ec2/setup-ec2.sh")}
+    
+    # Final ownership fix
+    chown -R ec2-user:ec2-user /home/ec2-user/app
+  EOF
 }
 
 # ── EC2 Instance Connect Endpoint ───────────────────

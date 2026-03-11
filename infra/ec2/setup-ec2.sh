@@ -16,9 +16,10 @@ sudo systemctl enable docker
 # 4. ให้สิทธิ์ ec2-user ใช้ Docker ได้โดยไม่ต้องพิมพ์ sudo
 sudo usermod -aG docker ec2-user
 
-# 5. สร้างโฟลเดอร์สำหรับโปรเจกต์และให้ ec2-user เป็นเจ้าของ
-sudo mkdir -p /home/ec2-user/app
-sudo chown -R ec2-user:ec2-user /home/ec2-user/app
+# 5. Note on Project Structure
+# The app directory /home/ec2-user/app is managed by the launch process (Terraform User Data).
 
+echo "----------------------------------------------------"
 echo "✅ Setup Complete! Docker and Docker Compose V2 are ready."
-echo "⚠️ Please type 'exit' to logout and SSH again to apply docker permissions."
+echo "EC2 User Data logs can be found at: /var/log/cloud-init-output.log"
+echo "----------------------------------------------------"
