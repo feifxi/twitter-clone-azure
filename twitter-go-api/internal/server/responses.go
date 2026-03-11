@@ -9,14 +9,16 @@ import (
 )
 
 type authResponse struct {
-	AccessToken string       `json:"accessToken"`
-	User        userResponse `json:"user"`
+	AccessToken  string       `json:"accessToken"`
+	RefreshToken string       `json:"refreshToken"`
+	User         userResponse `json:"user"`
 }
 
-func newAuthResponse(accessToken string, user usecase.UserItem) authResponse {
+func newAuthResponse(accessToken, refreshToken string, user usecase.UserItem) authResponse {
 	return authResponse{
-		AccessToken: accessToken,
-		User:        newUserResponse(user),
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		User:         newUserResponse(user),
 	}
 }
 

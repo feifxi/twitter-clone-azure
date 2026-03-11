@@ -112,6 +112,9 @@ func (c Config) ValidateForRuntime() error {
 	if strings.TrimSpace(c.GoogleClientID) == "" {
 		return fmt.Errorf("GOOGLE_CLIENT_ID is required in production")
 	}
+	if len(strings.TrimSpace(c.TokenSymmetricKey)) < 32 {
+		return fmt.Errorf("TOKEN_SYMMETRIC_KEY must be at least 32 characters in production")
+	}
 
 	return nil
 }

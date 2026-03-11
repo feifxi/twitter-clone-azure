@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/chanombude/twitter-go-api/internal/db"
 	"github.com/chanombude/twitter-go-api/internal/logger"
 	"github.com/chanombude/twitter-go-api/internal/server"
+	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 
@@ -32,6 +34,10 @@ func main() {
 	}
 
 	logger.InitLogger(config.Environment)
+
+	if strings.EqualFold(config.Environment, "production") {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
 	poolConfig, err := pgxpool.ParseConfig(config.DBSource)
 	if err != nil {

@@ -8,6 +8,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type refreshTokenRequest struct {
+	RefreshToken string `json:"refreshToken"`
+}
+
+// resolveRefreshToken reads the refresh token from the cookie first,
+// then falls back to a JSON body field for mobile / cross-origin clients.
+func resolveRefreshToken(ctx *gin.Context) string {
+	if rt, err := ctx.Cookie("refresh_token"); err == nil && strings.TrimSpace(rt) != "" {
+		return rt
+	}
+	var body refreshTokenRequest
+	if ctx.ShouldBindJSON(&body) == nil && strings.TrimSpace(body.RefreshToken) != "" {
+		return body.RefreshToken
+	}
+	return ""
+}
+
 type googleLoginRequest struct {
 	IdToken string `json:"idToken" binding:"required"`
 }
@@ -26,12 +43,12 @@ func (server *Server) loginGoogle(ctx *gin.Context) {
 	}
 
 	server.setSessionCookies(ctx, authData.AccessToken, authData.RefreshToken)
-	ctx.JSON(http.StatusOK, newAuthResponse(authData.AccessToken, authData.User))
+	ctx.JSON(http.StatusOK, newAuthResponse(authData.AccessToken, authData.RefreshToken, authData.User))
 }
 
 func (server *Server) refreshToken(ctx *gin.Context) {
-	refreshToken, err := ctx.Cookie("refresh_token")
-	if err != nil || strings.TrimSpace(refreshToken) == "" {
+	refreshToken := resolveRefreshToken(ctx)
+	if refreshToken == "" {
 		writeError(ctx, apperr.Unauthorized("missing refresh token"))
 		return
 	}
@@ -43,15 +60,15 @@ func (server *Server) refreshToken(ctx *gin.Context) {
 	}
 
 	server.setSessionCookies(ctx, authData.AccessToken, authData.RefreshToken)
-	ctx.JSON(http.StatusOK, newAuthResponse(authData.AccessToken, authData.User))
+	ctx.JSON(http.StatusOK, newAuthResponse(authData.AccessToken, authData.RefreshToken, authData.User))
 }
 
 func (server *Server) logout(ctx *gin.Context) {
 	userID, ok := getCurrentUserID(ctx)
 	if ok {
 		server.authUC.Logout(ctx, &userID, nil)
-	} else if refreshToken, err := ctx.Cookie("refresh_token"); err == nil {
-		server.authUC.Logout(ctx, nil, &refreshToken)
+	} else if rt := resolveRefreshToken(ctx); rt != "" {
+		server.authUC.Logout(ctx, nil, &rt)
 	}
 
 	server.clearSessionCookies(ctx)

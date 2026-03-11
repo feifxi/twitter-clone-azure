@@ -87,6 +87,7 @@ func TestValidateForRuntime_ProductionAllValidPasses(t *testing.T) {
 		AzureStorageConnString: "DefaultEndpointsProtocol=https;...",
 		AzureStorageContainer:  "media",
 		GoogleClientID:         "my-client-id.apps.googleusercontent.com",
+		TokenSymmetricKey:      "01234567890123456789012345678901",
 	}
 	if err := cfg.ValidateForRuntime(); err != nil {
 		t.Fatalf("unexpected error for valid production config: %v", err)
