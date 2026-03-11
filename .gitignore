@@ -1,0 +1,43 @@
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+**/*.tfvars
+**/*.tfvars.json
+.terraform.lock.hcl
+
+# Go
+twitter-go-api/twitter-go-api
+**/app.env
+**/debug
+**/debug.test
+
+# Node
+node_modules/
+.next/
+out/
+build/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Java
+twitter-java-api/target/
+twitter-java-api/.mvn/wrapper/maven-wrapper.jar
+**/*.class
+**/out/
