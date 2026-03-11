@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -63,13 +65,14 @@ func (u *AuthUsecase) LoginWithGoogle(ctx context.Context, idToken string) (Auth
 }
 
 func (u *AuthUsecase) RefreshSession(ctx context.Context, refreshToken string) (AuthResult, error) {
-	session, err := u.store.GetRefreshToken(ctx, refreshToken)
+	tokenHash := hashRefreshToken(refreshToken)
+	session, err := u.store.GetRefreshToken(ctx, tokenHash)
 	if err != nil {
 		return AuthResult{}, apperr.Unauthorized("refresh token not found or revoked")
 	}
 
 	if time.Now().After(session.ExpiryDate) {
-		_ = u.store.DeleteRefreshToken(ctx, refreshToken)
+		_ = u.store.DeleteRefreshToken(ctx, tokenHash)
 		return AuthResult{}, apperr.Unauthorized("refresh token expired")
 	}
 
@@ -96,7 +99,7 @@ func (u *AuthUsecase) Logout(ctx context.Context, userID *int64, refreshToken *s
 		return
 	}
 	if refreshToken != nil && strings.TrimSpace(*refreshToken) != "" {
-		_ = u.store.DeleteRefreshToken(ctx, *refreshToken)
+		_ = u.store.DeleteRefreshToken(ctx, hashRefreshToken(*refreshToken))
 	}
 }
 
@@ -123,7 +126,7 @@ func (u *AuthUsecase) issueSession(ctx context.Context, userID int64) (accessTok
 
 	_, err = u.store.CreateRefreshToken(ctx, db.CreateRefreshTokenParams{
 		UserID:     userID,
-		Token:      refreshToken,
+		TokenHash:  hashRefreshToken(refreshToken),
 		ExpiryDate: expiresAt,
 	})
 	if err != nil {
@@ -145,4 +148,9 @@ func buildUniqueUsername(email string) string {
 		clean = "user"
 	}
 	return fmt.Sprintf("%s_%s", clean, strings.ReplaceAll(uuid.NewString()[:8], "-", ""))
+}
+
+func hashRefreshToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
 }

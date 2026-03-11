@@ -15,7 +15,7 @@ type CreateTweetInput struct {
 	UserID    int64
 	Content   *string
 	ParentID  *int64
-	MediaKey  *string // S3 object key (already uploaded via presigned URL)
+	MediaKey  *string // S3 object key (uploaded elsewhere)
 	MediaType *string // "IMAGE" or "VIDEO"
 }
 

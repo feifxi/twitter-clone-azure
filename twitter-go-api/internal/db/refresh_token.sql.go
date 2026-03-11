@@ -12,26 +12,26 @@ import (
 
 const createRefreshToken = `-- name: CreateRefreshToken :one
 INSERT INTO refresh_tokens (
-  user_id, token, expiry_date
+  user_id, token_hash, expiry_date
 ) VALUES (
   $1, $2, $3
 )
-RETURNING id, user_id, token, expiry_date, created_at
+RETURNING id, user_id, token_hash, expiry_date, created_at
 `
 
 type CreateRefreshTokenParams struct {
 	UserID     int64     `json:"user_id"`
-	Token      string    `json:"token"`
+	TokenHash  string    `json:"token_hash"`
 	ExpiryDate time.Time `json:"expiry_date"`
 }
 
 func (q *Queries) CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error) {
-	row := q.db.QueryRow(ctx, createRefreshToken, arg.UserID, arg.Token, arg.ExpiryDate)
+	row := q.db.QueryRow(ctx, createRefreshToken, arg.UserID, arg.TokenHash, arg.ExpiryDate)
 	var i RefreshToken
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.Token,
+		&i.TokenHash,
 		&i.ExpiryDate,
 		&i.CreatedAt,
 	)
@@ -40,11 +40,11 @@ func (q *Queries) CreateRefreshToken(ctx context.Context, arg CreateRefreshToken
 
 const deleteRefreshToken = `-- name: DeleteRefreshToken :exec
 DELETE FROM refresh_tokens
-WHERE token = $1
+WHERE token_hash = $1
 `
 
-func (q *Queries) DeleteRefreshToken(ctx context.Context, token string) error {
-	_, err := q.db.Exec(ctx, deleteRefreshToken, token)
+func (q *Queries) DeleteRefreshToken(ctx context.Context, tokenHash string) error {
+	_, err := q.db.Exec(ctx, deleteRefreshToken, tokenHash)
 	return err
 }
 
@@ -59,17 +59,17 @@ func (q *Queries) DeleteRefreshTokensByUser(ctx context.Context, userID int64) e
 }
 
 const getRefreshToken = `-- name: GetRefreshToken :one
-SELECT id, user_id, token, expiry_date, created_at FROM refresh_tokens
-WHERE token = $1 LIMIT 1
+SELECT id, user_id, token_hash, expiry_date, created_at FROM refresh_tokens
+WHERE token_hash = $1 LIMIT 1
 `
 
-func (q *Queries) GetRefreshToken(ctx context.Context, token string) (RefreshToken, error) {
-	row := q.db.QueryRow(ctx, getRefreshToken, token)
+func (q *Queries) GetRefreshToken(ctx context.Context, tokenHash string) (RefreshToken, error) {
+	row := q.db.QueryRow(ctx, getRefreshToken, tokenHash)
 	var i RefreshToken
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.Token,
+		&i.TokenHash,
 		&i.ExpiryDate,
 		&i.CreatedAt,
 	)

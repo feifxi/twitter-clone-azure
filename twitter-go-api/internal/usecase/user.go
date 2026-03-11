@@ -9,7 +9,7 @@ import (
 type UpdateProfileInput struct {
 	Bio         *string
 	DisplayName *string
-	AvatarKey   *string // S3 object key (already uploaded via presigned URL)
+	AvatarKey   *string // S3 object key (uploaded elsewhere)
 }
 
 func (u *UserUsecase) GetUser(ctx context.Context, targetUserID int64, viewerID *int64) (UserItem, error) {

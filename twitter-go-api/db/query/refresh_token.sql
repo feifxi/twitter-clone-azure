@@ -1,6 +1,6 @@
 -- name: CreateRefreshToken :one
 INSERT INTO refresh_tokens (
-  user_id, token, expiry_date
+  user_id, token_hash, expiry_date
 ) VALUES (
   $1, $2, $3
 )
@@ -8,11 +8,11 @@ RETURNING *;
 
 -- name: GetRefreshToken :one
 SELECT * FROM refresh_tokens
-WHERE token = $1 LIMIT 1;
+WHERE token_hash = $1 LIMIT 1;
 
 -- name: DeleteRefreshToken :exec
 DELETE FROM refresh_tokens
-WHERE token = $1;
+WHERE token_hash = $1;
 
 -- name: DeleteRefreshTokensByUser :exec
 DELETE FROM refresh_tokens

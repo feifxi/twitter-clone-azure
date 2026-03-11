@@ -1,6 +1,10 @@
 package middleware
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
 
 // GatewayGuard rejects requests that don't carry the expected
 // X-Gateway-Secret header (injected by API Gateway).
@@ -12,7 +16,7 @@ func GatewayGuard(secret string) gin.HandlerFunc {
 			return
 		}
 		if c.GetHeader("X-Gateway-Secret") != secret {
-			c.AbortWithStatus(403)
+			abortWithError(c, http.StatusForbidden, "FORBIDDEN", "gateway secret mismatch")
 			return
 		}
 		c.Next()

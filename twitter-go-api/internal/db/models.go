@@ -63,7 +63,7 @@ type PublicRoomMessage struct {
 type RefreshToken struct {
 	ID         int64     `json:"id"`
 	UserID     int64     `json:"user_id"`
-	Token      string    `json:"token"`
+	TokenHash  string    `json:"token_hash"`
 	ExpiryDate time.Time `json:"expiry_date"`
 	CreatedAt  time.Time `json:"created_at"`
 }

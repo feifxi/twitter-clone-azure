@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -26,10 +27,10 @@ type StorageService interface {
 }
 
 type S3StorageService struct {
-	client       *s3.Client
-	presigner    *s3.PresignClient
-	bucketName   string
-	cdnDomain    string
+	client     *s3.Client
+	presigner  *s3.PresignClient
+	bucketName string
+	cdnDomain  string
 }
 
 func NewS3StorageService(cfg config.Config) (StorageService, error) {
@@ -80,6 +81,7 @@ func (s *S3StorageService) GeneratePresignedURL(ctx context.Context, filename, c
 }
 
 func (s *S3StorageService) DeleteFile(ctx context.Context, objectKey string) error {
+	objectKey = s.normalizeKey(objectKey)
 	if s.client == nil || objectKey == "" {
 		return nil
 	}
@@ -95,8 +97,35 @@ func (s *S3StorageService) DeleteFile(ctx context.Context, objectKey string) err
 }
 
 func (s *S3StorageService) PublicURL(objectKey string) string {
+	if objectKey == "" {
+		return ""
+	}
+	if strings.HasPrefix(objectKey, "http://") || strings.HasPrefix(objectKey, "https://") {
+		return objectKey
+	}
 	if s.cdnDomain == "" {
 		return objectKey
 	}
 	return fmt.Sprintf("https://%s/%s", s.cdnDomain, objectKey)
+}
+
+func (s *S3StorageService) normalizeKey(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+
+	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
+		parsed, err := url.Parse(value)
+		if err == nil {
+			path := strings.TrimPrefix(parsed.Path, "/")
+			return path
+		}
+	}
+
+	if s.cdnDomain != "" && strings.HasPrefix(value, s.cdnDomain+"/") {
+		return strings.TrimPrefix(value, s.cdnDomain+"/")
+	}
+
+	return strings.TrimPrefix(value, "/")
 }

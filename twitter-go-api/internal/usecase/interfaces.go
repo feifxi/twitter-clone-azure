@@ -107,42 +107,6 @@ type MessageUsecase struct {
 	store db.Store
 }
 
-type ServiceSet struct {
-	Auth         AuthService
-	User         UserService
-	Tweet        TweetService
-	Feed         FeedService
-	Search       SearchService
-	Discovery    DiscoveryService
-	Notification NotificationService
-	Message      MessageService
-}
-
-func NewServices(cfg config.Config, store db.Store, tokenMaker token.Maker, storage service.StorageService, publishNotification func(db.Notification)) ServiceSet {
-	return ServiceSet{
-		Auth: &AuthUsecase{
-			config:     cfg,
-			store:      store,
-			tokenMaker: tokenMaker,
-		},
-		User: &UserUsecase{
-			store:               store,
-			storage:             storage,
-			publishNotification: publishNotification,
-		},
-		Tweet: &TweetUsecase{
-			store:               store,
-			storage:             storage,
-			publishNotification: publishNotification,
-		},
-		Feed:         &FeedUsecase{store: store},
-		Search:       &SearchUsecase{store: store},
-		Discovery:    &DiscoveryUsecase{store: store},
-		Notification: &NotificationUsecase{store: store},
-		Message:      &MessageUsecase{store: store},
-	}
-}
-
 var (
 	_ AuthService         = (*AuthUsecase)(nil)
 	_ UserService         = (*UserUsecase)(nil)

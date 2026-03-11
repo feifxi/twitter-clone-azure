@@ -20,7 +20,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DecrementHashtagUsageBy(ctx context.Context, arg DecrementHashtagUsageByParams) error
 	DecrementParentReplyCount(ctx context.Context, id int64) error
-	DeleteRefreshToken(ctx context.Context, token string) error
+	DeleteRefreshToken(ctx context.Context, tokenHash string) error
 	DeleteRefreshTokensByUser(ctx context.Context, userID int64) error
 	DeleteRetweetByUser(ctx context.Context, arg DeleteRetweetByUserParams) (DeleteRetweetByUserRow, error)
 	DeleteTweetByOwner(ctx context.Context, arg DeleteTweetByOwnerParams) (Tweet, error)
@@ -28,7 +28,7 @@ type Querier interface {
 	FindDirectConversation(ctx context.Context, arg FindDirectConversationParams) (Conversation, error)
 	FollowUser(ctx context.Context, arg FollowUserParams) (bool, error)
 	GetFollowedUserIDs(ctx context.Context, arg GetFollowedUserIDsParams) ([]int64, error)
-	GetRefreshToken(ctx context.Context, token string) (RefreshToken, error)
+	GetRefreshToken(ctx context.Context, tokenHash string) (RefreshToken, error)
 	GetTopHashtagsAllTime(ctx context.Context, limit int32) ([]Hashtag, error)
 	GetTrendingHashtagsLast24h(ctx context.Context, limit int32) ([]Hashtag, error)
 	GetTweet(ctx context.Context, arg GetTweetParams) (GetTweetRow, error)

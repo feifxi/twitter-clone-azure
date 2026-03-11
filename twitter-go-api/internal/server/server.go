@@ -67,15 +67,14 @@ func NewServer(config config.Config, store db.Store, redisClient *redis.Client) 
 		wsPublic:   make(map[*chatWSClient]struct{}),
 		done:       make(chan struct{}),
 	}
-	services := usecase.NewServices(config, store, tokenMaker, storageService, server.publishNotification)
-	server.authUC = services.Auth
-	server.userUC = services.User
-	server.tweetUC = services.Tweet
-	server.feedUC = services.Feed
-	server.searchUC = services.Search
-	server.discoveryUC = services.Discovery
-	server.notifyUC = services.Notification
-	server.messageUC = services.Message
+	server.authUC = usecase.NewAuthUsecase(config, store, tokenMaker)
+	server.userUC = usecase.NewUserUsecase(store, storageService, server.publishNotification)
+	server.tweetUC = usecase.NewTweetUsecase(store, storageService, server.publishNotification)
+	server.feedUC = usecase.NewFeedUsecase(store)
+	server.searchUC = usecase.NewSearchUsecase(store)
+	server.discoveryUC = usecase.NewDiscoveryUsecase(store)
+	server.notifyUC = usecase.NewNotificationUsecase(store)
+	server.messageUC = usecase.NewMessageUsecase(store)
 
 	server.setupRouter()
 

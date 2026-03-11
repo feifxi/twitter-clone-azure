@@ -7,7 +7,8 @@ import (
 
 func abortWithError(ctx *gin.Context, status int, code, message string) {
 	ctx.AbortWithStatusJSON(status, apperr.ErrorResponse{
-		Code:    code,
-		Message: message,
+		Code:      code,
+		Message:   message,
+		RequestID: GetRequestID(ctx),
 	})
 }
