@@ -36,7 +36,6 @@ type Server struct {
 	sseClients  map[int64][]*sseClient
 	sseMu       sync.RWMutex
 	wsClients   map[int64]map[*chatWSClient]struct{}
-	wsPublic    map[*chatWSClient]struct{}
 	wsMu        sync.RWMutex
 	done        chan struct{}
 }
@@ -64,7 +63,6 @@ func NewServer(config config.Config, store db.Store, redisClient *redis.Client) 
 		redis:      redisClient,
 		sseClients: make(map[int64][]*sseClient),
 		wsClients:  make(map[int64]map[*chatWSClient]struct{}),
-		wsPublic:   make(map[*chatWSClient]struct{}),
 		done:       make(chan struct{}),
 	}
 	server.authUC = usecase.NewAuthUsecase(config, store, tokenMaker)

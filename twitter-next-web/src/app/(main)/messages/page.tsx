@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, MailPlus, Send, Globe } from 'lucide-react';
+import { Search, MailPlus, Send } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,13 +10,11 @@ import {
   useConversations, 
   useConversationMessages, 
   useSendMessageToConversation,
-  usePublicRoomMessages,
-  useSendPublicRoomMessage,
   useSendMessageToUser
 } from '@/hooks/useMessages';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { useAuth } from '@/hooks/useAuth';
-import type { MessageResponse, PublicRoomMessageResponse, UserResponse } from '@/types';
+import type { MessageResponse, UserResponse } from '@/types';
 import { useQuery } from '@tanstack/react-query';
 import { useSuggestedUsers } from '@/hooks/useDiscovery';
 import { axiosInstance } from '@/api/axiosInstance';
@@ -42,14 +40,13 @@ function formatRelativeTime(value: string): string {
 }
 
 type ActiveChat = 
-  | { type: 'global'; key: string } 
   | { type: 'private'; id: number }
   | { type: 'new_private'; user: UserResponse };
 
 export default function MessagesPage() {
   const { user, isLoggedIn } = useAuth();
   
-  const [activeChat, setActiveChat] = useState<ActiveChat>({ type: 'global', key: 'global' });
+  const [activeChat, setActiveChat] = useState<ActiveChat | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const [hasHydrated, setHasHydrated] = useState(false);
 
@@ -129,7 +126,7 @@ export default function MessagesPage() {
   const { data: conversationPages, isLoading: conversationsLoading } = useConversations();
   const conversations = conversationPages?.pages.flatMap((p) => p.items) ?? [];
   
-  const privateId = activeChat.type === 'private' ? activeChat.id : null;
+  const privateId = activeChat?.type === 'private' ? activeChat.id : null;
   const { 
     data: dmPages, 
     isLoading: dmsLoading,
@@ -139,41 +136,26 @@ export default function MessagesPage() {
   } = useConversationMessages(privateId);
   const sendDMMutation = useSendMessageToConversation();
 
-  // 3. Global Room Queries (Everyone)
-  const globalKey = activeChat.type === 'global' ? activeChat.key : '';
-  const { 
-    data: globalPages, 
-    isLoading: globalLoading,
-    hasNextPage: globalHasNextPage,
-    fetchNextPage: globalFetchNextPage,
-    isFetchingNextPage: globalIsFetchingNextPage 
-  } = usePublicRoomMessages(globalKey);
-  const sendGlobalMutation = useSendPublicRoomMessage();
-
   // Derived State: sort oldest-first for natural top→bottom chat display
-  const rawMessages: (MessageResponse | PublicRoomMessageResponse)[] = activeChat.type === 'global'
-    ? (globalPages?.pages.flatMap((p) => p.items) ?? [])
-    : (dmPages?.pages.flatMap((p) => p.items) ?? []);
+  const rawMessages: MessageResponse[] = dmPages?.pages.flatMap((p) => p.items) ?? [];
   const messagesData = [...rawMessages].sort((a, b) => 
     new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
 
-  const isLoadingMessages = activeChat.type === 'global' ? globalLoading : dmsLoading;
-  const hasNextPage = activeChat.type === 'global' ? globalHasNextPage : dmHasNextPage;
-  const isFetchingNextPage = activeChat.type === 'global' ? globalIsFetchingNextPage : dmIsFetchingNextPage;
+  const isLoadingMessages = dmsLoading;
+  const hasNextPage = dmHasNextPage;
+  const isFetchingNextPage = dmIsFetchingNextPage;
   
   const fetchNextPage = useCallback(() => {
-    if (activeChat.type === 'global') {
-      globalFetchNextPage();
-    } else if (activeChat.type === 'private') {
+    if (activeChat?.type === 'private') {
       dmFetchNextPage();
     }
-  }, [activeChat, globalFetchNextPage, dmFetchNextPage]);
+  }, [activeChat, dmFetchNextPage]);
 
   const currentPrivateConversation = conversations.find((c) => c.id === privateId);
 
   // Auto-scroll to bottom when chat changes or new messages arrive
-  const activeChatKey = activeChat.type === 'global' ? 'global' : activeChat.type === 'private' ? `private-${activeChat.id}` : `new-${activeChat.type === 'new_private' ? activeChat.user.id : ''}`;
+  const activeChatKey = activeChat ? (activeChat.type === 'private' ? `private-${activeChat.id}` : `new-${activeChat.user.id}`) : '';
   
   useEffect(() => {
     // Always scroll to bottom when switching chats
@@ -247,7 +229,7 @@ export default function MessagesPage() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handleSendMessage = async () => {
-    if (!messageInput.trim()) return;
+    if (!messageInput.trim() || !activeChat) return;
     
     if (!isLoggedIn) {
       toast.error('You must log in to send messages.');
@@ -255,9 +237,7 @@ export default function MessagesPage() {
     }
 
     try {
-      if (activeChat.type === 'global') {
-        await sendGlobalMutation.mutateAsync({ roomKey: activeChat.key, content: messageInput });
-      } else if (activeChat.type === 'private') {
+      if (activeChat.type === 'private') {
         await sendDMMutation.mutateAsync({ conversationId: activeChat.id, content: messageInput });
       } else if (activeChat.type === 'new_private') {
         const msg = await startPrivateChatMutation.mutateAsync({ userId: activeChat.user.id, content: messageInput });
@@ -363,21 +343,6 @@ export default function MessagesPage() {
 
         {/* List */}
         <div className="flex-1 overflow-y-auto">
-          {/* Pinned Global Room */}
-           <div 
-              onClick={() => setActiveChat({ type: 'global', key: 'global' })}
-              className={`flex gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-card border-b border-border ${activeChat.type === 'global' ? 'border-r-2 border-r-primary bg-card' : ''}`}
-            >
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Globe className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0 flex items-center">
-                <div className="truncate text-foreground font-bold text-[15px]">
-                  Global Chat <span className="text-muted-foreground font-normal text-xs bg-muted px-2 py-0.5 rounded-full ml-1">Public</span>
-                </div>
-              </div>
-            </div>
-
           {/* Private DMs */}
           {isLoggedIn ? (
             <>
@@ -395,7 +360,7 @@ export default function MessagesPage() {
                 <div 
                   key={conv.id}
                   onClick={() => setActiveChat({ type: 'private', id: conv.id })}
-                  className={`flex gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-card ${activeChat.type === 'private' && activeChat.id === conv.id ? 'border-r-2 border-r-primary bg-card' : ''}`}
+                  className={`flex gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-card ${activeChat?.type === 'private' && activeChat?.id === conv.id ? 'border-r-2 border-r-primary bg-card' : ''}`}
                 >
                   <Avatar className="w-10 h-10 shrink-0">
                     <AvatarImage src={conv.peer.avatarUrl ?? undefined} />
@@ -434,17 +399,12 @@ export default function MessagesPage() {
                 variant="ghost" 
                 size="icon" 
                 className="md:hidden -ml-2 rounded-full shrink-0"
-                onClick={() => setActiveChat({ type: 'global', key: 'global' })}
+                onClick={() => setActiveChat(null)}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current"><g><path d="M7.414 13l5.043 5.04-1.414 1.42L3.586 12l7.457-7.46 1.414 1.42L7.414 11H21v2H7.414z"></path></g></svg>
               </Button>
               
-              {activeChat.type === 'global' ? (
-                 <div className="flex flex-col min-w-0">
-                  <span className="font-bold text-[17px] text-foreground truncate">Global Chat</span>
-                  <span className="text-[13px] text-muted-foreground">Anyone can join</span>
-                </div>
-              ) : activeChat.type === 'new_private' ? (
+              {activeChat?.type === 'new_private' ? (
                 <div className="flex flex-col min-w-0">
                   <span className="font-bold text-[17px] text-foreground truncate">{activeChat.user.displayName || activeChat.user.username}</span>
                   <span className="text-[13px] text-muted-foreground truncate">@{activeChat.user.username}</span>
@@ -470,30 +430,18 @@ export default function MessagesPage() {
             <div className="text-muted-foreground text-center text-sm py-2">Loading older messages...</div>
           )}
           
-          {isLoadingMessages && activeChat.type !== 'new_private' && (
+          {isLoadingMessages && activeChat?.type !== 'new_private' && (
             <div className="text-muted-foreground text-center flex-1 flex items-center justify-center">Loading messages...</div>
           )}
           
-          {(!isLoadingMessages || activeChat.type === 'new_private') && messagesData.length === 0 && (
+          {(!isLoadingMessages || activeChat?.type === 'new_private') && messagesData.length === 0 && (
             <div className="text-muted-foreground text-center flex-1 flex items-center justify-center">Start the conversation.</div>
           )}
           
-          {activeChat.type !== 'new_private' && messagesData.map((message) => {
+          {activeChat?.type !== 'new_private' && messagesData.map((message) => {
             const isMine = isLoggedIn && message.sender.id === user?.id;
             return (
               <div key={message.id} className={`max-w-[85%] md:max-w-[75%] flex flex-col ${isMine ? 'self-end items-end' : 'self-start items-start'}`}>
-                {/* For Global Room, show sender info if not me */}
-                {!isMine && activeChat.type === 'global' && (
-                  <div className="text-[13px] font-bold text-foreground mb-1 ml-1 flex items-center gap-2">
-                    <Avatar className="w-5 h-5 shrink-0">
-                      <AvatarImage src={message.sender.avatarUrl ?? undefined} />
-                      <AvatarFallback>{(message.sender.displayName || message.sender.username)[0]}</AvatarFallback>
-                    </Avatar>
-                    <span className="truncate max-w-[120px]">{message.sender.displayName || message.sender.username}</span>
-                    <span className="font-normal text-muted-foreground truncate max-w-[100px]">@{message.sender.username}</span>
-                  </div>
-                )}
-                
                 <div
                   className={`px-4 py-3 rounded-2xl text-[15px] border break-words ${
                     isMine
@@ -516,16 +464,7 @@ export default function MessagesPage() {
 
         {/* Thread Input */}
         <div className="p-3 border-t border-border bg-background">
-          {!isLoggedIn ? (
-            <div className="bg-muted rounded-2xl p-4 text-center">
-              <p className="text-foreground font-semibold mb-2">Join the conversation</p>
-              <p className="text-muted-foreground text-sm mb-4">Log in to send messages in the global chat.</p>
-              <div className="flex justify-center gap-2">
-                <Button variant="outline" className="rounded-full font-bold px-6">Log in</Button>
-                <Button className="rounded-full font-bold px-6">Sign up</Button>
-              </div>
-            </div>
-          ) : (
+          {activeChat ? (
              <div className="bg-card rounded-2xl flex items-center px-2 py-1">
                 <Input 
                   ref={messageInputRef}
@@ -534,17 +473,22 @@ export default function MessagesPage() {
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                  disabled={sendGlobalMutation.isPending || sendDMMutation.isPending || startPrivateChatMutation.isPending}
+                  disabled={sendDMMutation.isPending || startPrivateChatMutation.isPending}
                 />
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   className={`rounded-full w-9 h-9 transition-colors ${messageInput.trim() ? 'text-primary hover:bg-primary/10' : 'text-muted-foreground cursor-default hover:bg-transparent'}`}
                   onClick={handleSendMessage}
-                  disabled={!messageInput.trim() || sendGlobalMutation.isPending || sendDMMutation.isPending || startPrivateChatMutation.isPending}
+                  disabled={!messageInput.trim() || sendDMMutation.isPending || startPrivateChatMutation.isPending}
                 >
                   <Send className="w-5 h-5" />
                 </Button>
+            </div>
+          ) : (
+            <div className="bg-muted rounded-2xl p-4 text-center">
+             <p className="text-foreground font-semibold mb-2">Private Messages</p>
+             <p className="text-muted-foreground text-sm">Select a conversation or start a new one.</p>
             </div>
           )}
         </div>

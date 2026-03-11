@@ -10,10 +10,6 @@ type sendMessageRequest struct {
 	Content string `json:"content" binding:"required,max=2000"`
 }
 
-type roomURIRequest struct {
-	Room string `uri:"room" binding:"required,max=64"`
-}
-
 func (server *Server) listConversations(ctx *gin.Context) {
 	userID, ok := mustCurrentUserID(ctx)
 	if !ok {
@@ -119,59 +115,5 @@ func (server *Server) sendMessageToConversation(ctx *gin.Context) {
 
 	resp := newMessageResponse(item)
 	server.sendDirectMessageWS(participants, resp)
-	ctx.JSON(http.StatusCreated, resp)
-}
-
-func (server *Server) listPublicRoomMessages(ctx *gin.Context) {
-	var req roomURIRequest
-	if err := ctx.ShouldBindUri(&req); err != nil {
-		writeError(ctx, err)
-		return
-	}
-
-	offset, size, ok := parseOffsetAndSize(ctx)
-	if !ok {
-		return
-	}
-	page := offset / size
-
-	viewerID := optionalViewerID(ctx)
-
-	items, err := server.messageUC.ListPublicRoomMessages(ctx, req.Room, page, size+1, viewerID)
-	if err != nil {
-		writeError(ctx, err)
-		return
-	}
-
-	response := newPublicMessageResponseList(items)
-	ctx.JSON(http.StatusOK, buildPageResponse(response, size, offset))
-}
-
-func (server *Server) sendPublicRoomMessage(ctx *gin.Context) {
-	userID, ok := mustCurrentUserID(ctx)
-	if !ok {
-		return
-	}
-
-	var roomReq roomURIRequest
-	if err := ctx.ShouldBindUri(&roomReq); err != nil {
-		writeError(ctx, err)
-		return
-	}
-
-	var req sendMessageRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		writeError(ctx, err)
-		return
-	}
-
-	item, err := server.messageUC.SendPublicRoomMessage(ctx, userID, roomReq.Room, req.Content)
-	if err != nil {
-		writeError(ctx, err)
-		return
-	}
-
-	resp := newPublicMessageResponse(item)
-	server.sendPublicRoomWS(resp)
 	ctx.JSON(http.StatusCreated, resp)
 }

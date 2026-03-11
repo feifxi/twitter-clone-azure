@@ -1,13 +1,11 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { axiosInstance } from '@/api/axiosInstance';
 import { useAuthStore } from '@/store/useAuthStore';
-import type { ConversationResponse, MessageResponse, PublicRoomMessageResponse, PageResponse } from '@/types';
+import type { ConversationResponse, MessageResponse, PageResponse } from '@/types';
 
 export const conversationsQueryKey = ['messages', 'conversations'] as const;
 export const conversationMessagesQueryKey = (conversationId: number) =>
   ['messages', 'conversation', conversationId] as const;
-export const publicRoomMessagesQueryKey = (roomKey: string) =>
-  ['messages', 'public-room', roomKey] as const;
 
 export function useConversations(pageSize = 20) {
   const { accessToken } = useAuthStore();
@@ -74,39 +72,6 @@ export function useSendMessageToUser() {
     onSuccess: (message) => {
       queryClient.invalidateQueries({ queryKey: conversationsQueryKey });
       queryClient.invalidateQueries({ queryKey: conversationMessagesQueryKey(message.conversationId) });
-    },
-  });
-}
-
-export function usePublicRoomMessages(roomKey: string, pageSize = 30) {
-  return useInfiniteQuery({
-    queryKey: publicRoomMessagesQueryKey(roomKey),
-    queryFn: async ({ pageParam }: { pageParam: string | null }): Promise<PageResponse<PublicRoomMessageResponse>> => {
-      const { data } = await axiosInstance.get<PageResponse<PublicRoomMessageResponse>>(
-        `/messages/public/${roomKey}/messages`,
-        { params: { cursor: pageParam ?? undefined, size: pageSize } },
-      );
-      return data;
-    },
-    enabled: !!roomKey,
-    initialPageParam: null as string | null,
-    getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
-    staleTime: 5000,
-  });
-}
-
-export function useSendPublicRoomMessage() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (payload: { roomKey: string; content: string }): Promise<PublicRoomMessageResponse> => {
-      const { data } = await axiosInstance.post<PublicRoomMessageResponse>(
-        `/messages/public/${payload.roomKey}/messages`,
-        { content: payload.content },
-      );
-      return data;
-    },
-    onSuccess: (_message, variables) => {
-      queryClient.invalidateQueries({ queryKey: publicRoomMessagesQueryKey(variables.roomKey) });
     },
   });
 }

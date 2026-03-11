@@ -69,14 +69,3 @@ WHERE conversation_id = $1
 ORDER BY created_at DESC, id DESC
 LIMIT $2 OFFSET $3;
 
--- name: CreatePublicRoomMessage :one
-INSERT INTO public_room_messages (room_key, sender_id, content)
-VALUES ($1, $2, $3)
-RETURNING *;
-
--- name: ListPublicRoomMessages :many
-SELECT *
-FROM public_room_messages
-WHERE room_key = $1
-ORDER BY created_at DESC, id DESC
-LIMIT $2 OFFSET $3;

@@ -130,13 +130,7 @@ type messageResponse struct {
 	CreatedAt      time.Time    `json:"createdAt"`
 }
 
-type publicMessageResponse struct {
-	ID        int64        `json:"id"`
-	RoomKey   string       `json:"roomKey"`
-	Sender    userResponse `json:"sender"`
-	Content   string       `json:"content"`
-	CreatedAt time.Time    `json:"createdAt"`
-}
+
 
 type conversationResponse struct {
 	ID          int64           `json:"id"`
@@ -180,15 +174,7 @@ func newConversationResponse(item usecase.ConversationItem) conversationResponse
 	}
 }
 
-func newPublicMessageResponse(item usecase.PublicRoomMessageItem) publicMessageResponse {
-	return publicMessageResponse{
-		ID:        item.ID,
-		RoomKey:   item.RoomKey,
-		Sender:    newUserResponse(item.Sender),
-		Content:   item.Content,
-		CreatedAt: item.CreatedAt,
-	}
-}
+
 
 func successResponse() gin.H {
 	return gin.H{"success": true}
@@ -242,10 +228,3 @@ func newConversationResponseList(items []usecase.ConversationItem) []conversatio
 	return response
 }
 
-func newPublicMessageResponseList(items []usecase.PublicRoomMessageItem) []publicMessageResponse {
-	response := make([]publicMessageResponse, 0, len(items))
-	for _, item := range items {
-		response = append(response, newPublicMessageResponse(item))
-	}
-	return response
-}

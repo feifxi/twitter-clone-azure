@@ -10,6 +10,7 @@ import {
 import { axiosInstance } from '@/api/axiosInstance';
 import type { PageResponse, TweetResponse } from '@/types';
 import type { TweetRequestInput } from '@/lib/validation';
+import { uploadFileWithPresignedUrl } from '@/api/upload';
 import { toast } from 'sonner';
 
 export const tweetQueryKey = (id: number) => ['tweets', id] as const;
@@ -62,19 +63,27 @@ export function useCreateTweet() {
 
   return useMutation({
     mutationFn: async ({ content, media, parentId }: TweetRequestInput & { media?: File }) => {
-      const formData = new FormData();
-      if (content) {
-        formData.append('content', content);
-      }
-      if (parentId) {
-        formData.append('parentId', parentId.toString());
-      }
+      let mediaKey: string | undefined;
+      let mediaType: 'IMAGE' | 'VIDEO' | undefined;
+
       if (media) {
-        formData.append('media', media);
+        mediaKey = await uploadFileWithPresignedUrl(media, 'tweets');
+        // Determine mediaType based on file MIME type
+        if (media.type.startsWith('image/')) {
+          mediaType = 'IMAGE';
+        } else if (media.type.startsWith('video/')) {
+          mediaType = 'VIDEO';
+        }
       }
-      const { data } = await axiosInstance.post<TweetResponse>('/tweets', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+
+      const payload = {
+        content,
+        parentId,
+        mediaKey,
+        mediaType,
+      };
+
+      const { data } = await axiosInstance.post<TweetResponse>('/tweets', payload);
       return data;
     },
     onMutate: async () => {

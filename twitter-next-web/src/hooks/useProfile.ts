@@ -4,6 +4,7 @@ import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tansta
 import { axiosInstance } from '@/api/axiosInstance';
 import type { PageResponse, UserResponse, TweetResponse } from '@/types';
 import type { UpdateProfileInput } from '@/lib/validation';
+import { uploadFileWithPresignedUrl } from '@/api/upload';
 
 const userQueryKey = (id: number) => ['users', id] as const;
 export const userFeedQueryKey = (userId: number) => ['feeds', 'user', userId] as const;
@@ -163,19 +164,19 @@ export function useUpdateProfile() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ displayName, bio, avatar }: UpdateProfileInput & { avatar?: File }) => {
-      const formData = new FormData();
-      if (displayName) {
-        formData.append('displayName', displayName);
-      }
-      if (bio !== undefined && bio !== null) {
-        formData.append('bio', bio);
-      }
+      let avatarKey: string | undefined;
+
       if (avatar) {
-        formData.append('avatar', avatar);
+        avatarKey = await uploadFileWithPresignedUrl(avatar, 'avatars');
       }
-      const { data } = await axiosInstance.put<UserResponse>('/users/profile', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+
+      const payload = {
+        displayName,
+        bio,
+        avatarKey,
+      };
+
+      const { data } = await axiosInstance.put<UserResponse>('/users/profile', payload);
       return data;
     },
 

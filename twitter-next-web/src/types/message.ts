@@ -15,10 +15,3 @@ export interface ConversationResponse {
   updatedAt: string;
 }
 
-export interface PublicRoomMessageResponse {
-  id: number;
-  roomKey: string;
-  sender: UserResponse;
-  content: string;
-  createdAt: string;
-}

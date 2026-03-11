@@ -1,16 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
-import { conversationMessagesQueryKey, conversationsQueryKey, publicRoomMessagesQueryKey } from './useMessages';
-import type { MessageResponse, PublicRoomMessageResponse } from '@/types/message';
+import { conversationMessagesQueryKey, conversationsQueryKey } from './useMessages';
+import type { MessageResponse } from '@/types/message';
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL?.replace(/^http/, 'ws') || 'ws://localhost:8080/api/v1';
 
 type WSEnvelope = {
     type: string;
     conversationId?: number;
-    roomKey?: string;
-    message?: MessageResponse | PublicRoomMessageResponse;
+    message?: MessageResponse;
     data?: unknown;
 };
 
@@ -48,8 +47,6 @@ export function useChatWebSocket() {
                     if (envelope.type === 'dm.message' && envelope.conversationId) {
                         queryClient.invalidateQueries({ queryKey: conversationsQueryKey });
                         queryClient.invalidateQueries({ queryKey: conversationMessagesQueryKey(envelope.conversationId) });
-                    } else if (envelope.type === 'public.message' && envelope.roomKey) {
-                        queryClient.invalidateQueries({ queryKey: publicRoomMessagesQueryKey(envelope.roomKey) });
                     }
                 } catch {
                     // ignore malformed events

@@ -152,7 +152,6 @@ func (server *Server) registerNotificationRoutes(api *gin.RouterGroup, requiredA
 func (server *Server) registerMessageRoutes(api *gin.RouterGroup, optionalAuth, requiredAuth, strictWriteLimiter gin.HandlerFunc) {
 	messagesPublic := api.Group("/messages")
 	messagesPublic.GET("/ws", server.streamMessagesWS)
-	messagesPublic.GET("/public/:room/messages", optionalAuth, server.listPublicRoomMessages)
 
 	messagesPrivate := api.Group("/messages")
 	messagesPrivate.Use(requiredAuth)
@@ -160,7 +159,6 @@ func (server *Server) registerMessageRoutes(api *gin.RouterGroup, optionalAuth, 
 	messagesPrivate.GET("/conversations/:id/messages", server.listConversationMessages)
 	messagesPrivate.POST("/conversations/:id/messages", strictWriteLimiter, server.sendMessageToConversation)
 	messagesPrivate.POST("/users/:id/messages", strictWriteLimiter, server.sendMessageToUser)
-	messagesPrivate.POST("/public/:room/messages", strictWriteLimiter, server.sendPublicRoomMessage)
 }
 
 func parseAllowedOrigins(raw string) []string {

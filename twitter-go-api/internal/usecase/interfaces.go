@@ -65,8 +65,6 @@ type MessageService interface {
 	ListMessages(ctx context.Context, userID, conversationID int64, page, size int32) ([]MessageItem, error)
 	SendMessageToUser(ctx context.Context, senderID, recipientID int64, content string) (MessageItem, []int64, error)
 	SendMessageToConversation(ctx context.Context, senderID, conversationID int64, content string) (MessageItem, []int64, error)
-	ListPublicRoomMessages(ctx context.Context, roomKey string, page, size int32, viewerID *int64) ([]PublicRoomMessageItem, error)
-	SendPublicRoomMessage(ctx context.Context, senderID int64, roomKey, content string) (PublicRoomMessageItem, error)
 }
 
 type AuthUsecase struct {
@@ -117,3 +115,47 @@ var (
 	_ NotificationService = (*NotificationUsecase)(nil)
 	_ MessageService      = (*MessageUsecase)(nil)
 )
+
+func NewAuthUsecase(cfg config.Config, store db.Store, tokenMaker token.Maker) *AuthUsecase {
+	return &AuthUsecase{
+		config:     cfg,
+		store:      store,
+		tokenMaker: tokenMaker,
+	}
+}
+
+func NewUserUsecase(store db.Store, storage service.StorageService, publishNotification func(db.Notification)) *UserUsecase {
+	return &UserUsecase{
+		store:               store,
+		storage:             storage,
+		publishNotification: publishNotification,
+	}
+}
+
+func NewTweetUsecase(store db.Store, storage service.StorageService, publishNotification func(db.Notification)) *TweetUsecase {
+	return &TweetUsecase{
+		store:               store,
+		storage:             storage,
+		publishNotification: publishNotification,
+	}
+}
+
+func NewFeedUsecase(store db.Store) *FeedUsecase {
+	return &FeedUsecase{store: store}
+}
+
+func NewSearchUsecase(store db.Store) *SearchUsecase {
+	return &SearchUsecase{store: store}
+}
+
+func NewDiscoveryUsecase(store db.Store) *DiscoveryUsecase {
+	return &DiscoveryUsecase{store: store}
+}
+
+func NewNotificationUsecase(store db.Store) *NotificationUsecase {
+	return &NotificationUsecase{store: store}
+}
+
+func NewMessageUsecase(store db.Store) *MessageUsecase {
+	return &MessageUsecase{store: store}
+}

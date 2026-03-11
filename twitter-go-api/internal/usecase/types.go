@@ -77,14 +77,6 @@ type MessageItem struct {
 	CreatedAt      time.Time
 }
 
-type PublicRoomMessageItem struct {
-	ID        int64
-	RoomKey   string
-	Sender    UserItem
-	Content   string
-	CreatedAt time.Time
-}
-
 type ConversationItem struct {
 	ID          int64
 	Peer        UserItem

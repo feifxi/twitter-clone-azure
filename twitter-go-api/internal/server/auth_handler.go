@@ -8,23 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type refreshTokenRequest struct {
-	RefreshToken string `json:"refreshToken"`
-}
-
-// resolveRefreshToken reads the refresh token from the cookie first,
-// then falls back to a JSON body field for mobile / cross-origin clients.
-func resolveRefreshToken(ctx *gin.Context) string {
-	if rt, err := ctx.Cookie("refresh_token"); err == nil && strings.TrimSpace(rt) != "" {
-		return rt
-	}
-	var body refreshTokenRequest
-	if ctx.ShouldBindJSON(&body) == nil && strings.TrimSpace(body.RefreshToken) != "" {
-		return body.RefreshToken
-	}
-	return ""
-}
-
 type googleLoginRequest struct {
 	IdToken string `json:"idToken" binding:"required"`
 }
@@ -75,6 +58,38 @@ func (server *Server) logout(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, successResponse())
 }
 
+func (server *Server) getMe(ctx *gin.Context) {
+	userID, ok := mustCurrentUserID(ctx)
+	if !ok {
+		return
+	}
+
+	user, err := server.authUC.GetMe(ctx, userID)
+	if err != nil {
+		writeError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, newUserResponse(user))
+}
+
+type refreshTokenRequest struct {
+	RefreshToken string `json:"refreshToken"`
+}
+
+// resolveRefreshToken reads the refresh token from the cookie first,
+// then falls back to a JSON body field for mobile / cross-origin clients.
+func resolveRefreshToken(ctx *gin.Context) string {
+	if rt, err := ctx.Cookie("refresh_token"); err == nil && strings.TrimSpace(rt) != "" {
+		return rt
+	}
+	var body refreshTokenRequest
+	if ctx.ShouldBindJSON(&body) == nil && strings.TrimSpace(body.RefreshToken) != "" {
+		return body.RefreshToken
+	}
+	return ""
+}
+
 func (server *Server) setSessionCookies(ctx *gin.Context, accessToken, refreshToken string) {
 	ctx.SetSameSite(server.cookieSameSite())
 	ctx.SetCookie(
@@ -95,21 +110,6 @@ func (server *Server) setSessionCookies(ctx *gin.Context, accessToken, refreshTo
 		server.config.CookieSecure,
 		true,
 	)
-}
-
-func (server *Server) getMe(ctx *gin.Context) {
-	userID, ok := mustCurrentUserID(ctx)
-	if !ok {
-		return
-	}
-
-	user, err := server.authUC.GetMe(ctx, userID)
-	if err != nil {
-		writeError(ctx, err)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, newUserResponse(user))
 }
 
 func (server *Server) clearSessionCookies(ctx *gin.Context) {

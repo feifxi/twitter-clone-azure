@@ -130,12 +130,3 @@ CREATE TABLE direct_messages (
 
 CREATE INDEX idx_direct_messages_conversation_created ON direct_messages(conversation_id, created_at DESC, id DESC);
 
-CREATE TABLE public_room_messages (
-    id BIGSERIAL PRIMARY KEY,
-    room_key VARCHAR(64) NOT NULL,
-    sender_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    content VARCHAR(2000) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_public_room_messages_room_created ON public_room_messages(room_key, created_at DESC, id DESC);

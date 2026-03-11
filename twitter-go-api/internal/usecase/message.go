@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"errors"
-	"regexp"
 	"strings"
 
 	"github.com/chanombude/twitter-go-api/internal/apperr"
@@ -11,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-var roomKeyPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,63}$`)
 
 func normalizeMessageContent(content string) (string, error) {
 	trimmed := strings.TrimSpace(content)
@@ -24,16 +22,6 @@ func normalizeMessageContent(content string) (string, error) {
 	return trimmed, nil
 }
 
-func normalizeRoomKey(roomKey string) (string, error) {
-	normalized := strings.ToLower(strings.TrimSpace(roomKey))
-	if normalized == "" {
-		normalized = "global"
-	}
-	if !roomKeyPattern.MatchString(normalized) {
-		return "", apperr.BadRequest("invalid room key")
-	}
-	return normalized, nil
-}
 
 func (u *MessageUsecase) fetchSender(ctx context.Context, senderID int64) (UserItem, error) {
 	rows, err := u.store.GetUsersByIDs(ctx, db.GetUsersByIDsParams{
@@ -319,96 +307,4 @@ func (u *MessageUsecase) SendMessageToConversation(ctx context.Context, senderID
 	}, participants, nil
 }
 
-func (u *MessageUsecase) ListPublicRoomMessages(ctx context.Context, roomKey string, page, size int32, viewerID *int64) ([]PublicRoomMessageItem, error) {
-	normalizedRoomKey, err := normalizeRoomKey(roomKey)
-	if err != nil {
-		return nil, err
-	}
 
-	rows, err := u.store.ListPublicRoomMessages(ctx, db.ListPublicRoomMessagesParams{
-		RoomKey: normalizedRoomKey,
-		Limit:   size,
-		Offset:  page * size,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(rows) == 0 {
-		return []PublicRoomMessageItem{}, nil
-	}
-
-	ids := make([]int64, 0, len(rows))
-	seen := make(map[int64]struct{}, len(rows))
-	for _, row := range rows {
-		if _, ok := seen[row.SenderID]; ok {
-			continue
-		}
-		seen[row.SenderID] = struct{}{}
-		ids = append(ids, row.SenderID)
-	}
-
-	users, err := u.store.GetUsersByIDs(ctx, db.GetUsersByIDsParams{
-		ViewerID: viewerID,
-		UserIds:  ids,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	userMap := make(map[int64]UserItem, len(users))
-	for _, row := range users {
-		userMap[row.User.ID] = newUserItemFromDB(row.User, row.IsFollowing)
-	}
-
-	items := make([]PublicRoomMessageItem, 0, len(rows))
-	for i := len(rows) - 1; i >= 0; i-- {
-		row := rows[i]
-		sender, ok := userMap[row.SenderID]
-		if !ok {
-			continue
-		}
-
-		items = append(items, PublicRoomMessageItem{
-			ID:        row.ID,
-			RoomKey:   row.RoomKey,
-			Sender:    sender,
-			Content:   row.Content,
-			CreatedAt: row.CreatedAt,
-		})
-	}
-	return items, nil
-}
-
-func (u *MessageUsecase) SendPublicRoomMessage(ctx context.Context, senderID int64, roomKey, content string) (PublicRoomMessageItem, error) {
-	normalizedRoomKey, err := normalizeRoomKey(roomKey)
-	if err != nil {
-		return PublicRoomMessageItem{}, err
-	}
-
-	normalizedContent, err := normalizeMessageContent(content)
-	if err != nil {
-		return PublicRoomMessageItem{}, err
-	}
-
-	created, err := u.store.CreatePublicRoomMessage(ctx, db.CreatePublicRoomMessageParams{
-		RoomKey:  normalizedRoomKey,
-		SenderID: senderID,
-		Content:  normalizedContent,
-	})
-	if err != nil {
-		return PublicRoomMessageItem{}, err
-	}
-
-	sender, err := u.fetchSender(ctx, senderID)
-	if err != nil {
-		return PublicRoomMessageItem{}, err
-	}
-
-	return PublicRoomMessageItem{
-		ID:        created.ID,
-		RoomKey:   created.RoomKey,
-		Sender:    sender,
-		Content:   created.Content,
-		CreatedAt: created.CreatedAt,
-	}, nil
-}

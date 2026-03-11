@@ -27,7 +27,6 @@ type chatWSClient struct {
 type wsEnvelope struct {
 	Type           string                 `json:"type"`
 	ConversationID *int64                 `json:"conversationId,omitempty"`
-	RoomKey        *string                `json:"roomKey,omitempty"`
 	Message        any                    `json:"message,omitempty"`
 	Data           map[string]interface{} `json:"data,omitempty"`
 }
@@ -118,14 +117,11 @@ func (server *Server) registerWSClient(client *chatWSClient) {
 		server.wsClients[client.userID] = make(map[*chatWSClient]struct{})
 	}
 	server.wsClients[client.userID][client] = struct{}{}
-	server.wsPublic[client] = struct{}{}
 }
 
 func (server *Server) unregisterWSClient(client *chatWSClient) {
 	server.wsMu.Lock()
 	defer server.wsMu.Unlock()
-
-	delete(server.wsPublic, client)
 	if userClients, ok := server.wsClients[client.userID]; ok {
 		delete(userClients, client)
 		if len(userClients) == 0 {
@@ -156,28 +152,6 @@ func (server *Server) sendDirectMessageWS(userIDs []int64, message messageRespon
 			}
 		}
 		server.wsMu.RUnlock()
-	}
-}
-
-func (server *Server) sendPublicRoomWS(message publicMessageResponse) {
-	payload, err := json.Marshal(wsEnvelope{
-		Type:    "public.message",
-		RoomKey: &message.RoomKey,
-		Message: message,
-	})
-	if err != nil {
-		log.Error().Err(err).Msg("failed to marshal public-room websocket payload")
-		return
-	}
-
-	server.wsMu.RLock()
-	defer server.wsMu.RUnlock()
-	for client := range server.wsPublic {
-		select {
-		case client.send <- payload:
-		default:
-			log.Warn().Int64("user_id", client.userID).Msg("dropped public-room websocket event due to full client buffer")
-		}
 	}
 }
 
