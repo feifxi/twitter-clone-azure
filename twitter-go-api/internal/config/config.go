@@ -84,15 +84,24 @@ func LoadConfig(path string) (config Config, err error) {
 
 	err = viper.ReadInConfig()
 	if err != nil {
-		// It's ok if app.env doesn't exist, we will use auto env
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return
 		}
+		// In production, we MUST have some config from somewhere
+		if strings.EqualFold(env, "production") && !configLoadedSuccessfully && len(viper.AllKeys()) == 0 {
+			return config, fmt.Errorf("no configuration found: app.env is missing and SSM loading failed")
+		}
+	}
+
+	if configLoadedSuccessfully {
+		fmt.Printf("✅ Metadata: Configuration loaded from AWS SSM (Region: %s, Prefix: %s)\n", os.Getenv("AWS_REGION"), "/chmtwt/prod/")
 	}
 
 	err = viper.Unmarshal(&config)
 	return
 }
+
+var configLoadedSuccessfully bool
 
 func loadFromSSM() {
 	prefix := "/chmtwt/prod/"
@@ -105,7 +114,7 @@ func loadFromSSM() {
 
 	cfg, err := config.LoadDefaultConfig(context.TODO(), opts...)
 	if err != nil {
-		fmt.Printf("Unable to load AWS config for SSM: %v\n", err)
+		fmt.Printf("❌ Error: Unable to initialize AWS SDK: %v (Is AWS_REGION set?)\n", err)
 		return
 	}
 
@@ -115,10 +124,11 @@ func loadFromSSM() {
 		WithDecryption: func() *bool { b := true; return &b }(),
 	})
 
+	parameterCount := 0
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(context.TODO())
 		if err != nil {
-			fmt.Printf("Error fetching SSM parameters: %v\n", err)
+			fmt.Printf("❌ Error: Failed to fetch parameters from SSM at %s: %v\n", prefix, err)
 			return
 		}
 		for _, p := range page.Parameters {
@@ -128,7 +138,14 @@ func loadFromSSM() {
 				val = ""
 			}
 			viper.Set(key, val)
+			parameterCount++
 		}
+	}
+
+	if parameterCount > 0 {
+		configLoadedSuccessfully = true
+	} else {
+		fmt.Printf("⚠️ Warning: No parameters found in SSM path %s\n", prefix)
 	}
 }
 
