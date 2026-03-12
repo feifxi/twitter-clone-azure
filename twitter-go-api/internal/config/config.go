@@ -96,8 +96,13 @@ func LoadConfig(path string) (config Config, err error) {
 
 func loadFromSSM() {
 	prefix := "/chmtwt/prod/"
-	
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+
+	region := os.Getenv("AWS_REGION")
+	if region == "" {
+		region = "ap-southeast-1"
+	}
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
 	if err != nil {
 		fmt.Printf("Unable to load AWS config for SSM: %v\n", err)
 		return
