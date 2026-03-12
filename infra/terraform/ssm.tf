@@ -31,7 +31,7 @@ resource "aws_ssm_parameter" "config" {
 
   name  = each.key
   type  = "SecureString"
-  value = each.value
+  value = each.value == "" ? "N/A" : each.value
 
   tags = { Name = "${var.project_name}-ssm-${replace(each.key, "/", "-")}" }
 }

@@ -8,6 +8,21 @@ output "ec2_public_ip" {
   value       = aws_instance.api.public_ip
 }
 
+output "ec2_instance_id" {
+  description = "EC2 Instance ID (Required for GitHub Secrets and SSH)"
+  value       = aws_instance.api.id
+}
+
+output "eice_id" {
+  description = "EC2 Instance Connect Endpoint ID"
+  value       = aws_ec2_instance_connect_endpoint.this.id
+}
+
+output "ssm_parameter_prefix" {
+  description = "Prefix for all application parameters in SSM"
+  value       = "/chmtwt/prod/"
+}
+
 output "rds_endpoint" {
   description = "RDS connection endpoint (host:port)"
   value       = aws_db_instance.this.endpoint

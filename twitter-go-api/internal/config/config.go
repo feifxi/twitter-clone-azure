@@ -117,7 +117,11 @@ func loadFromSSM() {
 		}
 		for _, p := range page.Parameters {
 			key := strings.TrimPrefix(*p.Name, prefix)
-			viper.Set(key, *p.Value)
+			val := *p.Value
+			if val == "N/A" || val == "none" {
+				val = ""
+			}
+			viper.Set(key, val)
 		}
 	}
 }

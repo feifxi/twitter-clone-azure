@@ -43,6 +43,34 @@ Full-stack Twitter/X clone with a Next.js frontend, Go backend, and AWS infrastr
 brew install go node docker awscli hashicorp/tap/terraform make
 ```
 
+## Local Development
+
+### 1. Start infra (Postgres + Redis)
+
+```bash
+docker-compose up -d
+```
+
+### 2. Run Go API
+
+```bash
+cd twitter-go-api
+# Ensure you have created app.env from app.env.example
+make migrateup
+make run
+```
+
+### 3. Run Next.js Web
+
+```bash
+cd twitter-next-web
+npm install
+npm run dev
+```
+
+Web: `http://localhost:3000`
+API: `http://localhost:8080`
+
 ## AWS Infrastructure
 
 | Service | Purpose |
@@ -91,32 +119,6 @@ To tear down all resources and **stop all AWS charges**:
 terraform destroy
 ```
 
-## Local Development
-
-### 1. Start infra (Postgres + Redis)
-
-```bash
-docker-compose up -d
-```
-
-### 2. Run Go API
-
-```bash
-cd twitter-go-api
-make migrateup
-make run
-```
-
-### 3. Run Next.js Web
-
-```bash
-cd twitter-next-web
-npm install
-npm run dev
-```
-
-Web: `http://localhost:3000`
-API: `http://localhost:8080`
 
 ## Deployment
 
@@ -165,6 +167,14 @@ Connect to the EC2 instance using **EC2 Instance Connect Endpoint** (no `.pem` k
 ```bash
 aws ec2-instance-connect ssh --instance-id <INSTANCE_ID>
 ```
+
+**Alternative (Web Portal):**
+1. Go to **AWS Console** → **EC2** → **Instances**
+2. Select your instance and click **Connect**
+3. Select the **EC2 Instance Connect** tab
+4. **Connection Type**: Select **"Connect using a Private IP"**
+5. **EC2 Instance Connect Endpoint**: Select your endpoint from the dropdown (e.g., `eice-xxxx...`)
+6. Click **Connect** to open a terminal in your browser.
 
 ### Connect to RDS (via SSH tunnel)
 
