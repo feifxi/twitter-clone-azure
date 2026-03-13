@@ -29,6 +29,13 @@ func GinMiddleware() gin.HandlerFunc {
 		start := time.Now()
 		path := ctx.Request.URL.Path
 		raw := ctx.Request.URL.RawQuery
+
+		// Skip internal health and metrics checks to reduce log noise
+		if path == "/metrics" || path == "/healthz" || path == "/readyz" {
+			ctx.Next()
+			return
+		}
+
 		route := ctx.FullPath()
 		if route == "" {
 			route = path
