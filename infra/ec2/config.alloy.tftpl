@@ -1,7 +1,28 @@
 // --- Prometheus Metrics ---
 prometheus.scrape "api" {
-  targets = [{"__address__" = "api:8080"}]
+  targets    = [{"__address__" = "api:8080"}]
+  forward_to = [prometheus.relabel.api.receiver]
+}
+
+prometheus.relabel "api" {
   forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+  rule {
+    target_label = "job"
+    replacement  = "twitter-api"
+  }
+}
+
+prometheus.scrape "node_exporter" {
+  targets    = [{"__address__" = "node-exporter:9100"}]
+  forward_to = [prometheus.relabel.node_exporter.receiver]
+}
+
+prometheus.relabel "node_exporter" {
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+  rule {
+    target_label = "job"
+    replacement  = "node-exporter"
+  }
 }
 
 prometheus.remote_write "grafana_cloud" {

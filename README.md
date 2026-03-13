@@ -1,6 +1,6 @@
 # Twitter Clone
 
-Full-stack Twitter/X clone with a Next.js frontend, Go backend, and AWS infrastructure managed by Terraform.
+Full-stack Twitter/X clone with a Next.js frontend, Go backend, and production-ready AWS infrastructure managed by Terraform—featuring a complete observability stack with Grafana Cloud, Prometheus, and Loki.
 
 ## Features
 
@@ -15,10 +15,6 @@ Full-stack Twitter/X clone with a Next.js frontend, Go backend, and AWS infrastr
 - **Trending & Discovery** — Trending hashtags and suggested users
 - **Observability** — Real-time metrics (Prometheus) and log aggregation (Loki) via Grafana Cloud
 
-## Architecture
-
-![AWS Architecture](docs/assets/Chanom_Twitter_AWS_Architecture.jpg)
-
 ## Tech Stack
 
 | Layer | Technologies |
@@ -26,7 +22,17 @@ Full-stack Twitter/X clone with a Next.js frontend, Go backend, and AWS infrastr
 | Frontend | Next.js (App Router), TypeScript, Tailwind CSS, TanStack Query, Zustand |
 | Backend | Go, Gin, PostgreSQL + sqlc, Redis |
 | Infrastructure | AWS (Amplify, API Gateway, EC2, RDS, S3, CloudFront), Terraform, GitHub Actions |
-| Observability | Prometheus, Grafana, Loki (Grafana Cloud) |
+| Observability | **Grafana Cloud** (Loki, Prometheus), **Grafana Alloy**, **Node Exporter** |
+
+## Architecture
+
+![AWS Architecture](docs/assets/Chanom_Twitter_AWS_Architecture.jpg)
+
+## Observability
+
+We use **Grafana Cloud** for a "Single Pane of Glass" monitoring experience. The EC2 instance runs **Grafana Alloy** alongside **Node Exporter** to provide a unified view of hardware health, Go application performance, and real-time logs.
+
+![Grafana Dashboard](docs/assets/grafana-dashboard.png)
 
 ## Prerequisites
 
@@ -138,8 +144,9 @@ npm run lint
 | **S3** | Media storage with presigned-URL uploads |
 | **CloudFront** | CDN for serving S3 media over HTTPS |
 | **SSM Parameter Store** | Securely manages, stores, and injects runtime configuration into the Go API |
-| **Grafana Alloy** | Efficient agent on EC2 for scraping metrics and forwarding logs to Grafana Cloud |
-| **Terraform** | Infrastructure as Code for all resources |
+| **Grafana Alloy** | Efficient agent on EC2 for scraping Go metrics and forwarding Docker logs to Loki |
+| **Node Exporter** | Sidecar container providing system-level metrics (CPU, Memory, Disk) for the EC2 host |
+| **Terraform** | Infrastructure as Code for all resources (using `.tftpl` templates for configuration) |
 | **GitHub Actions** | CI/CD pipeline pulling from GHCR and deploying via SSM Run Command |
 
 ## AWS Setup
@@ -295,8 +302,8 @@ This forwards your local port `5433` to RDS port `5432` through the EC2 instance
 ├── twitter-java-api/    # Java backend (legacy/alternative)
 ├── infra/
 │   ├── terraform/       # AWS infrastructure (Terraform)
-│   └── ec2/             # EC2 setup scripts, docker-compose, and Alloy config
+│   └── ec2/             # Docker Compose templates (.tftpl) & Alloy configuration
 ├── docs/
-│   └── assets/          # Architecture diagrams
-└── .github/workflows/   # CI/CD pipelines
+│   └── assets/          # Architecture diagrams & Monitoring screenshots
+└── .github/workflows/   # CI/CD pipelines (GitHub Actions)
 ```
