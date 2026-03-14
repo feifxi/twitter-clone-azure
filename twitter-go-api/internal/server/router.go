@@ -1,6 +1,7 @@
 package server
 
 import (
+	"net/http"
 	"reflect"
 	"strings"
 	"time"
@@ -18,10 +19,31 @@ func (server *Server) setupRouter() {
 	configureValidationFieldNames()
 
 	router := gin.New()
+	
+	// Trusted proxies are critical when behind a load balancer (API Gateway/EICE)
+	// We trust private IP ranges typically used in AWS VPCs
+	router.SetTrustedProxies([]string{
+		"10.0.0.0/8",     // Private IPv4 Class A
+		"172.16.0.0/12",  // Private IPv4 Class B
+		"192.168.0.0/16", // Private IPv4 Class C
+	})
+
 	router.Use(middleware.Metrics())
 	router.Use(middleware.RequestID())
 	router.Use(logger.GinMiddleware())
 	router.Use(gin.Recovery())
+
+	// Handle unmatched routes (silence bot scans and apply strict rate limiting)
+	router.NoRoute(
+		middleware.RateLimiterWithRedis(server.redis, 1, 5, "rl:noroute"), // Strict: 1 req/sec, burst of 5
+		func(c *gin.Context) {
+			// Set flag to skip logging this request in logger.GinMiddleware
+			c.Set("skip_log", true)
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+				"error": "route not found",
+			})
+		},
+	)
 
 	// Standard security headers.
 	router.Use(func(c *gin.Context) {

@@ -44,6 +44,11 @@ func GinMiddleware() gin.HandlerFunc {
 
 		ctx.Next()
 
+		// Skip logging if a middleware (like NoRoute) has flagged it
+		if skip, _ := ctx.Get("skip_log"); skip == true {
+			return
+		}
+
 		if raw != "" {
 			path = path + "?" + raw
 		}
