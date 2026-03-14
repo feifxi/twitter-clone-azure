@@ -7,10 +7,8 @@ import { Check } from 'lucide-react';
 export default function PremiumPage() {
   const features = [
     'เป็นที่รักของแก๊ง call center',
-    'โพสต์ยาวได้ แต่ไม่มีใครเห็นโพสต์',
-    'ได้ blue check "this mf paid for Twitter"',
-    'เพื่อนไม่คบ',
-    'พ่อแม่ย้ายร่าง',
+    'โพสต์ไปก็ไม่มีใครอ่าน',
+    'เพื่อนไม่รัก',
     'อย่ากดถ้าไม่อยากโดนย่ำกระหม่อม',
   ];
 

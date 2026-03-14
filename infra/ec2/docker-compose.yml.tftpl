@@ -1,7 +1,7 @@
 services:
   # Node Exporter for System Metrics (CPU, Memory, Disk)
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:v1.10.2
     container_name: node-exporter
     restart: unless-stopped
     volumes:
@@ -32,7 +32,7 @@ services:
 %{~ if ENABLE_MONITORING ~}
   # Grafana Alloy (Monitoring Agent)
   alloy:
-    image: grafana/alloy:latest
+    image: grafana/alloy:v1.14.0
     container_name: grafana-alloy
     user: root
     volumes:
