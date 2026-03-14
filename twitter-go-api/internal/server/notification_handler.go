@@ -111,7 +111,7 @@ func (server *Server) streamNotifications(ctx *gin.Context) {
 		log.Info().Int64("user_id", userID).Int("connections", len(server.sseClients[userID])).Msg("SSE client disconnected")
 	}()
 
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 
 	for {

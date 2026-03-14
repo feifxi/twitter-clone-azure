@@ -52,9 +52,10 @@ resource "aws_amplify_app" "this" {
   # Environment variables for the frontend
   # Using the API Gateway URL for the backend communication
   environment_variables = {
-    AMPLIFY_MONOREPO_APP_ROOT = "twitter-next-web"
-    NEXT_PUBLIC_API_URL       = "${aws_apigatewayv2_stage.default.invoke_url}api/v1"
-    NEXT_TELEMETRY_DISABLED   = "1"
+    AMPLIFY_MONOREPO_APP_ROOT    = "twitter-next-web"
+    NEXT_PUBLIC_API_URL          = "${aws_apigatewayv2_stage.default.invoke_url}api/v1"
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID = var.google_client_id
+    NEXT_TELEMETRY_DISABLED      = "1"
   }
 
   platform = "WEB_COMPUTE"

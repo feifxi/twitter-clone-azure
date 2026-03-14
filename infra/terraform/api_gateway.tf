@@ -5,6 +5,13 @@ resource "aws_apigatewayv2_api" "this" {
   protocol_type = "HTTP"
 
   tags = { Name = "${var.project_name}-api-gateway" }
+  
+  cors_configuration {
+    allow_origins = ["*"]
+    allow_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+    allow_headers = ["Origin", "Content-Type", "Accept", "Authorization", "X-Gateway-Secret"]
+    max_age       = 3600
+  }
 }
 
 # ── Integration (HTTP proxy to EC2) ──────────────────
