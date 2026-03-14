@@ -17,8 +17,9 @@ export function ComposeTweetModal({ isOpen, onClose }: ComposeTweetModalProps) {
         <DialogDescription className="sr-only">Write and post a new tweet</DialogDescription>
         <div className="flex items-center h-[53px] px-4 shrink-0">
           <button
-             onClick={onClose}
-             className="p-2 rounded-full hover:bg-card transition-colors -ml-2"
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-card transition-colors -ml-2"
           >
              <X size={20} className="text-foreground cursor-pointer" />
           </button>

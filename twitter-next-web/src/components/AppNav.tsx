@@ -59,6 +59,7 @@ export function AppNav({ unreadCount = 0 }: AppNavProps) {
              return (
                 <button
                 key={item.label}
+                type="button"
                 onClick={item.onClick}
                 className="group flex items-center w-fit xl:w-full"
                 >
@@ -90,7 +91,7 @@ export function AppNav({ unreadCount = 0 }: AppNavProps) {
              return (
                  <DropdownMenu key={item.label}>
                     <DropdownMenuTrigger asChild>
-                        <button className="group flex items-center w-fit xl:w-full outline-none cursor-pointer">
+                        <button type="button" className="group flex items-center w-fit xl:w-full outline-none cursor-pointer">
                             <div className={`flex items-center xl:gap-5 px-3 py-3 rounded-full transition-colors group-hover:bg-accent/50 ${isActive ? 'font-bold' : 'font-normal'}`}>
                                 <item.icon className={`w-7 h-7 ${isActive ? 'fill-current' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
                                 <div className="relative hidden xl:block cursor-pointer">
@@ -99,7 +100,7 @@ export function AppNav({ unreadCount = 0 }: AppNavProps) {
                             </div>
                         </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-[200px] rounded-xl border border-border shadow-[0_0_15px_rgba(255,255,255,0.1)] py-2 bg-background font-bold ml-10 xl:ml-0" align="start" side="top">
+                    <DropdownMenuContent className="w-[200px] rounded-xl border border-border shadow-lg py-2 bg-background font-bold ml-10 xl:ml-0" align="start" side="top">
                         <DropdownMenuItem asChild className="p-3 text-[15px] cursor-pointer focus:bg-accent">
                             <Link href="/premium" className="flex items-center gap-4">
                                 <XLogo className="w-5 h-5 fill-current" />
@@ -112,6 +113,7 @@ export function AppNav({ unreadCount = 0 }: AppNavProps) {
                                 <span>Brainrot</span>
                             </Link>
                         </DropdownMenuItem>
+                        <ThemeToggle variant="menu-item" />
                     </DropdownMenuContent>
                  </DropdownMenu>
              )
@@ -171,9 +173,8 @@ export function AppNav({ unreadCount = 0 }: AppNavProps) {
         <ComposeTweetModal isOpen={showCompose} onClose={() => setShowCompose(false)} />
       </div>
 
-      {/* User Profile / Logout / Theme Toggle */}
+      {/* User Profile / Logout */}
       <div className="flex flex-col items-center xl:items-start w-full gap-2">
-        <ThemeToggle className="mb-2" />
         {isLoggedIn && user ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -199,7 +200,7 @@ export function AppNav({ unreadCount = 0 }: AppNavProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-[300px] mb-2 rounded-xl border border-border shadow-[0_0_15px_rgba(255,255,255,0.1)] py-2 bg-background font-bold"
+            className="w-[300px] mb-2 rounded-xl border border-border shadow-lg py-2 bg-background font-bold"
             side="top"
             align="center"
           >

@@ -105,6 +105,7 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
         <div className="flex items-center justify-between h-[53px] px-4 shrink-0 border-b border-border">
             <div className="flex items-center gap-4">
                 <button
+                    type="button"
                     onClick={handleClose}
                     className="p-2 rounded-full hover:bg-card transition-colors -ml-2"
                 >
@@ -151,10 +152,13 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
                 <div className="border border-border rounded-md px-3 py-1.5 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-colors relative">
                     <div className="flex justify-between items-center mb-0.5">
                         <label className="block text-muted-foreground text-[13px]">Name</label>
-                        <span className="text-muted-foreground text-[13px]">{displayName.length} / 30</span>
+                        <span className={`text-[13px] ${displayName.length >= 30 ? 'text-red-500' : 'text-muted-foreground'}`}>
+                            {displayName.length} / 30
+                        </span>
                     </div>
                     <input 
                         {...register('displayName')}
+                        maxLength={30}
                         className="w-full bg-transparent text-foreground text-[17px] outline-none"
                     />
                 </div>
@@ -163,10 +167,13 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
                 <div className="border border-border rounded-md px-3 py-1.5 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-colors relative">
                     <div className="flex justify-between items-center mb-0.5">
                         <label className="block text-muted-foreground text-[13px]">Bio</label>
-                        <span className="text-muted-foreground text-[13px]">{bio.length} / 160</span>
+                        <span className={`text-[13px] ${bio.length >= 160 ? 'text-red-500' : 'text-muted-foreground'}`}>
+                            {bio.length} / 160
+                        </span>
                     </div>
                     <textarea 
                         {...register('bio')}
+                        maxLength={160}
                         className="w-full bg-transparent text-foreground text-[17px] outline-none resize-none h-[80px]"
                     />
                 </div>

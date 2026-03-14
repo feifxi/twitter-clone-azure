@@ -159,6 +159,7 @@ export function CreateTweet({
               className="rounded-2xl max-h-[300px] object-cover border border-border"
             />
             <button
+              type="button"
               onClick={clearMedia}
               className="absolute top-1 right-1 bg-black/75 rounded-full p-1 hover:bg-black/50 transition-colors"
             >
@@ -170,6 +171,7 @@ export function CreateTweet({
         <div className="flex items-center justify-between mt-2 border-t border-border pt-3">
           <div className="flex items-center gap-2 text-primary">
             <button
+              type="button"
               onClick={() => fileInputRef.current?.click()}
               className="p-2 hover:bg-primary/10 rounded-full transition-colors"
               title="Media"
@@ -193,7 +195,7 @@ export function CreateTweet({
             <Button
               type="submit"
               disabled={(!content.trim() && !media) || createMutation.isPending || !isValid}
-              className="rounded-full bg-primary hover:bg-primary/90 font-bold text-foreground px-4 py-1.5 h-auto text-[15px] cursor-pointer"
+              className="rounded-full bg-primary hover:bg-primary/90 font-bold text-primary-foreground px-4 py-1.5 h-auto text-[15px] cursor-pointer"
             >
               {createMutation.isPending ? 'Posting...' : isReply ? 'Reply' : 'Post'}
             </Button>

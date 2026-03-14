@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from '@/components/ui/input';
 import { X } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { useUIStore } from '@/store/useUIStore';
 
@@ -26,7 +27,7 @@ export function SignUpModal() {
   };
 
   const handleNext = () => {
-    alert('สมัครไม่ได้หรอกโว้ย บังคับ Google login เท่านั้น 5555');
+    toast.info('Registration is coming soon! Please use Google Login for now.');
   }
 
   const handleSignInClick = () => {

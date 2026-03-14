@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { XLogo } from '../XLogo';
 import GoogleLoginBtn from '../GoogleLoginBtn';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -25,11 +26,11 @@ export function SignInModal() {
   };
 
   const handleNext = () => {
-    alert('สมัครไม่ได้หรอกโว้ย บังคับ Google login เท่านั้น 5555');
+    toast.info('This feature is coming soon! Please use Google Login for now.');
   }
 
   const handleForgot = () => {
-    alert('ลืมรหัสผ่านหรอ ว้ายแย่จุง 5555');
+    toast.info('Forgot password? Please use Google Login for now.');
   }
 
   const handleSignUpClick = () => {

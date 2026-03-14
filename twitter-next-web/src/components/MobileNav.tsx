@@ -16,6 +16,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+import { ThemeToggle } from '@/components/ThemeToggle';
+
 type MobileNavProps = {
   unreadCount?: number;
 };
@@ -60,6 +62,7 @@ export function MobileNav({ unreadCount = 0 }: MobileNavProps) {
             return (
               <button
                 key={item.label}
+                type="button"
                 onClick={item.onClick}
                 className="p-2 relative flex items-center justify-center cursor-pointer"
               >
@@ -89,7 +92,7 @@ export function MobileNav({ unreadCount = 0 }: MobileNavProps) {
         {isLoggedIn && user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-2 relative flex items-center justify-center cursor-pointer outline-none">
+              <button type="button" className="p-2 relative flex items-center justify-center cursor-pointer outline-none">
                 <Avatar className="w-6 h-6 border border-border/50">
                   <AvatarImage src={user.avatarUrl ?? undefined} alt={user.displayName || user.username} />
                   <AvatarFallback className="text-[10px]">{(user.displayName || user.username)[0]}</AvatarFallback>
@@ -106,6 +109,7 @@ export function MobileNav({ unreadCount = 0 }: MobileNavProps) {
               <DropdownMenuItem asChild className="p-3 text-[15px] cursor-pointer">
                 <Link href="/brainrot">Brainrot</Link>
               </DropdownMenuItem>
+              <ThemeToggle variant="menu-item" />
               <DropdownMenuItem 
                 className="p-3 text-[15px] cursor-pointer"
                 onClick={() => { logout(); openSignInModal(); }}
@@ -121,7 +125,7 @@ export function MobileNav({ unreadCount = 0 }: MobileNavProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <button className="p-2 relative flex items-center justify-center cursor-pointer" onClick={openSignInModal}>
+          <button type="button" className="p-2 relative flex items-center justify-center cursor-pointer" onClick={openSignInModal}>
             <LogIn className="w-6 h-6 text-muted-foreground" strokeWidth={2} />
           </button>
         )}

@@ -142,48 +142,99 @@ export function useDeleteTweet() {
       await axiosInstance.delete(`/tweets/${tweetId}`);
     },
     onMutate: async (tweetId) => {
-      // Cancel any outgoing refetches so they don't overwrite our optimistic update
+      // 1. Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['feeds'] });
-      await queryClient.cancelQueries({ queryKey: ['tweets', tweetId] });
+      await queryClient.cancelQueries({ queryKey: ['tweets'] });
 
-      // Helper to remove tweet from a feed
-      const removeTweetFromFeed = (feedKey: QueryKey) => {
-        const previousData = queryClient.getQueryData<InfiniteData<PageResponse<TweetResponse>>>(feedKey);
-
-        if (previousData) {
-          queryClient.setQueryData<InfiniteData<PageResponse<TweetResponse>>>(feedKey, (old) => {
-            if (!old) return old;
-            return {
-              ...old,
-              pages: old.pages.map((page) => ({
-                ...page,
-                items: page.items.filter((t) => t.id !== tweetId),
-              })),
-            };
-          });
-        }
-        return previousData;
+      // 2. Snapshot current data for rollback
+      const snapshot: [QueryKey, any][] = [];
+      
+      // Helper to capture and update infinite data
+      const updateInfiniteFeeds = () => {
+        const queries = queryClient.getQueriesData<InfiniteData<PageResponse<TweetResponse>>>({ queryKey: ['feeds'] });
+        queries.forEach(([queryKey, oldData]) => {
+          if (oldData) {
+            snapshot.push([queryKey, oldData]);
+            queryClient.setQueryData(queryKey, (old: any) => {
+                if (!old) return old;
+                return {
+                  ...old,
+                  pages: old.pages.map((page: any) => ({
+                    ...page,
+                    items: page.items.filter((t: any) => t.id !== tweetId),
+                  })),
+                };
+            });
+          }
+        });
       };
 
-      const previousGlobal = removeTweetFromFeed(feedQueryKey('global'));
-      const previousFollowing = removeTweetFromFeed(feedQueryKey('following'));
+      // Helper to capture and update replies lists
+      const updateRepliesLists = () => {
+        // Find all reply queries: ['tweets', number, 'replies']
+        const queries = queryClient.getQueriesData<InfiniteData<PageResponse<TweetResponse>>>({ 
+            predicate: (query) => query.queryKey[0] === 'tweets' && query.queryKey[2] === 'replies'
+        });
+        
+        queries.forEach(([queryKey, oldData]) => {
+            if (oldData) {
+              snapshot.push([queryKey, oldData]);
+              queryClient.setQueryData(queryKey, (old: any) => {
+                  if (!old) return old;
+                  return {
+                    ...old,
+                    pages: old.pages.map((page: any) => ({
+                      ...page,
+                      items: page.items.filter((t: any) => t.id !== tweetId),
+                    })),
+                  };
+              });
+            }
+        });
+      };
 
-      return { previousGlobal, previousFollowing };
+      // 3. Perform manual updates
+      updateInfiniteFeeds();
+      updateRepliesLists();
+
+      // 4. Handle parent reply counter decrement
+      // We need to find the tweet in cache to see if it has a parentId
+      const allTweets = queryClient.getQueriesData<TweetResponse>({ queryKey: ['tweets'] });
+      let parentId: number | null = null;
+      
+      for (const [key, tweet] of allTweets) {
+          if (tweet?.id === tweetId) {
+              parentId = tweet.replyToTweetId ?? null;
+              break;
+          }
+      }
+
+      if (parentId) {
+          const parentKey = tweetQueryKey(parentId);
+          const oldParent = queryClient.getQueryData<TweetResponse>(parentKey);
+          if (oldParent) {
+              snapshot.push([parentKey, oldParent]);
+              queryClient.setQueryData<TweetResponse>(parentKey, {
+                  ...oldParent,
+                  replyCount: Math.max(0, oldParent.replyCount - 1)
+              });
+          }
+      }
+
+      return { snapshot };
     },
     onError: (_err, _tweetId, context) => {
-      if (context?.previousGlobal) {
-        queryClient.setQueryData(feedQueryKey('global'), context.previousGlobal);
-      }
-      if (context?.previousFollowing) {
-        queryClient.setQueryData(feedQueryKey('following'), context.previousFollowing);
+      // Rollback
+      if (context?.snapshot) {
+          context.snapshot.forEach(([key, val]) => {
+              queryClient.setQueryData(key, val);
+          });
       }
       toast.error('Failed to delete tweet');
     },
     onSuccess: () => {
       toast.success('Tweet deleted');
-      // Invalidate to ensure consistency, though optimistic update handles immediate UI
-      queryClient.invalidateQueries({ queryKey: ['feeds'] });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      // No global refetch needed! Optimistic update handles it.
     },
   });
 }

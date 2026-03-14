@@ -5,8 +5,9 @@ export const light = {
     foreground: "#14171A",
     card: "#FFFFFF",
     cardForeground: "#14171A",
-    border: "#E5E7EB",
-    // add more tokens as needed
+    border: "#E1E8ED",
+    secondary: "#F5F8FA",
+    muted: "#657786",
 };
 
 export const dark = {

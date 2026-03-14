@@ -46,8 +46,8 @@ export function FollowButton({ userId, isFollowing }: FollowButtonProps) {
       onClick={handleFollow}
       className={`rounded-full font-bold h-8 px-4 transition-colors cursor-pointer ${
         following
-          ? 'hover:border-destructive hover:text-destructive hover:bg-destructive/10 border-border text-foreground'
-          : 'bg-foreground text-background hover:bg-foreground/90'
+          ? 'hover:text-destructive hover:bg-destructive/10 border-border text-foreground hover:border-destructive/30'
+          : 'bg-primary text-primary-foreground hover:bg-primary/90'
       }`}
     >
       {following ? 'Following' : 'Follow'}
