@@ -53,6 +53,7 @@ type Querier interface {
 	ListHashtagUsageToDecrementForDeleteRoot(ctx context.Context, id int64) ([]ListHashtagUsageToDecrementForDeleteRootRow, error)
 	ListMediaUrlsInThread(ctx context.Context, id int64) ([]*string, error)
 	ListNotifications(ctx context.Context, arg ListNotificationsParams) ([]Notification, error)
+	ListRelatedTweetsByEmbedding(ctx context.Context, arg ListRelatedTweetsByEmbeddingParams) ([]ListRelatedTweetsByEmbeddingRow, error)
 	ListSuggestedUsers(ctx context.Context, arg ListSuggestedUsersParams) ([]ListSuggestedUsersRow, error)
 	ListTopUsers(ctx context.Context, arg ListTopUsersParams) ([]User, error)
 	ListTweetReplies(ctx context.Context, arg ListTweetRepliesParams) ([]ListTweetRepliesRow, error)

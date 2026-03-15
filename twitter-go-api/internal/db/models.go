@@ -6,6 +6,9 @@ package db
 
 import (
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/pgvector/pgvector-go"
 )
 
 type Conversation struct {
@@ -74,6 +77,14 @@ type Tweet struct {
 	CreatedAt    time.Time   `json:"created_at"`
 	UpdatedAt    time.Time   `json:"updated_at"`
 	SearchVector interface{} `json:"search_vector"`
+}
+
+type TweetEmbedding struct {
+	ID        pgtype.UUID        `json:"id"`
+	TweetID   int64              `json:"tweet_id"`
+	Content   string             `json:"content"`
+	Embedding *pgvector.Vector   `json:"embedding"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
 type TweetHashtag struct {

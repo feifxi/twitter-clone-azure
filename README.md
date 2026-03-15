@@ -324,5 +324,6 @@ This forwards your local port `5433` to RDS port `5432` through the EC2 instance
 │   └── ec2/             # Docker Compose templates (.tftpl) & Alloy configuration
 ├── docs/
 │   └── assets/          # Architecture diagrams & Monitoring screenshots
-└── .github/workflows/   # CI/CD pipelines (GitHub Actions)
+├──.github/workflows/   # CI/CD pipelines (GitHub Actions)
+└── docker-compose.yml   # Local development (Postgres & Redis)
 ```

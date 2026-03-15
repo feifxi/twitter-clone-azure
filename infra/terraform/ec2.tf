@@ -57,7 +57,24 @@ resource "aws_iam_instance_profile" "ec2" {
   role = aws_iam_role.ec2.name
 }
 
+# ── IAM for Go API (Producer) ───────────────────────
+
+resource "aws_iam_role_policy" "ec2_sqs" {
+  name = "${var.project_name}-ec2-sqs-policy"
+  role = aws_iam_role.ec2.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = "sqs:SendMessage"
+      Resource = aws_sqs_queue.tweet_embedding.arn
+    }]
+  })
+}
+
 # ── EC2 Instance ────────────────────────────────────
+
 
 resource "aws_instance" "api" {
   ami                    = data.aws_ami.amazon_linux.id

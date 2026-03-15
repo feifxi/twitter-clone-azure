@@ -7,6 +7,7 @@ import (
 	"github.com/chanombude/twitter-go-api/internal/db"
 	"github.com/chanombude/twitter-go-api/internal/service"
 	"github.com/chanombude/twitter-go-api/internal/token"
+	"io"
 )
 
 type AuthService interface {
@@ -66,6 +67,20 @@ type MessageService interface {
 	SendMessageToUser(ctx context.Context, senderID, recipientID int64, content string) (MessageItem, []int64, error)
 	SendMessageToConversation(ctx context.Context, senderID, conversationID int64, content string) (MessageItem, []int64, error)
 }
+ 
+type AssistantService interface {
+	Chat(ctx context.Context, input AssistantInput) (io.Reader, error)
+}
+ 
+type AssistantInput struct {
+	Query   string            `json:"query" binding:"required"`
+	History []AssistantHistoryItem `json:"history"`
+}
+ 
+type AssistantHistoryItem struct {
+	Role string `json:"role"` // "user" or "model" (for Gemini)
+	Text string `json:"text"`
+}
 
 type AuthUsecase struct {
 	config     config.Config
@@ -80,8 +95,10 @@ type UserUsecase struct {
 }
 
 type TweetUsecase struct {
+	config              config.Config
 	store               db.Store
 	storage             service.StorageService
+	embeddingPublisher  service.EmbeddingPublisher
 	publishNotification func(db.Notification)
 }
 
@@ -104,6 +121,11 @@ type NotificationUsecase struct {
 type MessageUsecase struct {
 	store db.Store
 }
+ 
+type AssistantUsecase struct {
+	config config.Config
+	store  db.Store
+}
 
 var (
 	_ AuthService         = (*AuthUsecase)(nil)
@@ -114,6 +136,7 @@ var (
 	_ DiscoveryService    = (*DiscoveryUsecase)(nil)
 	_ NotificationService = (*NotificationUsecase)(nil)
 	_ MessageService      = (*MessageUsecase)(nil)
+	_ AssistantService = (*AssistantUsecase)(nil)
 )
 
 func NewAuthUsecase(cfg config.Config, store db.Store, tokenMaker token.Maker) *AuthUsecase {
@@ -132,10 +155,12 @@ func NewUserUsecase(store db.Store, storage service.StorageService, publishNotif
 	}
 }
 
-func NewTweetUsecase(store db.Store, storage service.StorageService, publishNotification func(db.Notification)) *TweetUsecase {
+func NewTweetUsecase(cfg config.Config, store db.Store, storage service.StorageService, embeddingPublisher service.EmbeddingPublisher, publishNotification func(db.Notification)) *TweetUsecase {
 	return &TweetUsecase{
+		config:              cfg,
 		store:               store,
 		storage:             storage,
+		embeddingPublisher:  embeddingPublisher,
 		publishNotification: publishNotification,
 	}
 }
@@ -158,4 +183,11 @@ func NewNotificationUsecase(store db.Store) *NotificationUsecase {
 
 func NewMessageUsecase(store db.Store) *MessageUsecase {
 	return &MessageUsecase{store: store}
+}
+ 
+func NewAssistantUsecase(cfg config.Config, store db.Store) *AssistantUsecase {
+	return &AssistantUsecase{
+		config: cfg,
+		store:  store,
+	}
 }

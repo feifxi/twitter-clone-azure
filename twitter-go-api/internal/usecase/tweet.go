@@ -98,6 +98,16 @@ func (u *TweetUsecase) CreateTweet(ctx context.Context, input CreateTweetInput) 
 		return TweetItem{}, err
 	}
 
+	// Publish to SQS for embeddings async without blocking response
+	if u.config.EnableRAG && content != nil && *content != "" {
+		// Use a detached context because the request context might be cancelled after response
+		go func(tweetID int64, text string) {
+			bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			_ = u.embeddingPublisher.PublishEmbeddingEvent(bgCtx, tweetID, text)
+		}(createdTweet.ID, *content)
+	}
+
 	return u.GetTweet(ctx, createdTweet.ID, &input.UserID)
 }
 

@@ -31,6 +31,7 @@ type Server struct {
 	discoveryUC usecase.DiscoveryService
 	notifyUC    usecase.NotificationService
 	messageUC   usecase.MessageService
+	assistantUC usecase.AssistantService
 	router      *gin.Engine
 	redis       *redis.Client
 	sseClients  map[int64][]*sseClient
@@ -55,6 +56,11 @@ func NewServer(config config.Config, store db.Store, redisClient *redis.Client) 
 		return nil, fmt.Errorf("cannot create storage service: %w", err)
 	}
 
+	embeddingPublisher, err := service.NewSQSEmbeddingPublisher(config)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create sqs embedding publisher: %w", err)
+	}
+
 	server := &Server{
 		config:     config,
 		store:      store,
@@ -67,12 +73,13 @@ func NewServer(config config.Config, store db.Store, redisClient *redis.Client) 
 	}
 	server.authUC = usecase.NewAuthUsecase(config, store, tokenMaker)
 	server.userUC = usecase.NewUserUsecase(store, storageService, server.publishNotification)
-	server.tweetUC = usecase.NewTweetUsecase(store, storageService, server.publishNotification)
+	server.tweetUC = usecase.NewTweetUsecase(config, store, storageService, embeddingPublisher, server.publishNotification)
 	server.feedUC = usecase.NewFeedUsecase(store)
 	server.searchUC = usecase.NewSearchUsecase(store)
 	server.discoveryUC = usecase.NewDiscoveryUsecase(store)
 	server.notifyUC = usecase.NewNotificationUsecase(store)
 	server.messageUC = usecase.NewMessageUsecase(store)
+	server.assistantUC = usecase.NewAssistantUsecase(config, store)
 
 	server.setupRouter()
 

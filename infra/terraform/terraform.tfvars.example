@@ -19,6 +19,12 @@ token_symmetric_key = "CHANGE_ME_TO_A_STRONG_32_PLUS_CHAR_SECRET"
 # Google OAuth Web client ID for social login
 google_client_id = "YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com"
 
+# Google Gemini API Key for RAG features
+gemini_api_key = "YOUR_GEMINI_API_KEY"
+
+# Enable/Disable RAG (Timeline Context)
+enable_rag = true
+
 # ── Frontend & CORS ──────────────────────────────────
 # Local frontend URL for development (e.g. http://localhost:3000)
 # This allows your local browser to upload directly to S3.

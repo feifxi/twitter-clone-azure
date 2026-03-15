@@ -35,6 +35,9 @@ type Config struct {
 	GatewaySecret            string `mapstructure:"GATEWAY_SECRET"`
 	RedisAddress             string `mapstructure:"REDIS_ADDRESS"`
 	RedisPassword            string `mapstructure:"REDIS_PASSWORD"`
+	SQSEmbeddingQueueURL     string `mapstructure:"SQS_EMBEDDING_QUEUE_URL"`
+	GeminiAPIKey             string `mapstructure:"GEMINI_API_KEY"`
+	EnableRAG                bool   `mapstructure:"ENABLE_RAG"`
 }
 
 func LoadConfig(path string) (config Config, err error) {
@@ -54,6 +57,7 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.SetDefault("MAX_BANNER_BYTES", int64(10<<20))  // 10 MiB
 	// Explicitly bind environment variables so viper.Unmarshal detects them
 	// without needing a physical app.env file (which is excluded in CI/CD).
+	viper.SetDefault("ENABLE_RAG", true)
 	viper.BindEnv("ENVIRONMENT")
 	viper.BindEnv("DATABASE_URL")
 	viper.BindEnv("HTTP_SERVER_ADDRESS")
@@ -77,6 +81,9 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.BindEnv("GATEWAY_SECRET")
 	viper.BindEnv("REDIS_ADDRESS")
 	viper.BindEnv("REDIS_PASSWORD")
+	viper.BindEnv("SQS_EMBEDDING_QUEUE_URL")
+	viper.BindEnv("GEMINI_API_KEY")
+	viper.BindEnv("ENABLE_RAG")
 
 	viper.AutomaticEnv()
 

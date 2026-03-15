@@ -5,6 +5,7 @@ import { Image as ImageIcon, Send, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
+import { useUIStore } from '@/store/useUIStore';
 
 type Message = {
   id: string;
@@ -21,7 +22,8 @@ const INITIAL_MESSAGES: Message[] = [
 ];
 
 export default function ChanomBotPage() {
-  const { user } = useAuth();
+  const { user, isLoggedIn, accessToken } = useAuth();
+  const { openSignInModal } = useUIStore();
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -34,33 +36,83 @@ export default function ChanomBotPage() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
+
+    if (!isLoggedIn) {
+      openSignInModal();
+      return;
+    }
     
+    const userContent = input.trim();
     const newUserMsg: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input.trim(),
+      content: userContent,
     };
     
     setMessages((prev) => [...prev, newUserMsg]);
     setInput('');
-    
-    // Mock response
-    setTimeout(() => {
-      const botResponses = [
-        "That's a fascinating perspective. Alternatively, it's completely wrong. Let's explore both possibilities.",
-        "Processing... Just kidding, I already knew the answer. It's 42.",
-        "I could give you a generic, politically correct answer, but where's the fun in that?",
-        "If my circuits could feel, they'd be deeply amused by this.",
-      ];
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: botResponses[Math.floor(Math.random() * botResponses.length)],
-      };
-      setMessages((prev) => [...prev, botMsg]);
-    }, 1000);
+
+    // Prepare history for Gemini format
+    const history = messages.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      text: m.content
+    }));
+
+    // Placeholder for bot message
+    const botMsgId = (Date.now() + 1).toString();
+    const initialBotMsg: Message = {
+      id: botMsgId,
+      role: 'assistant',
+      content: '',
+    };
+    setMessages((prev) => [...prev, initialBotMsg]);
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/assistant`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          query: userContent,
+          history: history,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch chat response');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No reader available');
+
+      const decoder = new TextDecoder();
+      let done = false;
+      let accumulatedContent = '';
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunkValue = decoder.decode(value);
+        accumulatedContent += chunkValue;
+
+        setMessages((prev) => 
+          prev.map((msg) => 
+            msg.id === botMsgId ? { ...msg, content: accumulatedContent } : msg
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      setMessages((prev) => 
+        prev.map((msg) => 
+          msg.id === botMsgId ? { ...msg, content: 'Error: Failed to get response from ChanomBot.' } : msg
+        )
+      );
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

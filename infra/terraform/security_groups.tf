@@ -76,3 +76,30 @@ resource "aws_vpc_security_group_egress_rule" "rds_all" {
   ip_protocol       = "-1"
   cidr_ipv4         = "0.0.0.0/0"
 }
+
+# ── Security Group for Lambda ───────────────────────
+
+resource "aws_security_group" "lambda_embedding" {
+  name        = "${var.project_name}-lambda-embedding-sg"
+  description = "Security group for Tweet Embedding Lambda"
+  vpc_id      = aws_vpc.this.id
+
+  tags = { Name = "${var.project_name}-lambda-embedding-sg" }
+}
+
+resource "aws_vpc_security_group_egress_rule" "lambda_embedding_all" {
+  security_group_id = aws_security_group.lambda_embedding.id
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+# Allow Lambda to talk to RDS
+resource "aws_vpc_security_group_ingress_rule" "rds_from_lambda" {
+  security_group_id            = aws_security_group.rds.id
+  description                  = "Postgres from Embedding Lambda"
+  ip_protocol                  = "tcp"
+  from_port                    = 5432
+  to_port                      = 5432
+  referenced_security_group_id = aws_security_group.lambda_embedding.id
+}
+

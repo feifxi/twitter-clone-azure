@@ -215,3 +215,17 @@ variable "grafana_cloud_api_token" {
   sensitive   = true
 }
 
+# ── Assistant / Gemini ──────────────────────────────
+
+variable "gemini_api_key" {
+  description = "Google Gemini API Key"
+  type        = string
+  sensitive   = true
+}
+
+variable "enable_rag" {
+  description = "Enable RAG (Timeline Context) for the Assistant"
+  type        = bool
+  default     = true
+}
+

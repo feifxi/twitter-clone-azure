@@ -92,6 +92,7 @@ func (server *Server) registerDomainRoutes(api *gin.RouterGroup) {
 	server.registerDiscoveryRoutes(api, optionalAuth)
 	server.registerNotificationRoutes(api, requiredAuth)
 	server.registerMessageRoutes(api, optionalAuth, requiredAuth, strictWriteLimiter)
+	server.registerAssistantRoutes(api, requiredAuth)
 }
 
 func (server *Server) registerAuthRoutes(api *gin.RouterGroup, optionalAuth, requiredAuth, strictAuthLimiter gin.HandlerFunc) {
@@ -184,6 +185,12 @@ func (server *Server) registerMessageRoutes(api *gin.RouterGroup, optionalAuth, 
 	messagesPrivate.GET("/conversations/:id/messages", server.listConversationMessages)
 	messagesPrivate.POST("/conversations/:id/messages", strictWriteLimiter, server.sendMessageToConversation)
 	messagesPrivate.POST("/users/:id/messages", strictWriteLimiter, server.sendMessageToUser)
+}
+ 
+func (server *Server) registerAssistantRoutes(api *gin.RouterGroup, requiredAuth gin.HandlerFunc) {
+	assistant := api.Group("/assistant")
+	assistant.Use(requiredAuth)
+	assistant.POST("", server.assistant)
 }
 
 func parseAllowedOrigins(raw string) []string {
