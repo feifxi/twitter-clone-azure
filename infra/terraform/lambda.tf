@@ -106,9 +106,11 @@ resource "aws_lambda_function" "tweet_embedding" {
 
   environment {
     variables = {
-      ENVIRONMENT    = "production"
-      GEMINI_API_KEY = var.gemini_api_key
-      DATABASE_URL   = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.this.endpoint}/${var.db_name}?sslmode=require"
+      ENVIRONMENT            = "production"
+      SQS_QUEUE_URL          = aws_sqs_queue.tweet_embedding.id
+      GEMINI_API_KEY         = var.gemini_api_key
+      GEMINI_EMBEDDING_MODEL = var.gemini_embedding_model
+      DATABASE_URL           = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.this.endpoint}/${var.db_name}?sslmode=require"
     }
   }
 

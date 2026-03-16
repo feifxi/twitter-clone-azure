@@ -42,8 +42,9 @@ def process_message(conn, msg_body):
     print(f"Processing embedding for tweet {tweet_id}")
 
     # Call Gemini API
+    model_name = os.environ.get("GEMINI_EMBEDDING_MODEL", "gemini-embedding-2-preview")
     response = genai.embed_content(
-        model="models/text-embedding-004",
+        model=model_name,
         content=content,
         task_type="retrieval_document"
     )

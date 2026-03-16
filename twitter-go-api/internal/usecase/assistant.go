@@ -29,7 +29,7 @@ func (u *AssistantUsecase) Chat(ctx context.Context, input AssistantInput) (io.R
 		timelineContext = "Timeline context is currently disabled."
 	} else {
 		// 1. Vectorize the query
-		emModel := client.EmbeddingModel("text-embedding-004")
+		emModel := client.EmbeddingModel(u.config.GeminiEmbeddingModel)
 		res, err := emModel.EmbedContent(ctx, genai.Text(input.Query))
 		if err != nil {
 			log.Error().Err(err).Msg("failed to vectorize query for RAG, falling back to base chat")
@@ -60,11 +60,11 @@ func (u *AssistantUsecase) Chat(ctx context.Context, input AssistantInput) (io.R
 	// 3. Construct System Prompt
 	systemPrompt := `You are an AI assistant for a social media app. You have access to the user's recent [Chat History] and [Timeline Context]. Prioritize the Timeline Context. Maintain conversational continuity. CRITICAL: Your memory is limited to the provided history. If asked about older context you don't have, honestly state you forgot due to this being a temporary chat and ask for clarification.
 
-[Timeline Context]
-` + timelineContext
+	[Timeline Context]
+	` + timelineContext
 
 	// 4. Call Gemini 1.5 Flash with Streaming
-	model := client.GenerativeModel("gemini-1.5-flash")
+	model := client.GenerativeModel(u.config.GeminiChatModel)
 	model.SystemInstruction = &genai.Content{
 		Parts: []genai.Part{genai.Text(systemPrompt)},
 	}

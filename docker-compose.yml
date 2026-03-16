@@ -2,7 +2,7 @@ services:
   # Postgres Database
   database:
     container_name: twitter-dev-postgres-db
-    image: postgres:15.4
+    image: pgvector/pgvector:pg15
     ports:
       - "5432:5432"
     volumes:

@@ -37,6 +37,8 @@ type Config struct {
 	RedisPassword            string `mapstructure:"REDIS_PASSWORD"`
 	SQSEmbeddingQueueURL     string `mapstructure:"SQS_EMBEDDING_QUEUE_URL"`
 	GeminiAPIKey             string `mapstructure:"GEMINI_API_KEY"`
+	GeminiChatModel          string `mapstructure:"GEMINI_CHAT_MODEL"`
+	GeminiEmbeddingModel     string `mapstructure:"GEMINI_EMBEDDING_MODEL"`
 	EnableRAG                bool   `mapstructure:"ENABLE_RAG"`
 }
 
@@ -49,6 +51,8 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.SetDefault("COOKIE_DOMAIN", "")
 	viper.SetDefault("COOKIE_SAME_SITE", "Lax")
 	viper.SetDefault("COOKIE_SECURE", false)
+	viper.SetDefault("GEMINI_CHAT_MODEL", "gemini-2.5-flash")
+	viper.SetDefault("GEMINI_EMBEDDING_MODEL", "gemini-embedding-2-preview")
 	viper.SetDefault("DB_MAX_CONNS", int32(25))
 	viper.SetDefault("DB_MIN_CONNS", int32(0))
 	viper.SetDefault("DB_MAX_CONN_LIFETIME_MINUTES", 5)
@@ -83,6 +87,8 @@ func LoadConfig(path string) (config Config, err error) {
 	viper.BindEnv("REDIS_PASSWORD")
 	viper.BindEnv("SQS_EMBEDDING_QUEUE_URL")
 	viper.BindEnv("GEMINI_API_KEY")
+	viper.BindEnv("GEMINI_CHAT_MODEL")
+	viper.BindEnv("GEMINI_EMBEDDING_MODEL")
 	viper.BindEnv("ENABLE_RAG")
 
 	viper.AutomaticEnv()

@@ -26,6 +26,8 @@ locals {
     "/chmtwt/prod/REDIS_PASSWORD"               = var.redis_password
     "/chmtwt/prod/NEXT_PUBLIC_API_URL"          = "${aws_apigatewayv2_stage.default.invoke_url}api/v1"
     "/chmtwt/prod/GEMINI_API_KEY"               = var.gemini_api_key
+    "/chmtwt/prod/GEMINI_CHAT_MODEL"            = var.gemini_chat_model
+    "/chmtwt/prod/GEMINI_EMBEDDING_MODEL"       = var.gemini_embedding_model
     "/chmtwt/prod/SQS_EMBEDDING_QUEUE_URL"      = aws_sqs_queue.tweet_embedding.id
     "/chmtwt/prod/ENABLE_RAG"                   = var.enable_rag
   }

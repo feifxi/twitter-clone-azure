@@ -229,3 +229,15 @@ variable "enable_rag" {
   default     = true
 }
 
+variable "gemini_chat_model" {
+  description = "Gemini model for chat/assistant"
+  type        = string
+  default     = "gemini-2.5-flash"
+}
+
+variable "gemini_embedding_model" {
+  description = "Gemini model for text embeddings"
+  type        = string
+  default     = "gemini-embedding-2-preview"
+}
+
