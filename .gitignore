@@ -41,3 +41,24 @@ twitter-java-api/target/
 twitter-java-api/.mvn/wrapper/maven-wrapper.jar
 **/*.class
 **/out/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.mypy_cache/
+.pytest_cache/

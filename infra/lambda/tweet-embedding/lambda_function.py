@@ -60,7 +60,7 @@ def process_message(conn, msg_body):
              """
              INSERT INTO tweet_embeddings (tweet_id, content, embedding)
              VALUES (%s, %s, %s)
-             ON CONFLICT DO NOTHING
+             ON CONFLICT (tweet_id) DO NOTHING
              """,
              (tweet_id, content, VECTOR_STR)
          )

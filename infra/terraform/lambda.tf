@@ -60,8 +60,22 @@ resource "null_resource" "lambda_pip_install" {
   }
 
   provisioner "local-exec" {
-    command     = "pip install -r requirements.txt -t . --upgrade --quiet"
-    working_dir = "${path.module}/../lambda/tweet-embedding"
+    command = <<EOT
+      set -e
+      # Define build directory (deep inside .terraform to keep it hidden)
+      BUILD_DIR="${path.module}/.terraform/lambda_build/tweet_embedding"
+      SRC_DIR="${path.module}/../lambda/tweet-embedding"
+      
+      # 1. Prepare clean build directory
+      rm -rf $BUILD_DIR
+      mkdir -p $BUILD_DIR
+      
+      # 2. Install dependencies into build directory
+      pip3 install -r $SRC_DIR/requirements.txt -t $BUILD_DIR --platform manylinux2014_x86_64 --implementation cp --python-version 3.12 --only-binary=:all: --upgrade --quiet
+      
+      # 3. Copy source code to build directory
+      cp $SRC_DIR/lambda_function.py $BUILD_DIR/
+    EOT
   }
 }
 
@@ -71,14 +85,8 @@ data "archive_file" "lambda_embedding_zip" {
   depends_on = [null_resource.lambda_pip_install]
 
   type        = "zip"
-  source_dir  = "${path.module}/../lambda/tweet-embedding"
+  source_dir  = "${path.module}/.terraform/lambda_build/tweet_embedding"
   output_path = "${path.module}/.terraform/archive/tweet_embedding.zip"
-
-  excludes = [
-    "requirements.txt",
-    "__pycache__",
-    "*.pyc",
-  ]
 }
 
 resource "aws_lambda_function" "tweet_embedding" {
