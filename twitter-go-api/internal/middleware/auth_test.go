@@ -16,21 +16,6 @@ func newTestContext() *gin.Context {
 	return c
 }
 
-func TestResolveAccessTokenFromCookie(t *testing.T) {
-	t.Parallel()
-
-	ctx := newTestContext()
-	ctx.Request.AddCookie(&http.Cookie{Name: "access_token", Value: "cookie-token"})
-	ctx.Request.Header.Set("Authorization", "Bearer header-token")
-
-	got, err := resolveAccessToken(ctx)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if got != "cookie-token" {
-		t.Fatalf("expected cookie token, got %q", got)
-	}
-}
 
 func TestResolveAccessTokenFromHeader(t *testing.T) {
 	t.Parallel()

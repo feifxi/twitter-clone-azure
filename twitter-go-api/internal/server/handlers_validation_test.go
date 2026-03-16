@@ -107,7 +107,7 @@ func TestUpdateProfileRejectsEmptyJSON(t *testing.T) {
 	}
 }
 
-func TestRefreshTokenMissingCookie(t *testing.T) {
+func TestRefreshTokenMissingToken(t *testing.T) {
 	t.Parallel()
 
 	ctx, rec := newHandlerTestContext(http.MethodPost, "/api/v1/auth/refresh", nil, "")

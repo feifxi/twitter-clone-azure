@@ -185,7 +185,7 @@ func TestUpdateProfileSuccessPassesAvatarKey(t *testing.T) {
 	}
 }
 
-func TestRefreshTokenSuccessSetsSessionCookies(t *testing.T) {
+func TestRefreshTokenSuccessSetsTokensInResponse(t *testing.T) {
 	t.Parallel()
 
 	mock := &mockAuthUC{
@@ -205,14 +205,13 @@ func TestRefreshTokenSuccessSetsSessionCookies(t *testing.T) {
 		},
 	}
 
-	ctx, rec := newHandlerTestContext(http.MethodPost, "/api/v1/auth/refresh", nil, "")
-	ctx.Request.AddCookie(&http.Cookie{Name: "refresh_token", Value: "r-old"})
+	reqBody := `{"refreshToken":"r-old"}`
+	ctx, rec := newHandlerTestContext(http.MethodPost, "/api/v1/auth/refresh", bytes.NewBufferString(reqBody), "application/json")
 
 	s := &Server{
 		config: config.Config{
 			TokenDurationMinutes:     15,
 			RefreshTokenDurationDays: 30,
-			CookieSameSite:           "Lax",
 		},
 		authUC: mock,
 	}
@@ -222,18 +221,13 @@ func TestRefreshTokenSuccessSetsSessionCookies(t *testing.T) {
 		t.Fatalf("expected 200, got %d, body=%s", rec.Code, rec.Body.String())
 	}
 
-	cookies := rec.Result().Cookies()
-	var accessSet, refreshSet bool
-	for _, c := range cookies {
-		if c.Name == "access_token" && c.Value == "a-new" {
-			accessSet = true
-		}
-		if c.Name == "refresh_token" && c.Value == "r-new" {
-			refreshSet = true
-		}
+	var got authResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("invalid json response: %v", err)
 	}
-	if !accessSet || !refreshSet {
-		t.Fatalf("expected both session cookies to be set, got: %+v", cookies)
+
+	if got.AccessToken != "a-new" || got.RefreshToken != "r-new" {
+		t.Fatalf("expected both tokens in response, got: %+v", got)
 	}
 }
 
