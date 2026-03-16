@@ -157,6 +157,10 @@ func loadFromSSM() {
 }
 
 func (c Config) ValidateForRuntime() error {
+	if c.Environment != "production" {
+		return nil
+	}
+
 	if strings.TrimSpace(c.FrontendURL) == "" {
 		return fmt.Errorf("FRONTEND_URL is required in production")
 	}
