@@ -30,10 +30,10 @@ gemini_embedding_model = "gemini-embedding-2-preview"
 enable_rag = true
 
 # ── Frontend & CORS ──────────────────────────────────
-# Local frontend URL for development (e.g. http://localhost:3000)
+# For you custom domain and Local frontend URL for development (e.g. http://localhost:3000)
 # This allows your local browser to upload directly to S3.
-# Leave empty ("") to disable local access in production.
-frontend_url = "http://localhost:3000"
+# Remove local frontend url to disable local access in production.
+frontend_url = "http://localhost:3000,https://twitter.chanombude.me"
 
 # ── CI/CD (GitHub & Amplify) ──────────────────────────
 gh_repo_url = "https://github.com/feifxi/twitter-aws"
