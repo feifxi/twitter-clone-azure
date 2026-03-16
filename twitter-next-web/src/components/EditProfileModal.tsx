@@ -61,12 +61,7 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
         displayName: user.displayName || '',
         bio: user.bio || '',
       });
-      setAvatar(null);
-      setAvatarPreviewUrl(null);
-      setAvatarDeleted(false);
-      setBanner(null);
-      setBannerPreviewUrl(null);
-      setBannerDeleted(false);
+      // Removing setState calls during render/effect; handled by onOpen/onClose
     }
   }, [isOpen, user, reset]);
 
@@ -132,7 +127,18 @@ export function EditProfileModal({ user, isOpen, onClose }: EditProfileModalProp
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { 
+      if (!open) {
+        handleClose(); 
+      } else {
+        setAvatar(null);
+        setAvatarPreviewUrl(null);
+        setAvatarDeleted(false);
+        setBanner(null);
+        setBannerPreviewUrl(null);
+        setBannerDeleted(false);
+      }
+    }}>
       <DialogContent showCloseButton={false} className="sm:max-w-[600px] bg-background border-border p-0 gap-0 top-[5%] translate-y-0 sm:top-[10%] min-h-[400px] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between h-[53px] px-4 shrink-0 border-b border-border">

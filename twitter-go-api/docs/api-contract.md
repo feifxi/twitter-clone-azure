@@ -300,3 +300,55 @@ Response 200:
   1. `connected`
   2. `ping`
   3. `notification` (payload `NotificationResponse`)
+
+## Direct Messages
+
+### GET `/messages/ws` (optional auth, WebSocket)
+- Allows upgrading the connection to WebSocket for real-time messaging.
+- Authentication tokens should be passed in via handshake headers or query parameters if strictly required.
+
+### GET `/messages/conversations` (private)
+Query: `cursor`, `size`
+Response 200: `PageResponse<ConversationResponse>`
+
+### GET `/messages/conversations/:id/messages` (private)
+Query: `cursor`, `size`
+Response 200: `PageResponse<MessageResponse>`
+
+### POST `/messages/conversations/:id/messages` (private)
+Body:
+```json
+{
+  "content": "Message content"
+}
+```
+Response 200: `MessageResponse`
+
+### POST `/messages/users/:id/messages` (private)
+Starts a new conversation (or adds to an existing conversation) with a user by ID.
+Body:
+```json
+{
+  "content": "Message content"
+}
+```
+Response 200: `MessageResponse`
+
+## AI Assistant
+
+### POST `/assistant` (private, SSE)
+- Content-Type: `application/json`
+Body:
+```json
+{
+  "query": "User query here",
+  "history": [
+    { "role": "user", "text": "Previous query" },
+    { "role": "model", "text": "Previous reply" }
+  ]
+}
+```
+- Stream response over Server-Sent Events (SSE).
+- Events:
+  1. `message` (partial streaming content chunk)
+  2. `error` (if an error occurs connecting to Gemini or processing context)

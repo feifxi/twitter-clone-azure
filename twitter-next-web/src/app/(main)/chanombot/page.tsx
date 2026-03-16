@@ -274,10 +274,10 @@ export default function ChanomBotPage() {
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
-                      p: ({ children }: any) => (
+                      p: ({ children }: React.HTMLAttributes<HTMLParagraphElement>) => (
                         <p className="mb-2 last:mb-0">{children}</p>
                       ),
-                      a: ({ href, children }: any) => (
+                      a: ({ href, children }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
                         <a
                           href={href}
                           target="_blank"
@@ -287,20 +287,20 @@ export default function ChanomBotPage() {
                           {children}
                         </a>
                       ),
-                      code: ({ children }: any) => (
+                      code: ({ children }: React.HTMLAttributes<HTMLElement>) => (
                         <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">
                           {children}
                         </code>
                       ),
-                      pre: ({ children }: any) => (
+                      pre: ({ children }: React.HTMLAttributes<HTMLPreElement>) => (
                         <pre className="bg-muted p-3 rounded-lg overflow-x-auto my-2 text-sm">
                           {children}
                         </pre>
                       ),
-                      ul: ({ children }: any) => (
+                      ul: ({ children }: React.HTMLAttributes<HTMLUListElement>) => (
                         <ul className="list-disc ml-4 mb-2">{children}</ul>
                       ),
-                      ol: ({ children }: any) => (
+                      ol: ({ children }: React.HTMLAttributes<HTMLOListElement>) => (
                         <ol className="list-decimal ml-4 mb-2">{children}</ol>
                       ),
                     }}

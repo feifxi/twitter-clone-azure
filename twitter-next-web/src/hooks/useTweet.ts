@@ -147,7 +147,7 @@ export function useDeleteTweet() {
       await queryClient.cancelQueries({ queryKey: ['tweets'] });
 
       // 2. Snapshot current data for rollback
-      const snapshot: [QueryKey, any][] = [];
+      const snapshot: [QueryKey, InfiniteData<PageResponse<TweetResponse>> | TweetResponse][] = [];
       
       // Helper to capture and update infinite data
       const updateInfiniteFeeds = () => {
@@ -155,13 +155,13 @@ export function useDeleteTweet() {
         queries.forEach(([queryKey, oldData]) => {
           if (oldData) {
             snapshot.push([queryKey, oldData]);
-            queryClient.setQueryData(queryKey, (old: any) => {
+            queryClient.setQueryData<InfiniteData<PageResponse<TweetResponse>>>(queryKey, (old) => {
                 if (!old) return old;
                 return {
                   ...old,
-                  pages: old.pages.map((page: any) => ({
+                  pages: old.pages.map((page) => ({
                     ...page,
-                    items: page.items.filter((t: any) => t.id !== tweetId),
+                    items: page.items.filter((t) => t.id !== tweetId),
                   })),
                 };
             });
@@ -179,13 +179,13 @@ export function useDeleteTweet() {
         queries.forEach(([queryKey, oldData]) => {
             if (oldData) {
               snapshot.push([queryKey, oldData]);
-              queryClient.setQueryData(queryKey, (old: any) => {
+              queryClient.setQueryData<InfiniteData<PageResponse<TweetResponse>>>(queryKey, (old) => {
                   if (!old) return old;
                   return {
                     ...old,
-                    pages: old.pages.map((page: any) => ({
+                    pages: old.pages.map((page) => ({
                       ...page,
-                      items: page.items.filter((t: any) => t.id !== tweetId),
+                      items: page.items.filter((t) => t.id !== tweetId),
                     })),
                   };
               });
@@ -202,7 +202,7 @@ export function useDeleteTweet() {
       const allTweets = queryClient.getQueriesData<TweetResponse>({ queryKey: ['tweets'] });
       let parentId: number | null = null;
       
-      for (const [key, tweet] of allTweets) {
+      for (const [, tweet] of allTweets) {
           if (tweet?.id === tweetId) {
               parentId = tweet.replyToTweetId ?? null;
               break;

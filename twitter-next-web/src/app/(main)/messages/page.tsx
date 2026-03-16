@@ -67,12 +67,14 @@ export default function MessagesPage() {
     if (savedChat) {
       try {
         const parsed = JSON.parse(savedChat);
-        setActiveChat(parsed);
+        // Avoid cascading render by scheduling state update
+        requestAnimationFrame(() => setActiveChat(parsed));
       } catch (e) {
         console.error("Failed to parse activeChat from sessionStorage", e);
       }
     }
-    setHasHydrated(true);
+    // Schedule hydrated flag change
+    requestAnimationFrame(() => setHasHydrated(true));
   }, [user?.id, hasHydrated]);
 
   // Save activeChat to sessionStorage when it changes
@@ -190,15 +192,15 @@ export default function MessagesPage() {
       activeChat?.type === "private" &&
       conversations.length > 0
     ) {
-      const exists = conversations.some((c) => c.id === activeChat.id);
+      const exists = conversations.some((c) => c.id === (activeChat as { type: "private"; id: number }).id);
       if (!exists) {
         console.warn(
           "Restored chat no longer exists or belongs to another user. Clearing.",
         );
-        setActiveChat(null);
+        requestAnimationFrame(() => setActiveChat(null));
       }
     }
-  }, [isLoggedIn, conversationsLoading, conversations, activeChat]);
+  }, [isLoggedIn, conversationsLoading, conversations, activeChat?.type, activeChat?.type === "private" ? activeChat.id : undefined]);
 
   // Auto-scroll to bottom when chat changes or new messages arrive
   const activeChatKey = activeChat
@@ -631,10 +633,10 @@ export default function MessagesPage() {
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           components={{
-                            p: ({ children }: any) => (
+                            p: ({ children }: React.HTMLAttributes<HTMLParagraphElement>) => (
                               <p className="m-0">{children}</p>
                             ),
-                            a: ({ href, children }: any) => (
+                            a: ({ href, children }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
                               <a
                                 href={href}
                                 target="_blank"

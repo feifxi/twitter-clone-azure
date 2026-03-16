@@ -249,7 +249,7 @@ export function Tweet({ tweet, disableClick }: TweetProps) {
         {displayTweet.mediaUrl && (
             <div className="rounded-2xl border border-border overflow-hidden mt-2 mb-2 max-h-[500px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={displayTweet.mediaUrl} alt="Tweet media" className="w-full h-full object-cover text-transparent" />
+                <img src={displayTweet.mediaUrl} alt="Tweet media" className="w-full max-h-[500px] object-cover text-transparent" />
             </div>
         )}
 

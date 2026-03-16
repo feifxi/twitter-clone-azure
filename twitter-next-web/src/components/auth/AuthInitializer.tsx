@@ -43,7 +43,7 @@ export function AuthInitializer({ children }: { children: React.ReactNode }) {
     };
 
     init();
-  }, [accessToken, setAuth, logout, setInitialized]);
+  }, [accessToken, refreshToken, setAuth, logout, setInitialized]);
 
   if (!mounted || !isInitialized) {
     return <LoadingScreen />;
