@@ -2,7 +2,6 @@ package server
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/chanombude/twitter-go-api/internal/usecase"
 	"github.com/gin-gonic/gin"
@@ -25,14 +24,6 @@ func (server *Server) createTweet(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		writeError(ctx, err)
 		return
-	}
-
-	// Validate media key looks like an S3 object key (folder/uuid_file)
-	if req.MediaKey != nil && *req.MediaKey != "" {
-		if !strings.Contains(*req.MediaKey, "/") {
-			writeValidationError(ctx, "mediaKey", "invalid media key format")
-			return
-		}
 	}
 
 	input := usecase.CreateTweetInput{

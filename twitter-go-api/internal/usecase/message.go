@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-
 func normalizeMessageContent(content string) (string, error) {
 	trimmed := strings.TrimSpace(content)
 	if trimmed == "" {
@@ -21,7 +20,6 @@ func normalizeMessageContent(content string) (string, error) {
 	}
 	return trimmed, nil
 }
-
 
 func (u *MessageUsecase) fetchSender(ctx context.Context, senderID int64) (UserItem, error) {
 	rows, err := u.store.GetUsersByIDs(ctx, db.GetUsersByIDsParams{
@@ -187,7 +185,7 @@ func (u *MessageUsecase) SendMessageToUser(ctx context.Context, senderID, recipi
 
 	var created db.DirectMessage
 	var conversationID int64
-	err = u.store.ExecTx(ctx, func(q *db.Queries) error {
+	err = u.store.ExecTx(ctx, func(q db.Querier) error {
 		conversation, findErr := q.FindDirectConversation(ctx, db.FindDirectConversationParams{
 			UserID:   senderID,
 			UserID_2: recipientID,
@@ -272,7 +270,7 @@ func (u *MessageUsecase) SendMessageToConversation(ctx context.Context, senderID
 	}
 
 	var created db.DirectMessage
-	err = u.store.ExecTx(ctx, func(q *db.Queries) error {
+	err = u.store.ExecTx(ctx, func(q db.Querier) error {
 		var createErr error
 		created, createErr = q.CreateDirectMessage(ctx, db.CreateDirectMessageParams{
 			ConversationID: conversationID,
@@ -306,5 +304,3 @@ func (u *MessageUsecase) SendMessageToConversation(ctx context.Context, senderID
 		CreatedAt:      created.CreatedAt,
 	}, participants, nil
 }
-
-

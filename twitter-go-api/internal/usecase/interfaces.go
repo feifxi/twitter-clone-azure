@@ -7,8 +7,11 @@ import (
 	"github.com/chanombude/twitter-go-api/internal/db"
 	"github.com/chanombude/twitter-go-api/internal/service"
 	"github.com/chanombude/twitter-go-api/internal/token"
+	"google.golang.org/api/idtoken"
 	"io"
 )
+
+// --- Service Interfaces ---
 
 type AuthService interface {
 	LoginWithGoogle(ctx context.Context, idToken string) (AuthResult, error)
@@ -67,25 +70,28 @@ type MessageService interface {
 	SendMessageToUser(ctx context.Context, senderID, recipientID int64, content string) (MessageItem, []int64, error)
 	SendMessageToConversation(ctx context.Context, senderID, conversationID int64, content string) (MessageItem, []int64, error)
 }
- 
+
 type AssistantService interface {
 	Chat(ctx context.Context, input AssistantInput) (io.Reader, error)
 }
- 
-type AssistantInput struct {
-	Query   string            `json:"query" binding:"required"`
-	History []AssistantHistoryItem `json:"history"`
-}
- 
-type AssistantHistoryItem struct {
-	Role string `json:"role"` // "user" or "model" (for Gemini)
-	Text string `json:"text"`
+
+type UploadService interface {
+	GeneratePresignedURL(ctx context.Context, filename, contentType, folder string, contentLength *int64) (string, string, error)
 }
 
+// --- Domain Helper Interfaces ---
+
+type GoogleVerifier interface {
+	Validate(ctx context.Context, idToken string, audience string) (*idtoken.Payload, error)
+}
+
+// --- Implementation Structs ---
+
 type AuthUsecase struct {
-	config     config.Config
-	store      db.Store
-	tokenMaker token.Maker
+	config         config.Config
+	store          db.Store
+	tokenMaker     token.Maker
+	googleVerifier GoogleVerifier
 }
 
 type UserUsecase struct {
@@ -121,11 +127,18 @@ type NotificationUsecase struct {
 type MessageUsecase struct {
 	store db.Store
 }
- 
+
 type AssistantUsecase struct {
 	config config.Config
 	store  db.Store
 }
+
+type UploadUsecase struct {
+	config  config.Config
+	storage service.StorageService
+}
+
+// --- Interface Implementation Checks ---
 
 var (
 	_ AuthService         = (*AuthUsecase)(nil)
@@ -136,14 +149,18 @@ var (
 	_ DiscoveryService    = (*DiscoveryUsecase)(nil)
 	_ NotificationService = (*NotificationUsecase)(nil)
 	_ MessageService      = (*MessageUsecase)(nil)
-	_ AssistantService = (*AssistantUsecase)(nil)
+	_ AssistantService    = (*AssistantUsecase)(nil)
+	_ UploadService       = (*UploadUsecase)(nil)
 )
 
-func NewAuthUsecase(cfg config.Config, store db.Store, tokenMaker token.Maker) *AuthUsecase {
+// --- Constructors ---
+
+func NewAuthUsecase(cfg config.Config, store db.Store, tokenMaker token.Maker, googleVerifier GoogleVerifier) *AuthUsecase {
 	return &AuthUsecase{
-		config:     cfg,
-		store:      store,
-		tokenMaker: tokenMaker,
+		config:         cfg,
+		store:          store,
+		tokenMaker:     tokenMaker,
+		googleVerifier: googleVerifier,
 	}
 }
 
@@ -184,10 +201,29 @@ func NewNotificationUsecase(store db.Store) *NotificationUsecase {
 func NewMessageUsecase(store db.Store) *MessageUsecase {
 	return &MessageUsecase{store: store}
 }
- 
+
 func NewAssistantUsecase(cfg config.Config, store db.Store) *AssistantUsecase {
 	return &AssistantUsecase{
 		config: cfg,
 		store:  store,
 	}
+}
+
+func NewUploadUsecase(cfg config.Config, storage service.StorageService) *UploadUsecase {
+	return &UploadUsecase{
+		config:  cfg,
+		storage: storage,
+	}
+}
+
+// --- Assistant Models ---
+
+type AssistantInput struct {
+	Query   string                 `json:"query" binding:"required"`
+	History []AssistantHistoryItem `json:"history"`
+}
+
+type AssistantHistoryItem struct {
+	Role string `json:"role"` // "user" or "model" (for Gemini)
+	Text string `json:"text"`
 }

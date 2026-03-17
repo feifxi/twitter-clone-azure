@@ -38,6 +38,7 @@ func (m *mockTweetUC) UndoRetweet(context.Context, int64, int64) error { return 
 type mockUserUC struct {
 	updateProfileFn func(ctx context.Context, userID int64, input usecase.UpdateProfileInput) (usecase.UserItem, error)
 	listFollowersFn func(ctx context.Context, targetUserID int64, page, size int32, viewerID *int64) ([]usecase.UserItem, error)
+	followUserFn    func(ctx context.Context, followerID, targetUserID int64) (bool, error)
 }
 
 func (m *mockUserUC) GetUser(context.Context, int64, *int64) (usecase.UserItem, error) {
@@ -46,7 +47,12 @@ func (m *mockUserUC) GetUser(context.Context, int64, *int64) (usecase.UserItem, 
 func (m *mockUserUC) UpdateProfile(ctx context.Context, userID int64, input usecase.UpdateProfileInput) (usecase.UserItem, error) {
 	return m.updateProfileFn(ctx, userID, input)
 }
-func (m *mockUserUC) FollowUser(context.Context, int64, int64) (bool, error) { return true, nil }
+func (m *mockUserUC) FollowUser(ctx context.Context, followerID, targetUserID int64) (bool, error) {
+	if m.followUserFn != nil {
+		return m.followUserFn(ctx, followerID, targetUserID)
+	}
+	return true, nil
+}
 func (m *mockUserUC) UnfollowUser(context.Context, int64, int64) error       { return nil }
 func (m *mockUserUC) ListFollowers(ctx context.Context, targetUserID int64, page, size int32, viewerID *int64) ([]usecase.UserItem, error) {
 	if m.listFollowersFn != nil {
@@ -334,7 +340,7 @@ func TestListFollowersReturnsItemsAndHasNext(t *testing.T) {
 	}
 
 	ctx, rec := newHandlerTestContext(http.MethodGet, "/api/v1/users/99/followers?size=2", nil, "")
-	ctx.Params = gin.Params{{Key: "id", Value: "99"}}
+	ctx.Params = gin.Params{gin.Param{Key: "id", Value: "99"}}
 	s := &Server{userUC: mock}
 	s.listFollowers(ctx)
 

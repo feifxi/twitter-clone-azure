@@ -34,8 +34,8 @@ resource "aws_instance" "nat" {
   instance_type               = "t3.micro"
   subnet_id                   = aws_subnet.public_1.id
   vpc_security_group_ids      = [aws_security_group.nat.id]
-  source_dest_check           = false # Required for NAT
-  associate_public_ip_address = true  # <--- [เพิ่ม] บังคับให้รับ Public IP เพื่อออกเน็ต
+  source_dest_check           = false
+  associate_public_ip_address = true
 
   user_data = <<-EOF
     #!/bin/bash

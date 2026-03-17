@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -9,9 +10,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/chanombude/twitter-go-api/internal/config"
 	"github.com/chanombude/twitter-go-api/internal/middleware"
 	"github.com/chanombude/twitter-go-api/internal/token"
+	"github.com/chanombude/twitter-go-api/internal/usecase"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -49,13 +52,18 @@ func TestCreateTweetRejectsInvalidMediaKey(t *testing.T) {
 	ctx, rec := newHandlerTestContext(http.MethodPost, "/api/v1/tweets", bytes.NewBufferString(reqBody), "application/json")
 	setAuthorizedUser(ctx, 1)
 
-	s := &Server{config: config.Config{}}
+	mock := &mockTweetUC{
+		createTweetFn: func(_ context.Context, _ usecase.CreateTweetInput) (usecase.TweetItem, error) {
+			return usecase.TweetItem{}, apperr.BadRequest("invalid media key format")
+		},
+	}
+	s := &Server{config: config.Config{}, tweetUC: mock}
 	s.createTweet(ctx)
 
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d body=%s", rec.Code, rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), "invalid media key") {
+	if !strings.Contains(rec.Body.String(), "invalid media key format") {
 		t.Fatalf("unexpected response body: %s", rec.Body.String())
 	}
 }

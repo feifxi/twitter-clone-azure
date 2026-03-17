@@ -10,8 +10,8 @@ import (
 
 type Store interface {
 	Querier
-	ExecTx(ctx context.Context, fn func(*Queries) error) error
-	ExecTxAfterCommit(ctx context.Context, fn func(*Queries) error, afterCommit func()) error
+	ExecTx(ctx context.Context, fn func(Querier) error) error
+	ExecTxAfterCommit(ctx context.Context, fn func(Querier) error, afterCommit func()) error
 	Ping(ctx context.Context) error
 }
 
@@ -32,7 +32,7 @@ func NewStore(conn *pgxpool.Pool) Store {
 // ExecTx executes a function within a database transaction.
 // If the function returns an error, the transaction is rolled back.
 // Otherwise, the transaction is committed.
-func (s *SQLStore) ExecTx(ctx context.Context, fn func(*Queries) error) error {
+func (s *SQLStore) ExecTx(ctx context.Context, fn func(Querier) error) error {
 	tx, err := s.conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
@@ -48,7 +48,7 @@ func (s *SQLStore) ExecTx(ctx context.Context, fn func(*Queries) error) error {
 
 // ExecTxAfterCommit executes fn inside a transaction and only runs afterCommit
 // if the transaction has successfully committed.
-func (s *SQLStore) ExecTxAfterCommit(ctx context.Context, fn func(*Queries) error, afterCommit func()) error {
+func (s *SQLStore) ExecTxAfterCommit(ctx context.Context, fn func(Querier) error, afterCommit func()) error {
 	tx, err := s.conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)

@@ -32,6 +32,7 @@ type Server struct {
 	notifyUC    usecase.NotificationService
 	messageUC   usecase.MessageService
 	assistantUC usecase.AssistantService
+	uploadUC    usecase.UploadService
 	router      *gin.Engine
 	redis       *redis.Client
 	sseClients  map[int64][]*sseClient
@@ -71,7 +72,7 @@ func NewServer(config config.Config, store db.Store, redisClient *redis.Client) 
 		wsClients:  make(map[int64]map[*chatWSClient]struct{}),
 		done:       make(chan struct{}),
 	}
-	server.authUC = usecase.NewAuthUsecase(config, store, tokenMaker)
+	server.authUC = usecase.NewAuthUsecase(config, store, tokenMaker, usecase.NewRealGoogleVerifier())
 	server.userUC = usecase.NewUserUsecase(store, storageService, server.publishNotification)
 	server.tweetUC = usecase.NewTweetUsecase(config, store, storageService, embeddingPublisher, server.publishNotification)
 	server.feedUC = usecase.NewFeedUsecase(store)
@@ -80,6 +81,7 @@ func NewServer(config config.Config, store db.Store, redisClient *redis.Client) 
 	server.notifyUC = usecase.NewNotificationUsecase(store)
 	server.messageUC = usecase.NewMessageUsecase(store)
 	server.assistantUC = usecase.NewAssistantUsecase(config, store)
+	server.uploadUC = usecase.NewUploadUsecase(config, storageService)
 
 	server.setupRouter()
 

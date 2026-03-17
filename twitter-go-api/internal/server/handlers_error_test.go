@@ -59,7 +59,7 @@ func TestGetTweet_NotFoundReturns404(t *testing.T) {
 	t.Parallel()
 
 	ctx, rec := newHandlerTestContext(http.MethodGet, "/api/v1/tweets/99", nil, "")
-	ctx.Params = gin.Params{{Key: "id", Value: "99"}}
+	ctx.Params = gin.Params{gin.Param{Key: "id", Value: "99"}}
 
 	s := &Server{tweetUC: &mockTweetUCNotFound{}}
 	s.getTweet(ctx)
@@ -146,10 +146,18 @@ func TestFollowUser_CannotFollowSelf(t *testing.T) {
 	t.Parallel()
 
 	ctx, rec := newHandlerTestContext(http.MethodPost, "/api/v1/users/5/follow", nil, "")
-	ctx.Params = gin.Params{{Key: "id", Value: "5"}}
+	ctx.Params = gin.Params{gin.Param{Key: "id", Value: "5"}}
 	setAuthorizedUser(ctx, 5)
 
-	s := &Server{userUC: &mockUserUC{}}
+	mock := &mockUserUC{
+		followUserFn: func(ctx context.Context, followerID, targetUserID int64) (bool, error) {
+			if followerID == targetUserID {
+				return false, apperr.BadRequest("cannot follow yourself")
+			}
+			return true, nil
+		},
+	}
+	s := &Server{userUC: mock}
 	s.followUser(ctx)
 
 	if rec.Code != http.StatusBadRequest {
@@ -166,7 +174,7 @@ func TestDeleteTweet_MissingAuth(t *testing.T) {
 	t.Parallel()
 
 	ctx, rec := newHandlerTestContext(http.MethodDelete, "/api/v1/tweets/1", nil, "")
-	ctx.Params = gin.Params{{Key: "id", Value: "1"}}
+	ctx.Params = gin.Params{gin.Param{Key: "id", Value: "1"}}
 
 	s := &Server{tweetUC: &mockTweetUC{}}
 	s.deleteTweet(ctx)

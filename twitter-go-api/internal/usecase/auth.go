@@ -22,8 +22,18 @@ type AuthResult struct {
 	RefreshToken string
 }
 
+type realGoogleVerifier struct{}
+
+func (v *realGoogleVerifier) Validate(ctx context.Context, idToken string, audience string) (*idtoken.Payload, error) {
+	return idtoken.Validate(ctx, idToken, audience)
+}
+
+func NewRealGoogleVerifier() GoogleVerifier {
+	return &realGoogleVerifier{}
+}
+
 func (u *AuthUsecase) LoginWithGoogle(ctx context.Context, idToken string) (AuthResult, error) {
-	payload, err := idtoken.Validate(ctx, idToken, u.config.GoogleClientID)
+	payload, err := u.googleVerifier.Validate(ctx, idToken, u.config.GoogleClientID)
 	if err != nil {
 		return AuthResult{}, apperr.Unauthorized("invalid google token")
 	}

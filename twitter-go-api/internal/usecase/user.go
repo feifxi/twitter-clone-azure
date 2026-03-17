@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 
+	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/chanombude/twitter-go-api/internal/db"
 )
 
@@ -89,6 +90,10 @@ func (u *UserUsecase) UpdateProfile(ctx context.Context, userID int64, input Upd
 }
 
 func (u *UserUsecase) FollowUser(ctx context.Context, followerID, targetUserID int64) (bool, error) {
+	if followerID == targetUserID {
+		return false, apperr.BadRequest("cannot follow yourself")
+	}
+
 	targetUser, err := u.store.GetUser(ctx, db.GetUserParams{ID: targetUserID, ViewerID: nil})
 	if err != nil {
 		return false, err
@@ -96,7 +101,7 @@ func (u *UserUsecase) FollowUser(ctx context.Context, followerID, targetUserID i
 
 	var inserted bool
 	var pendingNotification db.Notification
-	err = u.store.ExecTxAfterCommit(ctx, func(q *db.Queries) error {
+	err = u.store.ExecTxAfterCommit(ctx, func(q db.Querier) error {
 		var err error
 		inserted, err = q.FollowUser(ctx, db.FollowUserParams{FollowerID: followerID, FollowingID: targetUserID})
 		if err != nil {

@@ -2,27 +2,8 @@ package server
 
 import (
 	"net/http"
-	"strings"
 
-	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/gin-gonic/gin"
-)
-
-var (
-	presignAllowedMIMEs = map[string]bool{
-		"image/jpeg": true,
-		"image/png":  true,
-		"image/gif":  true,
-		"image/webp": true,
-		"video/mp4":  true,
-		"video/webm": true,
-	}
-
-	presignAllowedFolders = map[string]bool{
-		"tweets":  true,
-		"avatars": true,
-		"banners": true,
-	}
 )
 
 type presignRequest struct {
@@ -43,29 +24,9 @@ func (server *Server) presignUpload(ctx *gin.Context) {
 		return
 	}
 
-	contentType := strings.ToLower(strings.TrimSpace(req.ContentType))
-	if !presignAllowedMIMEs[contentType] {
-		writeValidationError(ctx, "contentType", "unsupported content type")
-		return
-	}
-
-	folder := strings.ToLower(strings.TrimSpace(req.Folder))
-	if !presignAllowedFolders[folder] {
-		writeValidationError(ctx, "folder", "unsupported folder")
-		return
-	}
-
-	if req.ContentLength != nil {
-		maxSize := server.maxUploadSize(folder)
-		if maxSize > 0 && *req.ContentLength > maxSize {
-			writeValidationError(ctx, "contentLength", "file too large")
-			return
-		}
-	}
-
-	presignedURL, objectKey, err := server.storage.GeneratePresignedURL(ctx, req.Filename, contentType, folder)
+	presignedURL, objectKey, err := server.uploadUC.GeneratePresignedURL(ctx, req.Filename, req.ContentType, req.Folder, req.ContentLength)
 	if err != nil {
-		writeError(ctx, apperr.Internal("failed to generate upload URL", err))
+		writeError(ctx, err)
 		return
 	}
 
@@ -73,17 +34,4 @@ func (server *Server) presignUpload(ctx *gin.Context) {
 		"presignedUrl": presignedURL,
 		"objectKey":    objectKey,
 	})
-}
-
-func (server *Server) maxUploadSize(folder string) int64 {
-	switch folder {
-	case "avatars":
-		return server.config.MaxAvatarBytes
-	case "banners":
-		return server.config.MaxBannerBytes
-	case "tweets":
-		return server.config.MaxMediaBytes
-	default:
-		return 0
-	}
 }

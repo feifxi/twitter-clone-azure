@@ -3,7 +3,6 @@ package server
 import (
 	"net/http"
 
-	"github.com/chanombude/twitter-go-api/internal/apperr"
 	"github.com/chanombude/twitter-go-api/internal/usecase"
 	"github.com/gin-gonic/gin"
 )
@@ -70,10 +69,6 @@ func (server *Server) followUser(ctx *gin.Context) {
 
 	followerID, ok := mustCurrentUserID(ctx)
 	if !ok {
-		return
-	}
-	if followerID == req.ID {
-		writeError(ctx, apperr.BadRequest("cannot follow yourself"))
 		return
 	}
 

@@ -29,6 +29,9 @@ func (u *TweetUsecase) CreateTweet(ctx context.Context, input CreateTweetInput) 
 	var mediaURL *string
 	var mediaKey string
 	if input.MediaKey != nil && *input.MediaKey != "" {
+		if !strings.Contains(*input.MediaKey, "/") {
+			return TweetItem{}, apperr.BadRequest("invalid media key format")
+		}
 		mediaType = input.MediaType
 		mediaKey = *input.MediaKey
 		publicURL := u.storage.PublicURL(mediaKey)
@@ -46,7 +49,7 @@ func (u *TweetUsecase) CreateTweet(ctx context.Context, input CreateTweetInput) 
 
 	var createdTweet db.Tweet
 	var pendingNotification db.Notification
-	err := u.store.ExecTxAfterCommit(ctx, func(q *db.Queries) error {
+	err := u.store.ExecTxAfterCommit(ctx, func(q db.Querier) error {
 		var err error
 		createdTweet, err = q.CreateTweet(ctx, db.CreateTweetParams{
 			UserID:    input.UserID,
@@ -125,7 +128,7 @@ func (u *TweetUsecase) DeleteTweet(ctx context.Context, userID, tweetID int64) e
 		return err
 	}
 
-	return u.store.ExecTxAfterCommit(ctx, func(q *db.Queries) error {
+	return u.store.ExecTxAfterCommit(ctx, func(q db.Querier) error {
 		// Collect hashtag usage impact for the full cascade set (root tweet + replies + retweets)
 		// before deletion, because tweet_hashtags rows are removed via ON DELETE CASCADE.
 		hashtagUsage, err := q.ListHashtagUsageToDecrementForDeleteRoot(ctx, tweetID)
@@ -232,7 +235,7 @@ func (u *TweetUsecase) LikeTweet(ctx context.Context, userID, tweetID int64) err
 	}
 
 	var pendingNotification db.Notification
-	err = u.store.ExecTxAfterCommit(ctx, func(q *db.Queries) error {
+	err = u.store.ExecTxAfterCommit(ctx, func(q db.Querier) error {
 		liked, err := q.LikeTweet(ctx, db.LikeTweetParams{UserID: userID, TweetID: tweetID})
 		if err != nil {
 			return err
@@ -280,7 +283,7 @@ func (u *TweetUsecase) Retweet(ctx context.Context, userID, tweetID int64) (Twee
 
 	var created db.CreateRetweetRow
 	var pendingNotification db.Notification
-	err = u.store.ExecTxAfterCommit(ctx, func(q *db.Queries) error {
+	err = u.store.ExecTxAfterCommit(ctx, func(q db.Querier) error {
 		var err error
 		created, err = q.CreateRetweet(ctx, db.CreateRetweetParams{
 			UserID:    userID,

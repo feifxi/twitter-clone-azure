@@ -35,7 +35,7 @@ func TestExecTxAfterCommitCallsCallbackOnSuccess(t *testing.T) {
 	store := NewStore(pool)
 
 	called := false
-	err := store.ExecTxAfterCommit(context.Background(), func(_ *Queries) error {
+	err := store.ExecTxAfterCommit(context.Background(), func(_ Querier) error {
 		return nil
 	}, func() {
 		called = true
@@ -56,7 +56,7 @@ func TestExecTxAfterCommitSkipsCallbackOnFailure(t *testing.T) {
 
 	called := false
 	expectedErr := errors.New("tx failure")
-	err := store.ExecTxAfterCommit(context.Background(), func(_ *Queries) error {
+	err := store.ExecTxAfterCommit(context.Background(), func(_ Querier) error {
 		return expectedErr
 	}, func() {
 		called = true
@@ -77,7 +77,7 @@ func TestExecTxReturnsCallbackError(t *testing.T) {
 	store := NewStore(pool)
 
 	expectedErr := errors.New("exec tx failure")
-	err := store.ExecTx(context.Background(), func(_ *Queries) error {
+	err := store.ExecTx(context.Background(), func(_ Querier) error {
 		return expectedErr
 	})
 

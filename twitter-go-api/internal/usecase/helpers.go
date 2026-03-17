@@ -53,7 +53,7 @@ func buildTSQuery(raw string) string {
 // createNotification inserts a notification row using the provided Queries handle.
 // Use inside ExecTx to ensure the row is part of the transaction.
 // Returns the notification (for dispatch after commit) or zero value if skipped.
-func createNotification(ctx context.Context, q *db.Queries, recipientID, actorID int64, tweetID *int64, typ string) (db.Notification, error) {
+func createNotification(ctx context.Context, q db.Querier, recipientID, actorID int64, tweetID *int64, typ string) (db.Notification, error) {
 	if recipientID == actorID {
 		return db.Notification{}, nil
 	}
