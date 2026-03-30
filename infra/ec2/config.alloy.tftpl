@@ -46,14 +46,14 @@ discovery.relabel "containers" {
   // Keep only the API container
   rule {
     source_labels = ["__meta_docker_container_name"]
-    regex         = "/?twitter-aws-go-api"
+    regex         = "/?twitter-monolith-go-api"
     action        = "keep"
   }
 
   // hardcode the "job" label
   rule {
     target_label = "job"
-    replacement  = "twitter-aws-go-api"
+    replacement  = "twitter-monolith-go-api"
   }
   
   // also extract the container_name as a label, which is very useful in Grafana!

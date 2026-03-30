@@ -14,8 +14,8 @@ services:
       - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
 
   api:
-    image: ghcr.io/feifxi/twitter-aws-go-api:latest
-    container_name: twitter-aws-go-api
+    image: ghcr.io/feifxi/twitter-monolith-go-api:latest
+    container_name: twitter-monolith-go-api
     ports:
       - "8080:8080"
     environment:
