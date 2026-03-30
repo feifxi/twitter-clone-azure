@@ -36,7 +36,7 @@ enable_rag = true
 frontend_url = "http://localhost:3000,https://twitter.chanombude.me"
 
 # ── CI/CD (GitHub & Amplify) ──────────────────────────
-gh_repo_url = "https://github.com/feifxi/twitter-aws"
+gh_repo_url = "https://github.com/feifxi/twitter-aws-monolith"
 gh_branch   = "main"
 
 # GitHub Personal Access Token (Classic). 

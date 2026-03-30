@@ -149,7 +149,7 @@ variable "frontend_url" {
 variable "gh_repo_url" {
   description = "GitHub repository URL for Amplify"
   type        = string
-  default     = "https://github.com/feifxi/twitter-aws"
+  default     = "https://github.com/feifxi/twitter-aws-monolith"
 }
 
 variable "gh_branch" {
